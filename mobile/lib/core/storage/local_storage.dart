@@ -206,6 +206,32 @@ class CustomPlaylistsNotifier extends StateNotifier<List<Playlist>> {
   }
 }
 
+final userAvatarProvider = StateNotifierProvider<UserAvatarNotifier, String?>((ref) {
+  return UserAvatarNotifier();
+});
+
+class UserAvatarNotifier extends StateNotifier<String?> {
+  UserAvatarNotifier() : super(LocalStorageService.getUserAvatar());
+
+  Future<void> setAvatar(String? url) async {
+    await LocalStorageService.saveUserAvatar(url);
+    state = url;
+  }
+}
+
+final userNameProvider = StateNotifierProvider<UserNameNotifier, String>((ref) {
+  return UserNameNotifier();
+});
+
+class UserNameNotifier extends StateNotifier<String> {
+  UserNameNotifier() : super(LocalStorageService.getUserName());
+
+  Future<void> setName(String name) async {
+    await LocalStorageService.saveUserName(name);
+    state = name;
+  }
+}
+
 class LocalStorageService {
   static SharedPreferences? _prefs;
 

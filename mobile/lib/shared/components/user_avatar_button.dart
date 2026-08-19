@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/storage/local_storage.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 
-class UserAvatarButton extends StatelessWidget {
+class UserAvatarButton extends ConsumerWidget {
   final double size;
 
   const UserAvatarButton({
@@ -12,19 +13,17 @@ class UserAvatarButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final avatarUrl = LocalStorageService.getUserAvatar();
-    final userName = LocalStorageService.getUserName();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final avatarUrl = ref.watch(userAvatarProvider);
+    final userName = ref.watch(userNameProvider);
     final initial = (userName.isNotEmpty ? userName[0] : 'V').toUpperCase();
 
     return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
+      onTap: () {
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (ctx) => const ProfileScreen()),
         );
-        // Force rebuild if user updated profile
-        (context as Element).markNeedsBuild();
       },
       child: Container(
         width: size,

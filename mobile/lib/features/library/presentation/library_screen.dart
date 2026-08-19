@@ -428,9 +428,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     if (playlists.isEmpty)
                       const SliverFillRemaining(
                         child: Center(
-                          child: Text(
-                            'No matching playlists found',
-                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.queue_music_rounded, size: 54, color: AppTheme.textSecondary),
+                              SizedBox(height: 12),
+                              Text(
+                                'Your library is empty',
+                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Upload songs or create playlists to get started.',
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                              ),
+                            ],
                           ),
                         ),
                       )

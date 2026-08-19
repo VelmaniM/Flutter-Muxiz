@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/data/mock_catalog.dart';
 import '../../../core/storage/local_storage.dart';
@@ -11,27 +12,18 @@ import '../../../shared/components/artist_avatar.dart';
 import '../../details/presentation/playlist_detail_screen.dart';
 import 'profile_image_cropper.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  late String _displayName;
-  String? _avatarUrl;
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploadingAvatar = false;
   final ImagePicker _picker = ImagePicker();
 
-  @override
-  void initState() {
-    super.initState();
-    _displayName = LocalStorageService.getUserName();
-    _avatarUrl = LocalStorageService.getUserAvatar();
-  }
-
-  void _showProfilePhotoOptions() {
+  void _showProfilePhotoOptions(String? avatarUrl, String displayName) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF181818),
@@ -74,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryGreen, size: 22),
                   ),
                   title: Text(
-                    _avatarUrl != null && _avatarUrl!.isNotEmpty ? 'Change Photo' : 'Upload New Photo',
+                    avatarUrl != null && avatarUrl.isNotEmpty ? 'Change Photo' : 'Upload New Photo',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: const Text(
@@ -83,10 +75,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _pickAndUploadAvatar();
+                    _pickAndUploadAvatar(displayName);
                   },
                 ),
-                if (_avatarUrl != null && _avatarUrl!.isNotEmpty) ...[
+                if (avatarUrl != null && avatarUrl.isNotEmpty) ...[
                   const Divider(color: Colors.white10, height: 16),
                   ListTile(
                     leading: Container(
@@ -126,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      await LocalStorageService.saveUserAvatar(null);
+      await ref.read(userAvatarProvider.notifier).setAvatar(null);
 
       // Async backend remove
       final dio = Dio();
@@ -144,7 +136,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         setState(() {
-          _avatarUrl = null;
           _isUploadingAvatar = false;
         });
 
@@ -167,14 +158,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _avatarUrl = null;
           _isUploadingAvatar = false;
         });
       }
     }
   }
 
-  Future<void> _pickAndUploadAvatar() async {
+  Future<void> _pickAndUploadAvatar(String displayName) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -205,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.png',
         ),
         'userId': LocalStorageService.getUserId(),
-        'displayName': _displayName,
+        'displayName': displayName,
       });
 
       const endpoints = [
@@ -228,11 +218,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Fallback: If cloud offline, save cropped local image file path as avatar
       uploadedUrl ??= croppedFile.path;
 
-      await LocalStorageService.saveUserAvatar(uploadedUrl);
+      await ref.read(userAvatarProvider.notifier).setAvatar(uploadedUrl);
 
       if (mounted) {
         setState(() {
-          _avatarUrl = uploadedUrl;
           _isUploadingAvatar = false;
         });
 
@@ -267,8 +256,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showEditNameDialog() {
-    final textController = TextEditingController(text: _displayName);
+  void _showEditNameDialog(String currentName) {
+    final textController = TextEditingController(text: currentName);
 
     showModalBottomSheet(
       context: context,
@@ -348,11 +337,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (newName.isEmpty) return;
 
                     Navigator.pop(ctx);
-                    await LocalStorageService.saveUserName(newName);
-
-                    setState(() {
-                      _displayName = newName;
-                    });
+                    await ref.read(userNameProvider.notifier).setName(newName);
 
                     // Sync with backend asynchronously
                     try {
@@ -403,14 +388,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAvatarWidget() {
-    final initial = (_displayName.isNotEmpty ? _displayName[0] : 'V').toUpperCase();
+  Widget _buildAvatarWidget(String? avatarUrl, String displayName) {
+    final initial = (displayName.isNotEmpty ? displayName[0] : 'V').toUpperCase();
 
     Widget imageContent;
-    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
-      if (_avatarUrl!.startsWith('http')) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      if (avatarUrl.startsWith('http')) {
         imageContent = CachedNetworkImage(
-          imageUrl: _avatarUrl!,
+          imageUrl: avatarUrl,
           fit: BoxFit.cover,
           width: 112,
           height: 112,
@@ -432,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       } else {
         imageContent = Image.file(
-          File(_avatarUrl!),
+          File(avatarUrl),
           fit: BoxFit.cover,
           width: 112,
           height: 112,
@@ -460,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return GestureDetector(
-      onTap: _showProfilePhotoOptions,
+      onTap: () => _showProfilePhotoOptions(avatarUrl, displayName),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -513,6 +498,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final avatarUrl = ref.watch(userAvatarProvider);
+    final displayName = ref.watch(userNameProvider);
     final playlists = MockMusicCatalog.featuredPlaylists;
     final artists = MockMusicCatalog.popularArtists;
 
@@ -546,7 +533,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 22),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    onPressed: _showEditNameDialog,
+                    onPressed: () => _showEditNameDialog(displayName),
                   ),
                 ],
               ),
@@ -561,18 +548,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
 
                     // Interactive Profile Avatar with Camera Badge
-                    _buildAvatarWidget(),
+                    _buildAvatarWidget(avatarUrl, displayName),
                     const SizedBox(height: 16),
 
                     // Display Name with edit pen
                     GestureDetector(
-                      onTap: _showEditNameDialog,
+                      onTap: () => _showEditNameDialog(displayName),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _displayName,
+                            displayName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,
@@ -607,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           ),
-                          onPressed: _showEditNameDialog,
+                          onPressed: () => _showEditNameDialog(displayName),
                           icon: const Icon(Icons.edit, size: 15, color: Colors.white),
                           label: const Text('Edit profile', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
@@ -620,96 +607,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // Public Playlists Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Public Playlists',
+                    // Public Playlists Section (Only when playlists exist)
+                    if (playlists.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Public Playlists',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text(
+                                'See all',
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 210,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: playlists.length,
+                          itemBuilder: (context, index) {
+                            final playlist = playlists[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 14.0),
+                              child: AlbumCard(
+                                title: playlist.title,
+                                subtitle: '${playlist.songs.length} songs',
+                                imageUrl: playlist.coverUrl,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PlaylistDetailScreen(playlist: playlist),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Recently Played Artists (Only when artists exist)
+                    if (artists.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Recently played artists',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              'See all',
-                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 210,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        itemCount: playlists.length,
-                        itemBuilder: (context, index) {
-                          final playlist = playlists[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 14.0),
-                            child: AlbumCard(
-                              title: playlist.title,
-                              subtitle: '${playlist.songs.length} songs',
-                              imageUrl: playlist.coverUrl,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => PlaylistDetailScreen(playlist: playlist),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Recently Played Artists
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Recently played artists',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 140,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        itemCount: artists.length,
-                        itemBuilder: (context, index) {
-                          final artist = artists[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: ArtistAvatar(
-                              name: artist.name,
-                              imageUrl: artist.imageUrl,
-                              radius: 45,
-                            ),
-                          );
-                        },
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 140,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: artists.length,
+                          itemBuilder: (context, index) {
+                            final artist = artists[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 16.0),
+                              child: ArtistAvatar(
+                                name: artist.name,
+                                imageUrl: artist.imageUrl,
+                                radius: 45,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 48),
+                      const SizedBox(height: 48),
+                    ],
                   ],
                 ),
               ),
