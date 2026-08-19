@@ -238,7 +238,7 @@ class MockMusicCatalog {
           if (res.statusCode == 200 && res.data != null) {
             final data = res.data;
             final list = (data is Map ? (data['data'] ?? data['songs']) : data) as List<dynamic>?;
-            if (list != null && list.isNotEmpty) {
+            if (list != null) {
               final List<Song> backendSongs = [];
               for (final item in list) {
                 final id = (item['id'] ?? '').toString();
@@ -261,17 +261,15 @@ class MockMusicCatalog {
                 backendSongs.add(song);
               }
 
-              // EXACT DB SYNC: Frontend reflects the exact songs currently active in the database
-              if (backendSongs.isNotEmpty) {
-                allSongs = backendSongs;
-                _buildArtistsAndAlbums();
-                _buildPlaylists();
-                LocalStorageService.saveCatalogSongsLocally(allSongs);
-                isInitialized = true;
-                catalogNotifier.notify();
-                debugPrint('🎵 Muxiz Music Catalog Synced with DB: ${allSongs.length} Songs, ${popularArtists.length} Artists!');
-                break;
-              }
+              // EXACT DB SYNC: Frontend strictly reflects the exact songs currently in DB (even if 0)
+              allSongs = backendSongs;
+              _buildArtistsAndAlbums();
+              _buildPlaylists();
+              LocalStorageService.saveCatalogSongsLocally(allSongs);
+              isInitialized = true;
+              catalogNotifier.notify();
+              debugPrint('🎵 Muxiz Music Catalog Synced with DB: ${allSongs.length} Songs, ${popularArtists.length} Artists!');
+              break;
             }
           }
         } catch (_) {}
