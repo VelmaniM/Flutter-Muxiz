@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 
 import { RedisModule } from './redis/redis.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -28,5 +29,6 @@ import { RedisModule } from './redis/redis.module';
     UsersModule,
     RecommendationsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
