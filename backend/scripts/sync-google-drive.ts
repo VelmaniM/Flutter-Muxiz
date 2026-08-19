@@ -118,9 +118,28 @@ async function syncGoogleDriveWithAppleMusic() {
         },
       });
 
-      // Create Song with exact Google Drive Audio Link & Apple Music HD Artwork
-      await prisma.song.create({
-        data: {
+      // Upsert Song with exact Google Drive Audio Link & Apple Music HD Artwork
+      await prisma.song.upsert({
+        where: {
+          title_artistName: {
+            title,
+            artistName,
+          },
+        },
+        update: {
+          albumName: album.title,
+          artistId: artist.id,
+          albumId: album.id,
+          driveFileId: file.id,
+          audioUrl,
+          artworkUrl,
+          duration,
+          genre,
+          language: 'Tamil',
+          status: 'active',
+          lyrics: [`${title} by ${artistName}`],
+        },
+        create: {
           title,
           artistName,
           albumName: album.title,
