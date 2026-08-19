@@ -6,15 +6,14 @@ class AppConstants {
   static const String envApiUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
   static String get defaultApiBaseUrl => envApiUrl.isNotEmpty
       ? envApiUrl
-      : 'http://192.168.1.94:5001/api/v1';
+      : 'https://flutter-muxiz.onrender.com/api/v1';
 
   static List<String> get fallbackApiBaseUrls => [
     if (envApiUrl.isNotEmpty) envApiUrl,
+    'https://flutter-muxiz.onrender.com/api/v1',
     'http://192.168.1.94:5001/api/v1',
     'http://localhost:5001/api/v1',
     'http://127.0.0.1:5001/api/v1',
-    'http://10.0.2.2:5001/api/v1',
-    'http://169.254.78.185:5001/api/v1',
   ];
 
   // Fallback Cover Art (Empty: Uses sleek native placeholder icon & gradient)

@@ -1,7 +1,9 @@
-# Multi-stage production build for NestJS Backend
-FROM node:20-alpine AS builder
+# Multi-stage production build for NestJS Backend with Prisma OpenSSL support
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl
 
 # Copy backend dependencies
 COPY backend/package*.json ./
@@ -16,9 +18,11 @@ COPY backend/ ./
 RUN npm run build
 
 # Production Runner stage
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=5001

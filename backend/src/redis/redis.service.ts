@@ -13,39 +13,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   private initRedis() {
-    try {
-      const host = process.env.REDIS_HOST || '127.0.0.1';
-      const port = Number(process.env.REDIS_PORT) || 6379;
-      const password = process.env.REDIS_PASSWORD || undefined;
+    const host = process.env.REDIS_HOST;
+    const port = Number(process.env.REDIS_PORT) || 6379;
+    const password = process.env.REDIS_PASSWORD || undefined;
 
+    if (!host && process.env.NODE_ENV === 'production') {
+      this.logger.log('⚡ [Cache] Using high-performance in-memory cache.');
+      return;
+    }
+
+    try {
+      const redisHost = host || '127.0.0.1';
       this.client = new Redis({
-        host,
+        host: redisHost,
         port,
         password,
         retryStrategy: (times) => {
-          const delay = Math.min(times * 100, 3000);
-          return delay;
+          if (times > 2) return null; // Stop retrying after 2 attempts
+          return 1000;
         },
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 1,
         enableReadyCheck: true,
-        lazyConnect: false,
+        lazyConnect: true,
       });
 
-      this.client.on('connect', () => {
+      this.client.connect().then(() => {
         this.isConnected = true;
-        this.logger.log(`⚡ [Redis] Successfully connected to Redis Server at ${host}:${port}`);
-      });
-
-      this.client.on('error', (err) => {
+        this.logger.log(`⚡ [Redis] Successfully connected to Redis Server at ${redisHost}:${port}`);
+      }).catch((err) => {
         this.isConnected = false;
-        this.logger.warn(`⚠️ [Redis] Connection notice: ${err.message} (Using ultra-fast in-memory fallback)`);
-      });
-
-      this.client.on('close', () => {
-        this.isConnected = false;
+        this.logger.log(`⚡ [Cache] Redis not active (${err.message}). Using ultra-fast in-memory fallback.`);
       });
     } catch (e) {
-      this.logger.warn(`⚠️ [Redis] Failed to initialize Redis client: ${(e as Error).message}`);
+      this.logger.log(`⚡ [Cache] Using in-memory fallback: ${(e as Error).message}`);
     }
   }
 
