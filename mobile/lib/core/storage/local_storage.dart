@@ -317,81 +317,49 @@ class LocalStorageService {
 
   static List<Song> getLikedSongs() {
     final favIds = getFavoriteSongIds().toSet();
+    final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
+    final validFavIds = favIds.intersection(activeIds);
+
     final List<Song> result = [];
-    final Set<String> addedIds = {};
-
-    // 1. Load locally stored liked song JSONs
-    final raw = _prefs?.getString('muxiz_liked_songs');
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final List<dynamic> list = jsonDecode(raw);
-        for (final item in list) {
-          final s = Song.fromJson(item as Map<String, dynamic>).copyWith(isFavorite: true);
-          if (favIds.contains(s.id) && !addedIds.contains(s.id)) {
-            result.add(s);
-            addedIds.add(s.id);
-          }
-        }
-      } catch (_) {}
-    }
-
-    // 2. Also check MockMusicCatalog for any favIds not yet in JSON
-    for (final id in favIds) {
-      if (!addedIds.contains(id)) {
-        final found = MockMusicCatalog.allSongs.where((s) => s.id == id).firstOrNull;
-        if (found != null) {
-          result.add(found.copyWith(isFavorite: true));
-          addedIds.add(id);
-        } else {
-          result.add(Song(
-            id: id,
-            title: id.replaceAll('_', ' ').split('-').first,
-            artist: 'Kollywood Hit',
-            album: 'Muxiz Music',
-            audioUrl: '',
-            artworkUrl: '',
-            duration: 180,
-            isFavorite: true,
-          ));
-          addedIds.add(id);
-        }
+    for (final id in validFavIds) {
+      final found = MockMusicCatalog.allSongs.where((s) => s.id == id).firstOrNull;
+      if (found != null) {
+        result.add(found.copyWith(isFavorite: true));
       }
     }
-
     return result;
   }
 
   static Future<void> saveLikedSongLocally(Song song) async {
     final favIds = getFavoriteSongIds().toSet();
-    final likedList = getLikedSongs();
-    favIds.add(song.id);
-    likedList.removeWhere((s) => s.id == song.id);
-    likedList.insert(0, song.copyWith(isFavorite: true));
+    final bool willBeFavorite;
+
+    if (favIds.contains(song.id)) {
+      favIds.remove(song.id);
+      willBeFavorite = false;
+    } else {
+      favIds.add(song.id);
+      willBeFavorite = true;
+    }
 
     await _prefs?.setStringList(AppConstants.keyFavorites, favIds.toList());
-    final raw = jsonEncode(likedList.map((s) => s.toJson()).toList());
-    await _prefs?.setString('muxiz_liked_songs', raw);
+    _syncFavoriteWithBackend(song.id, willBeFavorite);
+    return;
   }
 
   static Future<bool> toggleFavoriteSong(Song song) async {
     final favIds = getFavoriteSongIds().toSet();
     final bool willBeFavorite;
-    final likedList = getLikedSongs();
 
     if (favIds.contains(song.id)) {
       favIds.remove(song.id);
-      likedList.removeWhere((s) => s.id == song.id);
       willBeFavorite = false;
     } else {
       favIds.add(song.id);
-      likedList.removeWhere((s) => s.id == song.id);
-      likedList.insert(0, song.copyWith(isFavorite: true));
       willBeFavorite = true;
     }
 
     await _prefs?.setStringList(AppConstants.keyFavorites, favIds.toList());
-    final raw = jsonEncode(likedList.map((s) => s.toJson()).toList());
-    await _prefs?.setString('muxiz_liked_songs', raw);
 
     // Asynchronously notify NestJS PostgreSQL backend
     _syncFavoriteWithBackend(song.id, willBeFavorite);
@@ -400,18 +368,8 @@ class LocalStorageService {
   }
 
   static Future<bool> toggleFavorite(String songId) async {
-    final liked = getLikedSongs().where((s) => s.id == songId).firstOrNull;
-    final catalogSong = MockMusicCatalog.allSongs.where((s) => s.id == songId).firstOrNull;
-    final song = liked ?? catalogSong ?? Song(
-      id: songId,
-      title: 'Liked Song',
-      artist: 'Artist',
-      album: 'Single',
-      audioUrl: '',
-      artworkUrl: 'https://res.cloudinary.com/dbsqhu7v5/image/upload/v1786269437/music/artwork/mersal-kailash_kher_d_sathyaprakash_deepak_pooja_av.jpg',
-      duration: 180,
-    );
-
+    final song = MockMusicCatalog.allSongs.where((s) => s.id == songId).firstOrNull;
+    if (song == null) return false;
     return toggleFavoriteSong(song);
   }
 
@@ -439,7 +397,11 @@ class LocalStorageService {
     if (raw == null || raw.isEmpty) return [];
     try {
       final List<dynamic> list = jsonDecode(raw);
-      return list.map((item) => Song.fromJson(item as Map<String, dynamic>)).toList();
+      final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
+      return list
+          .map((item) => Song.fromJson(item as Map<String, dynamic>))
+          .where((s) => activeIds.contains(s.id))
+          .toList();
     } catch (_) {
       return [];
     }
