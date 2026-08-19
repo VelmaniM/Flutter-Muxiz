@@ -184,12 +184,13 @@ class MockMusicCatalog {
     // 1. Direct Live Sync with PostgreSQL Database (Primary Source of Truth)
     try {
       final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 4),
-        receiveTimeout: const Duration(seconds: 4),
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
       ));
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final candidateEndpoints = [
+        'http://192.168.1.94:5001/api/v1/songs?limit=10000&t=$timestamp&nocache=1',
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000&t=$timestamp&nocache=1',
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000',
         ...AppConstants.fallbackApiBaseUrls.map((u) => '$u/songs?limit=10000&t=$timestamp'),
