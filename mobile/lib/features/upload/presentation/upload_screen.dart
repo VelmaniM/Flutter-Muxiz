@@ -202,11 +202,9 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       }
     }
 
-    // Run parallel batches with concurrency = 3
-    const concurrency = 3;
-    for (int i = 0; i < pendingItems.length; i += concurrency) {
-      final batch = pendingItems.skip(i).take(concurrency);
-      await Future.wait(batch.map((item) => processSingle(item)));
+    // Process songs strictly ONE BY ONE in exact queue sequence
+    for (final item in pendingItems) {
+      await processSingle(item);
     }
 
     setState(() {
