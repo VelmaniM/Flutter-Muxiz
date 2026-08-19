@@ -124,9 +124,11 @@ class AudioController extends StateNotifier<PlayerStateModel> {
   /// Automatically restore the last played song and position on app restart
   Future<void> _restoreLastPlaybackState() async {
     try {
+      if (MockMusicCatalog.allSongs.isEmpty) return;
       final last = LocalStorageService.getLastPlaybackState();
       if (last.song != null && last.song!.audioUrl.isNotEmpty) {
         final song = last.song!;
+        if (!MockMusicCatalog.allSongs.any((s) => s.id == song.id)) return;
         final queue = last.queue.isNotEmpty ? last.queue : [song];
         state = state.copyWith(
           currentSong: song,

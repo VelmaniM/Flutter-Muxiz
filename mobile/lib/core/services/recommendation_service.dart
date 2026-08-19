@@ -392,22 +392,24 @@ class RecommendationService {
 
     // Curated Trending Playlists (Strictly matching titles)
     final trendingTamilPlaylists = [
-      Playlist(
-        id: 'trending_tamil_top_50',
-        title: 'Trending Tamil Top 50',
-        description: 'The hottest Tamil tracks trending today across India & global charts.',
-        coverUrl: trendingSongs.isNotEmpty ? trendingSongs.first.artworkUrl : '',
-        creator: 'Spotify',
-        songs: trendingSongs.take(20).toList(),
-      ),
-      Playlist(
-        id: 'hot_hits_tamil',
-        title: 'Hot Hits Tamil',
-        description: 'Catch the biggest viral blockbusters and fresh drops in Tamil cinema.',
-        coverUrl: trendingSongs.length > 1 ? trendingSongs[1].artworkUrl : '',
-        creator: 'Spotify',
-        songs: trendingSongs.skip(3).take(15).toList(),
-      ),
+      if (trendingSongs.isNotEmpty)
+        Playlist(
+          id: 'trending_tamil_top_50',
+          title: 'Trending Tamil Top 50',
+          description: 'The hottest Tamil tracks trending today across India & global charts.',
+          coverUrl: trendingSongs.first.artworkUrl,
+          creator: 'Spotify',
+          songs: trendingSongs.take(20).toList(),
+        ),
+      if (trendingSongs.length > 3)
+        Playlist(
+          id: 'hot_hits_tamil',
+          title: 'Hot Hits Tamil',
+          description: 'Catch the biggest viral blockbusters and fresh drops in Tamil cinema.',
+          coverUrl: trendingSongs[1].artworkUrl,
+          creator: 'Spotify',
+          songs: trendingSongs.skip(3).take(15).toList(),
+        ),
       if (massAnthems.isNotEmpty)
         Playlist(
           id: 'kollywood_mass_anthems',

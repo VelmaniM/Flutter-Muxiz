@@ -242,14 +242,7 @@ class MockMusicCatalog {
       debugPrint('Live backend sync error: $e');
     }
 
-    // 2. Offline Fallback only if live backend was unreachable and cached songs exist
-    if (allSongs.isEmpty && !forceRefresh) {
-      final cachedSongs = LocalStorageService.getCatalogSongsLocally();
-      if (cachedSongs.isNotEmpty) {
-        allSongs = cachedSongs.where((s) => !deletedSongIds.contains(s.id)).toList();
-      }
-    }
-
+    // If backend returned or failed, rebuild artists, albums, playlists strictly from allSongs
     _buildArtistsAndAlbums();
     _buildPlaylists();
     isInitialized = true;

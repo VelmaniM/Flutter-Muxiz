@@ -237,18 +237,32 @@ class LocalStorageService {
 
   static Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
-    // Wipe all cached songs and playlists so app starts 100% fresh with 0 songs
+    // Complete wipe of all cached song catalogs, playback state, queue, recently played, favorites
     await _prefs?.remove('muxiz_catalog_songs');
+    await _prefs?.remove('muxiz_persistent_catalog_songs');
     await _prefs?.remove('muxiz_liked_songs');
     await _prefs?.remove('muxiz_custom_playlists');
     await _prefs?.remove('muxiz_recently_played');
+    await _prefs?.remove('muxiz_downloaded_songs');
+    await _prefs?.remove('last_played_song');
+    await _prefs?.remove('last_playback_queue');
+    await _prefs?.remove('last_playback_position_ms');
+    await _prefs?.remove('last_playback_queue_index');
     await _prefs?.remove(AppConstants.keyFavorites);
+    await _prefs?.remove(AppConstants.keyRecentlyPlayed);
+    await _prefs?.remove(AppConstants.keyCustomPlaylists);
+    await _prefs?.remove(AppConstants.keyDownloads);
   }
 
   static Future<void> clearAllData() async {
     _prefs ??= await SharedPreferences.getInstance();
+    final savedAvatar = _prefs?.getString('muxiz_user_avatar');
+    final savedName = _prefs?.getString('muxiz_user_name');
+    final savedUser = _prefs?.getString(AppConstants.keyUserData);
     await _prefs?.clear();
-    await _prefs?.setBool('muxiz_fresh_v3_reset_done', true);
+    if (savedAvatar != null) await _prefs?.setString('muxiz_user_avatar', savedAvatar);
+    if (savedName != null) await _prefs?.setString('muxiz_user_name', savedName);
+    if (savedUser != null) await _prefs?.setString(AppConstants.keyUserData, savedUser);
   }
 
   // --- Splash Screen Launch Persistence ---
@@ -668,13 +682,20 @@ class LocalStorageService {
 
       Song? song;
       if (songRaw != null && songRaw.isNotEmpty) {
-        song = Song.fromJson(jsonDecode(songRaw));
+        final parsed = Song.fromJson(jsonDecode(songRaw));
+        if (MockMusicCatalog.allSongs.any((s) => s.id == parsed.id)) {
+          song = parsed;
+        }
       }
 
       List<Song> queue = [];
-      if (queueRaw != null && queueRaw.isNotEmpty) {
+      if (queueRaw != null && queueRaw.isNotEmpty && song != null) {
         final List<dynamic> qList = jsonDecode(queueRaw);
-        queue = qList.map((item) => Song.fromJson(item as Map<String, dynamic>)).toList();
+        final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
+        queue = qList
+            .map((item) => Song.fromJson(item as Map<String, dynamic>))
+            .where((s) => activeIds.contains(s.id))
+            .toList();
       }
 
       return (
