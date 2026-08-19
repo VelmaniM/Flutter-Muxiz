@@ -25,7 +25,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:38.040Z",
-    "updatedAt": "2026-08-19T09:47:38.040Z"
+    "updatedAt": "2026-08-19T09:47:38.040Z",
+    "artist": {
+      "id": "e4a16656-ca5d-46d1-ab57-3c10d036fb44",
+      "name": "Paal Dabba & Flameboi",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/e6/f5/94/e6f594e2-233e-4f0b-73f9-f9800bf08610/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:36.824Z",
+      "updatedAt": "2026-08-19T09:47:36.824Z"
+    },
+    "album": {
+      "id": "83f96362-2086-4e5f-bbf9-1915ca5b338d",
+      "title": "170CM from Think Indie - Single",
+      "artistId": "e4a16656-ca5d-46d1-ab57-3c10d036fb44",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/e6/f5/94/e6f594e2-233e-4f0b-73f9-f9800bf08610/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2023-08-25T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:37.431Z",
+      "updatedAt": "2026-08-19T09:47:37.431Z"
+    }
   },
   {
     "id": "db4e6b50-e58a-47f9-bdb2-a984d9758489",
@@ -53,7 +70,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:11.337Z",
-    "updatedAt": "2026-08-19T09:47:11.337Z"
+    "updatedAt": "2026-08-19T09:47:11.337Z",
+    "artist": {
+      "id": "7658d274-f608-4763-8025-a541c1f2f153",
+      "name": "G.V. Prakash Kumar",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ec/9e/bd/ec9ebd4f-6bc8-5619-2ac8-be53313f9bf1/198588800706.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:10.126Z",
+      "updatedAt": "2026-08-19T09:47:10.126Z"
+    },
+    "album": {
+      "id": "eaa97469-332a-4f6a-986a-c3aab131450f",
+      "title": "Captain Miller (Original Motion Picture Soundtrack)",
+      "artistId": "7658d274-f608-4763-8025-a541c1f2f153",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ec/9e/bd/ec9ebd4f-6bc8-5619-2ac8-be53313f9bf1/198588800706.jpg/1400x1400bb.jpg",
+      "releaseDate": "2024-07-28T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:10.731Z",
+      "updatedAt": "2026-08-19T09:47:10.731Z"
+    }
   },
   {
     "id": "c0ca559e-bd4b-41d9-b064-de685f9c3d91",
@@ -81,7 +115,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:34.285Z",
-    "updatedAt": "2026-08-19T09:47:34.285Z"
+    "updatedAt": "2026-08-19T09:47:34.285Z",
+    "artist": {
+      "id": "1a696c57-d57b-4616-8d16-e1c8ba88945a",
+      "name": "Anirudh Ravichander & The Chennai Strings Orchestra",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b6/16/6c/b6166c68-3ace-c20d-7bad-fdad4b3d7657/886445049145.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:33.076Z",
+      "updatedAt": "2026-08-19T09:47:33.076Z"
+    },
+    "album": {
+      "id": "f26eab80-0f70-4793-a517-e13f663b0501",
+      "title": "Playback: Soulful Instrumentals - Soul Stirring Tamil Instrumentals",
+      "artistId": "1a696c57-d57b-4616-8d16-e1c8ba88945a",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b6/16/6c/b6166c68-3ace-c20d-7bad-fdad4b3d7657/886445049145.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-12-23T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:33.678Z",
+      "updatedAt": "2026-08-19T09:47:33.678Z"
+    }
   },
   {
     "id": "8291b6d5-577f-4eef-b96d-af1dfe565609",
@@ -109,7 +160,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:36.156Z",
-    "updatedAt": "2026-08-19T09:47:36.156Z"
+    "updatedAt": "2026-08-19T09:47:36.156Z",
+    "artist": {
+      "id": "f01c4a63-601f-4112-a32e-f01140e2bed7",
+      "name": "Sadhika K R",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e9/d1/53/e9d15318-30fa-25bf-f13b-a7beb9f9d94a/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:34.952Z",
+      "updatedAt": "2026-08-19T09:47:34.952Z"
+    },
+    "album": {
+      "id": "69af234e-8fb7-4b63-aa20-fa5ed9b8075f",
+      "title": "Veera Dheera Sooran (Original Motion Picture Soundtrack) - Single",
+      "artistId": "f01c4a63-601f-4112-a32e-f01140e2bed7",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e9/d1/53/e9d15318-30fa-25bf-f13b-a7beb9f9d94a/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2025-03-05T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:35.552Z",
+      "updatedAt": "2026-08-19T09:47:35.552Z"
+    }
   },
   {
     "id": "a3c1c170-e55c-46a9-a898-408f00b71f5b",
@@ -137,7 +205,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:28.630Z",
-    "updatedAt": "2026-08-19T09:47:28.630Z"
+    "updatedAt": "2026-08-19T09:47:28.630Z",
+    "artist": {
+      "id": "2583b95a-96fa-4bae-90fd-5f55447fd5fe",
+      "name": "Gaana Bala",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music30/v4/b4/5b/e1/b45be117-6149-1e16-c390-ca0524b039db/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:27.296Z",
+      "updatedAt": "2026-08-19T09:47:27.296Z"
+    },
+    "album": {
+      "id": "b0aaf39e-1a8c-430d-927a-ca049bac7325",
+      "title": "Atta Kathi (Original Motion Picture Soundtrack)",
+      "artistId": "2583b95a-96fa-4bae-90fd-5f55447fd5fe",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music30/v4/b4/5b/e1/b45be117-6149-1e16-c390-ca0524b039db/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-12-09T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:28.023Z",
+      "updatedAt": "2026-08-19T09:47:28.023Z"
+    }
   },
   {
     "id": "b7ab99d0-26a8-4660-af74-07076b918889",
@@ -165,7 +250,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:32.399Z",
-    "updatedAt": "2026-08-19T09:47:32.399Z"
+    "updatedAt": "2026-08-19T09:47:32.399Z",
+    "artist": {
+      "id": "f2edf4cb-2de5-43de-891b-d57264a92248",
+      "name": "Tamil Artist",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:31.186Z",
+      "updatedAt": "2026-08-19T09:47:31.186Z"
+    },
+    "album": {
+      "id": "91ce79ac-35b8-40a9-b997-4d32f308c836",
+      "title": "Aadiyile Sedhi (Original Soundtrack)",
+      "artistId": "f2edf4cb-2de5-43de-891b-d57264a92248",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": null,
+      "createdAt": "2026-08-19T09:47:31.793Z",
+      "updatedAt": "2026-08-19T09:47:31.793Z"
+    }
   },
   {
     "id": "7e0f9e56-91dc-4c83-8305-8422232b1763",
@@ -193,7 +295,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:26.567Z",
-    "updatedAt": "2026-08-19T09:47:26.567Z"
+    "updatedAt": "2026-08-19T09:47:26.567Z",
+    "artist": {
+      "id": "d92bc4e2-b2b1-464e-aa03-b8b8f77a67cc",
+      "name": "G.V. Prakash Kumar, Christin Jos & Govind Vasantha",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/65/bf/4a/65bf4a1c-6f05-c7a7-fd14-7b23731c041d/886448907008.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:25.352Z",
+      "updatedAt": "2026-08-19T09:47:25.352Z"
+    },
+    "album": {
+      "id": "62d71145-8071-4b63-b742-695987af84c9",
+      "title": "Soorarai Pottru (Original Motion Picture Soundtrack)",
+      "artistId": "d92bc4e2-b2b1-464e-aa03-b8b8f77a67cc",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/65/bf/4a/65bf4a1c-6f05-c7a7-fd14-7b23731c041d/886448907008.jpg/1400x1400bb.jpg",
+      "releaseDate": "2020-10-23T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:25.959Z",
+      "updatedAt": "2026-08-19T09:47:25.959Z"
+    }
   },
   {
     "id": "8a79dbc7-59a5-4629-bb6c-743af1d63542",
@@ -221,7 +340,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:24.686Z",
-    "updatedAt": "2026-08-19T09:47:24.686Z"
+    "updatedAt": "2026-08-19T09:47:24.686Z",
+    "artist": {
+      "id": "ca29b64c-c88d-40ef-8d22-2676c141bd74",
+      "name": "Harish Raghavendra, Harini, Harris Jayaraj & Vairamuthu",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/e8/c9/01/e8c90192-8554-81d0-a05c-0434faac4aeb/Samurai.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:23.440Z",
+      "updatedAt": "2026-08-19T09:47:23.440Z"
+    },
+    "album": {
+      "id": "5955307b-f2bb-4dce-aba1-c4b066d9c41c",
+      "title": "Samurai - EP",
+      "artistId": "ca29b64c-c88d-40ef-8d22-2676c141bd74",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/e8/c9/01/e8c90192-8554-81d0-a05c-0434faac4aeb/Samurai.jpg/1400x1400bb.jpg",
+      "releaseDate": "2000-01-01T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:24.050Z",
+      "updatedAt": "2026-08-19T09:47:24.050Z"
+    }
   },
   {
     "id": "b1609f63-6a19-4252-9cdd-891fdc3c879b",
@@ -249,7 +385,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:19.001Z",
-    "updatedAt": "2026-08-19T09:47:19.001Z"
+    "updatedAt": "2026-08-19T09:47:19.001Z",
+    "artist": {
+      "id": "3b649d83-aa96-44ea-ada8-756eafa6d32f",
+      "name": "Anthony Daasan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1f/6d/35/1f6d359b-2bc2-a2e9-bfe9-80e828d46a6a/886447484166.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:35.364Z",
+      "updatedAt": "2026-08-19T09:47:17.791Z"
+    },
+    "album": {
+      "id": "1efd1b16-8d97-4aec-81bb-ee1b39737a73",
+      "title": "Petta (Original Motion Picture Soundtrack)",
+      "artistId": "3b649d83-aa96-44ea-ada8-756eafa6d32f",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1f/6d/35/1f6d359b-2bc2-a2e9-bfe9-80e828d46a6a/886447484166.jpg/1400x1400bb.jpg",
+      "releaseDate": "2018-12-10T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:18.399Z",
+      "updatedAt": "2026-08-19T09:47:18.399Z"
+    }
   },
   {
     "id": "1e0095d7-fe7f-4935-9f9a-8e79eb373e83",
@@ -277,7 +430,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:22.770Z",
-    "updatedAt": "2026-08-19T09:47:22.770Z"
+    "updatedAt": "2026-08-19T09:47:22.770Z",
+    "artist": {
+      "id": "88f9052e-c948-4cb6-a20b-485796902895",
+      "name": "Anirudh Ravichander & Chintu",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/5a/f5/b7/5af5b7d3-7925-beac-a9d7-9ff5f17c3fc5/820200340795.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:21.561Z",
+      "updatedAt": "2026-08-19T09:47:21.561Z"
+    },
+    "album": {
+      "id": "0c17bbb2-ae64-42aa-9d16-eb8552adfba7",
+      "title": "Aaja Raja (From \"KH x RK Reunion\") - Single",
+      "artistId": "88f9052e-c948-4cb6-a20b-485796902895",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/5a/f5/b7/5af5b7d3-7925-beac-a9d7-9ff5f17c3fc5/820200340795.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-02-21T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:22.166Z",
+      "updatedAt": "2026-08-19T09:47:22.166Z"
+    }
   },
   {
     "id": "52cccc14-1ba5-41ec-a038-556a4d151b1a",
@@ -305,7 +475,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:20.881Z",
-    "updatedAt": "2026-08-19T09:47:20.881Z"
+    "updatedAt": "2026-08-19T09:47:20.881Z",
+    "artist": {
+      "id": "73b4388e-5f6e-49f3-9a5a-412dd6d9aa6d",
+      "name": "Santhosh Narayanan & Anthony Daasan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1b/8a/bf/1b8abfa9-149f-b270-7152-59a1b2945890/886449332212.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:19.670Z",
+      "updatedAt": "2026-08-19T09:47:19.670Z"
+    },
+    "album": {
+      "id": "96dad78d-ac98-4bb8-9877-d5ad5c205ad0",
+      "title": "Jagame Thandhiram (Original Motion Picture Soundtrack)",
+      "artistId": "73b4388e-5f6e-49f3-9a5a-412dd6d9aa6d",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1b/8a/bf/1b8abfa9-149f-b270-7152-59a1b2945890/886449332212.jpg/1400x1400bb.jpg",
+      "releaseDate": "2021-06-07T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:20.277Z",
+      "updatedAt": "2026-08-19T09:47:20.277Z"
+    }
   },
   {
     "id": "f760c90f-9b20-4e8d-8ff2-03f0c737ea83",
@@ -333,7 +520,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:17.121Z",
-    "updatedAt": "2026-08-19T09:47:17.121Z"
+    "updatedAt": "2026-08-19T09:47:17.121Z",
+    "artist": {
+      "id": "6cfc1c70-217d-477c-ace4-2f72d879c085",
+      "name": "Msv & Hariharan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/6e/ea/ea/6eeaea87-2da1-2a88-35e5-f39c652523a5/3614972833558.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:15.893Z",
+      "updatedAt": "2026-08-19T09:47:15.893Z"
+    },
+    "album": {
+      "id": "21c56082-92f8-43a8-acff-35d25d3a34fc",
+      "title": "Sangamam (Original Motion Picture Soundtrack)",
+      "artistId": "6cfc1c70-217d-477c-ace4-2f72d879c085",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/6e/ea/ea/6eeaea87-2da1-2a88-35e5-f39c652523a5/3614972833558.jpg/1400x1400bb.jpg",
+      "releaseDate": "1995-11-25T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:16.517Z",
+      "updatedAt": "2026-08-19T09:47:16.517Z"
+    }
   },
   {
     "id": "6ec94227-6098-4a1f-aa96-7feefbc86a83",
@@ -361,7 +565,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:09.456Z",
-    "updatedAt": "2026-08-19T09:47:09.456Z"
+    "updatedAt": "2026-08-19T09:47:09.456Z",
+    "artist": {
+      "id": "9521d3c9-3e87-49df-a023-827157fdfd08",
+      "name": "A.R. Rahman, Kailash Kher, Sathya Prakash, Deepak & Pooja AV",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/4a/08/44/4a0844fb-b860-117f-18f3-1c17e7aee164/886446688664.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:08.248Z",
+      "updatedAt": "2026-08-19T09:47:08.248Z"
+    },
+    "album": {
+      "id": "a4ac5420-2c78-4bc3-88e7-a53dd5d0a735",
+      "title": "Aalaporaan Thamizhan (From \"Mersal\") - Single",
+      "artistId": "9521d3c9-3e87-49df-a023-827157fdfd08",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/4a/08/44/4a0844fb-b860-117f-18f3-1c17e7aee164/886446688664.jpg/1400x1400bb.jpg",
+      "releaseDate": "2017-08-12T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:08.851Z",
+      "updatedAt": "2026-08-19T09:47:08.851Z"
+    }
   },
   {
     "id": "f3fb3607-4e8c-4eb4-bcab-b311fba3c391",
@@ -389,7 +610,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:13.348Z",
-    "updatedAt": "2026-08-19T09:47:13.348Z"
+    "updatedAt": "2026-08-19T09:47:13.348Z",
+    "artist": {
+      "id": "8c0e14dc-025e-47b4-8a52-644ec3b016fc",
+      "name": "Anirudh Ravichander & Badshah",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/10/39/c0/1039c02d-58c7-2e54-1c55-070e88694a30/886445559323.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:12.014Z",
+      "updatedAt": "2026-08-19T09:47:12.014Z"
+    },
+    "album": {
+      "id": "33ed5662-91a2-4402-afca-0e3706237a1c",
+      "title": "Vedalam (Original Motion Picture Soundtrack) - EP",
+      "artistId": "8c0e14dc-025e-47b4-8a52-644ec3b016fc",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/10/39/c0/1039c02d-58c7-2e54-1c55-070e88694a30/886445559323.jpg/1400x1400bb.jpg",
+      "releaseDate": "2015-10-16T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:12.743Z",
+      "updatedAt": "2026-08-19T09:47:12.743Z"
+    }
   },
   {
     "id": "2487f4df-f32e-4cb9-99af-8772fc0715d0",
@@ -417,7 +655,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:15.226Z",
-    "updatedAt": "2026-08-19T09:47:15.226Z"
+    "updatedAt": "2026-08-19T09:47:15.226Z",
+    "artist": {
+      "id": "667ede84-6551-4d26-b345-92122d8316f7",
+      "name": "Krishnaraj, Velmurugan, Sathyan & Yuvan Shankar Raja",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/ef/73/38/ef733885-1382-155b-cdfa-56f0a7805d1c/886443229969.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:14.016Z",
+      "updatedAt": "2026-08-19T09:47:14.016Z"
+    },
+    "album": {
+      "id": "ec31a645-4d58-4766-962a-a267c9476d18",
+      "title": "Kazhugoo (Original Motion Picture Soundtrack)",
+      "artistId": "667ede84-6551-4d26-b345-92122d8316f7",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/ef/73/38/ef733885-1382-155b-cdfa-56f0a7805d1c/886443229969.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-11-23T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:14.625Z",
+      "updatedAt": "2026-08-19T09:47:14.625Z"
+    }
   },
   {
     "id": "1025d3ab-0ab5-41b6-91d7-e3388c8812b1",
@@ -445,7 +700,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:07.545Z",
-    "updatedAt": "2026-08-19T09:47:07.545Z"
+    "updatedAt": "2026-08-19T09:47:07.545Z",
+    "artist": {
+      "id": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "name": "D. Imman",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/0c/f4/53/0cf453f8-51d6-38a3-8876-ebcb1ce5330c/886445531435.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:07.752Z",
+      "updatedAt": "2026-08-19T09:47:06.336Z"
+    },
+    "album": {
+      "id": "8782d7b0-cdb4-422d-833d-4ba6837f8714",
+      "title": "10 Endrathukulla (Original Motion Picture Soundtrack)",
+      "artistId": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/0c/f4/53/0cf453f8-51d6-38a3-8876-ebcb1ce5330c/886445531435.jpg/1400x1400bb.jpg",
+      "releaseDate": "2015-10-06T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:06.942Z",
+      "updatedAt": "2026-08-19T09:47:06.942Z"
+    }
   },
   {
     "id": "09929c30-b016-4f1c-996e-eb12a29be5e5",
@@ -473,7 +745,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:05.665Z",
-    "updatedAt": "2026-08-19T09:47:05.665Z"
+    "updatedAt": "2026-08-19T09:47:05.665Z",
+    "artist": {
+      "id": "303ed4cc-8803-4080-be3a-bd0b9a724586",
+      "name": "Yuvan Shankar Raja & Sriram Parthasarathy",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/d6/98/e2/d698e265-2e5d-b838-05b1-2bd24085b63e/886443986558.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:04.449Z",
+      "updatedAt": "2026-08-19T09:47:04.449Z"
+    },
+    "album": {
+      "id": "e68d0886-5cf7-4139-9837-daf288be4371",
+      "title": "Thangameenkal (Original Motion Picture Soundtrack)",
+      "artistId": "303ed4cc-8803-4080-be3a-bd0b9a724586",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/d6/98/e2/d698e265-2e5d-b838-05b1-2bd24085b63e/886443986558.jpg/1400x1400bb.jpg",
+      "releaseDate": "2013-05-03T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:05.058Z",
+      "updatedAt": "2026-08-19T09:47:05.058Z"
+    }
   },
   {
     "id": "db61c40a-918f-4bcd-8b23-b86288891d33",
@@ -501,7 +790,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:03.779Z",
-    "updatedAt": "2026-08-19T09:47:03.779Z"
+    "updatedAt": "2026-08-19T09:47:03.779Z",
+    "artist": {
+      "id": "aeaaf3f6-6c93-4e58-95c9-822f0d5a7488",
+      "name": "Senthildass",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/bb/da/69/bbda69f5-c7e8-86fc-3ee2-5bee8763d491/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:02.564Z",
+      "updatedAt": "2026-08-19T09:47:02.564Z"
+    },
+    "album": {
+      "id": "44205420-3fcb-446a-bd95-47cf0d442494",
+      "title": "Dharmadurai (Original Motion Picture Soundtrack) - EP",
+      "artistId": "aeaaf3f6-6c93-4e58-95c9-822f0d5a7488",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/bb/da/69/bbda69f5-c7e8-86fc-3ee2-5bee8763d491/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2016-03-08T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:03.172Z",
+      "updatedAt": "2026-08-19T09:47:03.172Z"
+    }
   },
   {
     "id": "e875d5a3-82d6-4e15-87c7-1dfa48c553e0",
@@ -529,7 +835,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:01.891Z",
-    "updatedAt": "2026-08-19T09:47:01.891Z"
+    "updatedAt": "2026-08-19T09:47:01.891Z",
+    "artist": {
+      "id": "3763f052-925c-4dc7-ace7-28fb6eb2a08a",
+      "name": "D. Imman & Shenbagaraj",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music49/v4/6f/a5/c2/6fa5c22d-9dc6-ec06-f50a-65df6721abab/886445867213.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:00.683Z",
+      "updatedAt": "2026-08-19T09:47:00.683Z"
+    },
+    "album": {
+      "id": "68385148-54d2-4756-8dcc-3fc9a93e4c47",
+      "title": "Wagah (Original Motion Picture Soundtrack)",
+      "artistId": "3763f052-925c-4dc7-ace7-28fb6eb2a08a",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music49/v4/6f/a5/c2/6fa5c22d-9dc6-ec06-f50a-65df6721abab/886445867213.jpg/1400x1400bb.jpg",
+      "releaseDate": "2016-04-18T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:01.286Z",
+      "updatedAt": "2026-08-19T09:47:01.286Z"
+    }
   },
   {
     "id": "8d5bd08e-bc62-4808-b34e-6a8abd9c4657",
@@ -557,7 +880,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:59.994Z",
-    "updatedAt": "2026-08-19T09:46:59.994Z"
+    "updatedAt": "2026-08-19T09:46:59.994Z",
+    "artist": {
+      "id": "76e294d6-f60f-4253-8b77-61056802008e",
+      "name": "K. J. Yesudas",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music/c2/a4/fe/mzi.blduzzfx.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:58.778Z",
+      "updatedAt": "2026-08-19T09:46:58.778Z"
+    },
+    "album": {
+      "id": "aaff1da9-1b4d-46e6-b45e-55100ba8de36",
+      "title": "Raam (Original Motion Picture Soundtrack)",
+      "artistId": "76e294d6-f60f-4253-8b77-61056802008e",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music/c2/a4/fe/mzi.blduzzfx.jpg/1400x1400bb.jpg",
+      "releaseDate": "2005-01-12T08:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:59.385Z",
+      "updatedAt": "2026-08-19T09:46:59.385Z"
+    }
   },
   {
     "id": "8d514347-918b-47a7-a988-491f09fbe8c0",
@@ -585,7 +925,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:50.328Z",
-    "updatedAt": "2026-08-19T09:46:50.328Z"
+    "updatedAt": "2026-08-19T09:46:50.328Z",
+    "artist": {
+      "id": "86b12777-4700-471b-84a1-e93d9483ad77",
+      "name": "Haricharan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f7/1a/a0/f71aa04e-d64f-3301-9426-9ed3e53b08d9/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:49.111Z",
+      "updatedAt": "2026-08-19T09:46:49.111Z"
+    },
+    "album": {
+      "id": "66657583-c178-42f8-a8b6-017e4cc92dff",
+      "title": "Deiva Thirumugal (Original Motion Picture Soundtrack)",
+      "artistId": "86b12777-4700-471b-84a1-e93d9483ad77",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f7/1a/a0/f71aa04e-d64f-3301-9426-9ed3e53b08d9/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-04-14T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:49.721Z",
+      "updatedAt": "2026-08-19T09:46:49.721Z"
+    }
   },
   {
     "id": "aebf4859-3e71-4323-bde9-babdfb88949d",
@@ -613,7 +970,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:46.441Z",
-    "updatedAt": "2026-08-19T09:46:58.105Z"
+    "updatedAt": "2026-08-19T09:46:58.105Z",
+    "artist": {
+      "id": "46fba2e6-d4bf-422b-a11f-3e60430767a9",
+      "name": "A.R. Rahman, Chinmayi Sripada, Murtuza Khan & Qadir Khan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/f0/6f/06/f06f060c-718e-6aee-f0c4-edd195a68c7e/886970656320.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:45.233Z",
+      "updatedAt": "2026-08-19T09:46:56.777Z"
+    },
+    "album": {
+      "id": "35098c97-1412-4027-9c67-fcca586c60fa",
+      "title": "Guru (Original Motion Picture Soundtrack) [Tamil Version]",
+      "artistId": "46fba2e6-d4bf-422b-a11f-3e60430767a9",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/f0/6f/06/f06f060c-718e-6aee-f0c4-edd195a68c7e/886970656320.jpg/1400x1400bb.jpg",
+      "releaseDate": "2006-09-11T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:57.500Z",
+      "updatedAt": "2026-08-19T09:46:57.500Z"
+    }
   },
   {
     "id": "88486086-98ec-4896-8999-3e1a4d5c3f1b",
@@ -641,7 +1015,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:54.178Z",
-    "updatedAt": "2026-08-19T09:46:54.178Z"
+    "updatedAt": "2026-08-19T09:46:54.178Z",
+    "artist": {
+      "id": "4ff209c9-1453-4faf-bcd1-7affb4b26f0e",
+      "name": "Sai Abhyankkar & Sai Smriti",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/39/42/ba/3942ba45-40bd-5d0a-d7ad-0595f1336f3f/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:52.894Z",
+      "updatedAt": "2026-08-19T09:46:52.894Z"
+    },
+    "album": {
+      "id": "a9cc44f9-a253-41fb-873e-07c64f7d0477",
+      "title": "Aasa Kooda (From \"Think Indie\") - Single",
+      "artistId": "4ff209c9-1453-4faf-bcd1-7affb4b26f0e",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/39/42/ba/3942ba45-40bd-5d0a-d7ad-0595f1336f3f/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2024-06-13T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:53.572Z",
+      "updatedAt": "2026-08-19T09:46:53.572Z"
+    }
   },
   {
     "id": "9d32e58b-3bca-45e5-b821-d9853a731276",
@@ -669,7 +1060,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:52.214Z",
-    "updatedAt": "2026-08-19T09:46:52.214Z"
+    "updatedAt": "2026-08-19T09:46:52.214Z",
+    "artist": {
+      "id": "c70ab96b-909e-4849-acc7-aea3a9a23301",
+      "name": "Deva, Hariharan, Vishali & Parinaman",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/73/b2/f9/73b2f928-a35f-2b9d-c68b-25f7057b10ab/5034644778662.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:50.999Z",
+      "updatedAt": "2026-08-19T09:46:50.999Z"
+    },
+    "album": {
+      "id": "1e0d4c33-d4e8-4059-8658-4c6c703f8a38",
+      "title": "Tamil Sad Beats",
+      "artistId": "c70ab96b-909e-4849-acc7-aea3a9a23301",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/73/b2/f9/73b2f928-a35f-2b9d-c68b-25f7057b10ab/5034644778662.jpg/1400x1400bb.jpg",
+      "releaseDate": "1999-08-10T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:51.605Z",
+      "updatedAt": "2026-08-19T09:46:51.605Z"
+    }
   },
   {
     "id": "c694b0bc-703a-46d1-b7f0-a2a5cc3a49e9",
@@ -697,7 +1105,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:56.105Z",
-    "updatedAt": "2026-08-19T09:46:56.105Z"
+    "updatedAt": "2026-08-19T09:46:56.105Z",
+    "artist": {
+      "id": "384e44ab-de72-4ad9-bb8d-076d94632f02",
+      "name": "Malaysia Vasudevan & Devan Ekambaram",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d6/65/29/d6652981-8c10-1113-e95b-6bc94db948ee/191773238889.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:54.891Z",
+      "updatedAt": "2026-08-19T09:46:54.891Z"
+    },
+    "album": {
+      "id": "6698b27d-b6dd-44c5-b0ee-6beefb03e701",
+      "title": "Kurumbu (Original Motion Picture Soundtrack)",
+      "artistId": "384e44ab-de72-4ad9-bb8d-076d94632f02",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d6/65/29/d6652981-8c10-1113-e95b-6bc94db948ee/191773238889.jpg/1400x1400bb.jpg",
+      "releaseDate": "1961-05-27T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:55.498Z",
+      "updatedAt": "2026-08-19T09:46:55.498Z"
+    }
   },
   {
     "id": "913b9f55-b65b-4a3a-83d0-144ba53e01de",
@@ -725,7 +1150,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:48.422Z",
-    "updatedAt": "2026-08-19T09:46:48.422Z"
+    "updatedAt": "2026-08-19T09:46:48.422Z",
+    "artist": {
+      "id": "7c2680f8-b842-4077-b66a-408186765ca6",
+      "name": "Pradeep & Kalyani Nair",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music30/v4/b4/5b/e1/b45be117-6149-1e16-c390-ca0524b039db/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:47.206Z",
+      "updatedAt": "2026-08-19T09:46:47.206Z"
+    },
+    "album": {
+      "id": "9052f8c2-ea54-40f8-8584-34ec7078eb82",
+      "title": "Atta Kathi (Original Motion Picture Soundtrack)",
+      "artistId": "7c2680f8-b842-4077-b66a-408186765ca6",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music30/v4/b4/5b/e1/b45be117-6149-1e16-c390-ca0524b039db/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-12-09T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:47.816Z",
+      "updatedAt": "2026-08-19T09:46:47.816Z"
+    }
   },
   {
     "id": "e167d82b-7c66-4995-901f-d986b3caf11c",
@@ -753,7 +1195,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:34.689Z",
-    "updatedAt": "2026-08-19T09:46:34.689Z"
+    "updatedAt": "2026-08-19T09:46:34.689Z",
+    "artist": {
+      "id": "0fad46f7-d817-4818-a17c-349492884237",
+      "name": "Hiphop Tamizha & Jayam Ravi",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/15/7c/42/157c42bd-751c-f0e8-270c-832cb6a0c8fc/886445395181.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:33.466Z",
+      "updatedAt": "2026-08-19T09:46:33.466Z"
+    },
+    "album": {
+      "id": "8e0723ad-1c8f-4cf8-b223-ce7c31419b01",
+      "title": "Thani Oruvan (Original Motion Picture Soundtrack)",
+      "artistId": "0fad46f7-d817-4818-a17c-349492884237",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/15/7c/42/157c42bd-751c-f0e8-270c-832cb6a0c8fc/886445395181.jpg/1400x1400bb.jpg",
+      "releaseDate": "2015-07-22T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:34.072Z",
+      "updatedAt": "2026-08-19T09:46:34.072Z"
+    }
   },
   {
     "id": "702a799c-83b8-4f8e-81d6-935f3e5e4f1e",
@@ -781,7 +1240,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:38.574Z",
-    "updatedAt": "2026-08-19T09:46:44.558Z"
+    "updatedAt": "2026-08-19T09:46:44.558Z",
+    "artist": {
+      "id": "c62b03d6-5d76-4078-92da-6c8b4fac0b8e",
+      "name": "Harris Jayaraj, Bhavatharini, Tipu, Dhanush & Abhay Jodhpurkar",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/e4/30/c7/e430c7ca-547d-7503-e7cb-142f5361dfd9/886444944274.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:37.314Z",
+      "updatedAt": "2026-08-19T09:46:43.325Z"
+    },
+    "album": {
+      "id": "d30e6aad-8104-42fa-b6e7-cc3aac153687",
+      "title": "Anegan (Original Motion Picture Soundtrack)",
+      "artistId": "c62b03d6-5d76-4078-92da-6c8b4fac0b8e",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/e4/30/c7/e430c7ca-547d-7503-e7cb-142f5361dfd9/886444944274.jpg/1400x1400bb.jpg",
+      "releaseDate": "2014-11-10T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:43.935Z",
+      "updatedAt": "2026-08-19T09:46:43.935Z"
+    }
   },
   {
     "id": "a019807b-3ee6-41ec-b727-58a20c1f4f7d",
@@ -809,7 +1285,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:42.633Z",
-    "updatedAt": "2026-08-19T09:46:42.633Z"
+    "updatedAt": "2026-08-19T09:46:42.633Z",
+    "artist": {
+      "id": "b7314ca8-d5f0-4153-bbe3-d166e1c5c183",
+      "name": "Priya Hemesh & Yuvan Shankar Raja",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/ef/73/38/ef733885-1382-155b-cdfa-56f0a7805d1c/886443229969.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:41.191Z",
+      "updatedAt": "2026-08-19T09:46:41.191Z"
+    },
+    "album": {
+      "id": "0794136b-4bfa-45df-b2b7-a8513a58636a",
+      "title": "Kazhugoo (Original Motion Picture Soundtrack)",
+      "artistId": "b7314ca8-d5f0-4153-bbe3-d166e1c5c183",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/ef/73/38/ef733885-1382-155b-cdfa-56f0a7805d1c/886443229969.jpg/1400x1400bb.jpg",
+      "releaseDate": "2011-11-23T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:41.914Z",
+      "updatedAt": "2026-08-19T09:46:41.914Z"
+    }
   },
   {
     "id": "4cce39a7-a412-4e4a-8ce7-5864c587f545",
@@ -837,7 +1330,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:30.851Z",
-    "updatedAt": "2026-08-19T09:46:30.851Z"
+    "updatedAt": "2026-08-19T09:46:30.851Z",
+    "artist": {
+      "id": "d845782e-cfc3-4da4-9b91-59a99481f323",
+      "name": "Shravan Kalai",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/89/5b/3c/895b3ca1-547b-15e3-e72a-77c186fea34c/artwork.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:29.633Z",
+      "updatedAt": "2026-08-19T09:46:29.633Z"
+    },
+    "album": {
+      "id": "de8897ac-4f2b-4305-bef3-6771d5d997bd",
+      "title": "Aathangara Marame - Single",
+      "artistId": "d845782e-cfc3-4da4-9b91-59a99481f323",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/89/5b/3c/895b3ca1-547b-15e3-e72a-77c186fea34c/artwork.jpg/1400x1400bb.jpg",
+      "releaseDate": "2022-02-18T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:30.247Z",
+      "updatedAt": "2026-08-19T09:46:30.247Z"
+    }
   },
   {
     "id": "cbe90b62-0def-4c79-a38e-2b5c3ff70aa1",
@@ -865,7 +1375,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:28.959Z",
-    "updatedAt": "2026-08-19T09:46:28.959Z"
+    "updatedAt": "2026-08-19T09:46:28.959Z",
+    "artist": {
+      "id": "f46287bf-d619-43db-85ce-b016044e32ce",
+      "name": "Harris Jayaraj, Gana Bala & MC Vickey",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/59/e5/62/59e56231-52e1-9810-4fd5-facc7303a00d/886444606042.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:27.748Z",
+      "updatedAt": "2026-08-19T09:46:27.748Z"
+    },
+    "album": {
+      "id": "6b76f90d-d90c-4f2a-9401-6a910ebcb56a",
+      "title": "Yaan (Original Motion Picture Soundtrack)",
+      "artistId": "f46287bf-d619-43db-85ce-b016044e32ce",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/59/e5/62/59e56231-52e1-9810-4fd5-facc7303a00d/886444606042.jpg/1400x1400bb.jpg",
+      "releaseDate": "2014-05-12T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:28.352Z",
+      "updatedAt": "2026-08-19T09:46:28.352Z"
+    }
   },
   {
     "id": "3d528e6c-484b-45a0-9895-81c5d77779d3",
@@ -893,7 +1420,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:18.561Z",
-    "updatedAt": "2026-08-19T09:46:18.561Z"
+    "updatedAt": "2026-08-19T09:46:18.561Z",
+    "artist": {
+      "id": "72979564-16bc-4060-9838-0866319dbfea",
+      "name": "Anirudh Ravichander & Vishal Dadlani",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d6/ff/97/d6ff97ce-3f3a-f031-8847-f2f46a15f304/196871094689.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:17.346Z",
+      "updatedAt": "2026-08-19T09:46:17.346Z"
+    },
+    "album": {
+      "id": "94dd69f1-f967-484f-bd18-3cf023534cea",
+      "title": "Kaththi (Original Motion Picture Soundtrack)",
+      "artistId": "72979564-16bc-4060-9838-0866319dbfea",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d6/ff/97/d6ff97ce-3f3a-f031-8847-f2f46a15f304/196871094689.jpg/1400x1400bb.jpg",
+      "releaseDate": "2014-04-01T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:17.957Z",
+      "updatedAt": "2026-08-19T09:46:17.957Z"
+    }
   },
   {
     "id": "d1303ed3-05d8-4a5f-88ea-ad6136986ca9",
@@ -921,7 +1465,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:20.449Z",
-    "updatedAt": "2026-08-19T09:46:20.449Z"
+    "updatedAt": "2026-08-19T09:46:20.449Z",
+    "artist": {
+      "id": "9a182c0e-38f1-48d8-8450-ecab234b863b",
+      "name": "Vijay Antony & Dinesh",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/c2/5f/ff/c25fff23-aede-11a3-3746-1fb04fc57a71/840896104952.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:19.233Z",
+      "updatedAt": "2026-08-19T09:46:19.233Z"
+    },
+    "album": {
+      "id": "7c5f6db4-8452-4a06-b647-2835179f3665",
+      "title": "TN07 AL 4777 (Original Motion Picture Soundtrack)",
+      "artistId": "9a182c0e-38f1-48d8-8450-ecab234b863b",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/c2/5f/ff/c25fff23-aede-11a3-3746-1fb04fc57a71/840896104952.jpg/1400x1400bb.jpg",
+      "releaseDate": "2009-03-19T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:19.843Z",
+      "updatedAt": "2026-08-19T09:46:19.843Z"
+    }
   },
   {
     "id": "25a9d8eb-67da-47b6-9748-9987ff755caa",
@@ -949,7 +1510,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:14.783Z",
-    "updatedAt": "2026-08-19T09:46:14.783Z"
+    "updatedAt": "2026-08-19T09:46:14.783Z",
+    "artist": {
+      "id": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "name": "D. Imman",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/0c/f4/53/0cf453f8-51d6-38a3-8876-ebcb1ce5330c/886445531435.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:07.752Z",
+      "updatedAt": "2026-08-19T09:47:06.336Z"
+    },
+    "album": {
+      "id": "0b9e8dab-8a93-40f8-9d7a-7e3df4ac3741",
+      "title": "Rajinimurugan (Original Motion Picture Soundtrack)",
+      "artistId": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/d9/27/44/d9274473-f010-d85f-8e4c-ada7c2fe340f/886445329759.jpg/1400x1400bb.jpg",
+      "releaseDate": "2015-06-16T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:14.176Z",
+      "updatedAt": "2026-08-19T09:46:14.176Z"
+    }
   },
   {
     "id": "6bb8cea8-fbf5-441a-a2d3-e78a18139924",
@@ -977,7 +1555,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:10.971Z",
-    "updatedAt": "2026-08-19T09:46:10.971Z"
+    "updatedAt": "2026-08-19T09:46:10.971Z",
+    "artist": {
+      "id": "889ec94e-3210-4eb5-9232-1e5c10919c4f",
+      "name": "Jangi Reddy, Arjun Chandy, Anirudh Ravichander & Kasarla Shyam",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/16/f3/b5/16f3b5b2-c5f1-cfc1-bb63-1f716b7a0b9f/820200469984.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:09.633Z",
+      "updatedAt": "2026-08-19T09:46:09.633Z"
+    },
+    "album": {
+      "id": "ce4a7846-a413-4df3-ae4b-85e075ba30e9",
+      "title": "Aaya Sher (From \"The Paradise\") - Single",
+      "artistId": "889ec94e-3210-4eb5-9232-1e5c10919c4f",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/16/f3/b5/16f3b5b2-c5f1-cfc1-bb63-1f716b7a0b9f/820200469984.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-02-24T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:10.241Z",
+      "updatedAt": "2026-08-19T09:46:10.241Z"
+    }
   },
   {
     "id": "ba84d312-6688-4451-8fc4-e1d6b632d94f",
@@ -1005,7 +1600,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:05.194Z",
-    "updatedAt": "2026-08-19T09:46:05.194Z"
+    "updatedAt": "2026-08-19T09:46:05.194Z",
+    "artist": {
+      "id": "c3ad4490-2541-42e0-ab51-44c8e5ed6153",
+      "name": "Premgi Amaren & Vadivelu",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/61/a4/54/61a4549e-91c2-2dec-69bd-3d7efee2f91f/886443228870.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:03.976Z",
+      "updatedAt": "2026-08-19T09:46:03.976Z"
+    },
+    "album": {
+      "id": "2c41c125-fe15-48bb-b4f2-9c1467c8a823",
+      "title": "Vel - EP",
+      "artistId": "c3ad4490-2541-42e0-ab51-44c8e5ed6153",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/61/a4/54/61a4549e-91c2-2dec-69bd-3d7efee2f91f/886443228870.jpg/1400x1400bb.jpg",
+      "releaseDate": "2007-10-13T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:04.584Z",
+      "updatedAt": "2026-08-19T09:46:04.584Z"
+    }
   },
   {
     "id": "9e83e2fa-d19e-487e-a1bc-b6505c5e17a0",
@@ -1033,7 +1645,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:16.671Z",
-    "updatedAt": "2026-08-19T09:46:16.671Z"
+    "updatedAt": "2026-08-19T09:46:16.671Z",
+    "artist": {
+      "id": "d092534a-25a7-4066-8574-a66ddfbda48f",
+      "name": "Rahul Nambiar & Saindhavi",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/18/7c/39/187c394c-95af-735f-82cf-16eca48a7290/886443235984.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:15.453Z",
+      "updatedAt": "2026-08-19T09:46:15.453Z"
+    },
+    "album": {
+      "id": "edab4945-74e5-4eb6-84fa-6c85c117225d",
+      "title": "Paiya (Original Motion Picture Soundtrack)",
+      "artistId": "d092534a-25a7-4066-8574-a66ddfbda48f",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/18/7c/39/187c394c-95af-735f-82cf-16eca48a7290/886443235984.jpg/1400x1400bb.jpg",
+      "releaseDate": "2009-11-22T08:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:16.059Z",
+      "updatedAt": "2026-08-19T09:46:16.059Z"
+    }
   },
   {
     "id": "5c57a272-b91e-446e-9a19-18d1565a0f88",
@@ -1061,7 +1690,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:08.965Z",
-    "updatedAt": "2026-08-19T09:46:08.965Z"
+    "updatedAt": "2026-08-19T09:46:08.965Z",
+    "artist": {
+      "id": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "name": "D. Imman",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/0c/f4/53/0cf453f8-51d6-38a3-8876-ebcb1ce5330c/886445531435.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:07.752Z",
+      "updatedAt": "2026-08-19T09:47:06.336Z"
+    },
+    "album": {
+      "id": "50688eba-9c7a-4523-a57c-701f38f24fc4",
+      "title": "Thodari (Original Motion Picture Soundtrack)",
+      "artistId": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/53/cc/65/53cc6555-7784-8d3b-6787-efd322f986c7/8905750002422.jpg/1400x1400bb.jpg",
+      "releaseDate": "2016-04-07T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:08.353Z",
+      "updatedAt": "2026-08-19T09:46:08.353Z"
+    }
   },
   {
     "id": "035e0ac7-6021-45bc-9900-1570fd340636",
@@ -1089,7 +1735,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:12.885Z",
-    "updatedAt": "2026-08-19T09:46:12.885Z"
+    "updatedAt": "2026-08-19T09:46:12.885Z",
+    "artist": {
+      "id": "1d1c3934-64d2-473b-802f-3703b663bc59",
+      "name": "Harris Jayaraj & Karthik",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/6e/9d/0c/6e9d0cb2-d2fc-96dd-b5d5-6fc9ac04ec3b/886445049190.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:11.645Z",
+      "updatedAt": "2026-08-19T09:46:11.645Z"
+    },
+    "album": {
+      "id": "85fd6e34-4a6f-40e7-aa37-a3e73ccf1f2d",
+      "title": "Playback: Pure Kaadhal - Enchanting Tamil Love Songs",
+      "artistId": "1d1c3934-64d2-473b-802f-3703b663bc59",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/6e/9d/0c/6e9d0cb2-d2fc-96dd-b5d5-6fc9ac04ec3b/886445049190.jpg/1400x1400bb.jpg",
+      "releaseDate": "2012-03-05T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:12.280Z",
+      "updatedAt": "2026-08-19T09:46:12.280Z"
+    }
   },
   {
     "id": "f090ff59-5ede-4d61-b5a4-8add684a5fd8",
@@ -1117,7 +1780,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:03.290Z",
-    "updatedAt": "2026-08-19T09:46:03.290Z"
+    "updatedAt": "2026-08-19T09:46:03.290Z",
+    "artist": {
+      "id": "cdfa6a88-3e30-4ac6-ac5b-65d2e6d8b366",
+      "name": "Yuvan Shankar Raja & Shankar Mahadevan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/d0/13/86/d01386e7-6417-7609-3e18-38e54c360bd5/886444219747.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:02.066Z",
+      "updatedAt": "2026-08-19T09:46:02.066Z"
+    },
+    "album": {
+      "id": "3dbfed6b-cb61-496e-afd2-9fcc95963634",
+      "title": "Arrambam (Original Motion Picture Soundtrack)",
+      "artistId": "cdfa6a88-3e30-4ac6-ac5b-65d2e6d8b366",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/d0/13/86/d01386e7-6417-7609-3e18-38e54c360bd5/886444219747.jpg/1400x1400bb.jpg",
+      "releaseDate": "2013-09-19T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:02.675Z",
+      "updatedAt": "2026-08-19T09:46:02.675Z"
+    }
   },
   {
     "id": "3e882808-5ee1-45a3-a45e-9c6bea075b27",
@@ -1145,7 +1825,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:07.077Z",
-    "updatedAt": "2026-08-19T09:46:07.077Z"
+    "updatedAt": "2026-08-19T09:46:07.077Z",
+    "artist": {
+      "id": "0b0ea165-17cc-48f2-8ca4-f6f109fd60b5",
+      "name": "A.R. Rahman & Dhanush",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/97/dc/d4/97dcd4ba-33a4-558f-896a-17f0b4519dfa/198588100592.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:05.867Z",
+      "updatedAt": "2026-08-19T09:46:05.867Z"
+    },
+    "album": {
+      "id": "9b7f428c-b439-4418-9aea-f1d0ab221170",
+      "title": "Adangaatha Asuran (From \"Raayan\") - Single",
+      "artistId": "0b0ea165-17cc-48f2-8ca4-f6f109fd60b5",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/97/dc/d4/97dcd4ba-33a4-558f-896a-17f0b4519dfa/198588100592.jpg/1400x1400bb.jpg",
+      "releaseDate": "2024-05-09T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:06.471Z",
+      "updatedAt": "2026-08-19T09:46:06.471Z"
+    }
   },
   {
     "id": "651c6b1b-1944-4e9f-be94-4ec5a9bd01bf",
@@ -1173,7 +1870,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:30.511Z",
-    "updatedAt": "2026-08-19T09:47:30.511Z"
+    "updatedAt": "2026-08-19T09:47:30.511Z",
+    "artist": {
+      "id": "736aa457-6f0f-4b62-b9f7-a8ee607a87e7",
+      "name": "Karthik",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Features6/v4/66/e4/d8/66e4d871-7e5d-8a71-00d8-702e9c2a7754/dj.gkdspedp.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:29.301Z",
+      "updatedAt": "2026-08-19T09:47:29.301Z"
+    },
+    "album": {
+      "id": "4fd023eb-0d5d-47cf-849f-95adb1d9372c",
+      "title": "Hits of Harris Jayaraj & Yuvan Sankar Raja Isai Thendral",
+      "artistId": "736aa457-6f0f-4b62-b9f7-a8ee607a87e7",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Features6/v4/66/e4/d8/66e4d871-7e5d-8a71-00d8-702e9c2a7754/dj.gkdspedp.jpg/1400x1400bb.jpg",
+      "releaseDate": "2001-04-19T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:29.909Z",
+      "updatedAt": "2026-08-19T09:47:29.909Z"
+    }
   },
   {
     "id": "fd9418f3-c282-4bf7-8a97-1e9fcb4552e3",
@@ -1201,7 +1915,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:01.393Z",
-    "updatedAt": "2026-08-19T09:46:01.393Z"
+    "updatedAt": "2026-08-19T09:46:01.393Z",
+    "artist": {
+      "id": "3b19b2bc-3b2e-4c40-9f68-2f30bce41b2e",
+      "name": "Santhosh Narayanan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:00.169Z",
+      "updatedAt": "2026-08-19T09:46:00.169Z"
+    },
+    "album": {
+      "id": "3635241f-9f50-4ef5-b834-3d3306ef5117",
+      "title": "Meyaadha Maan (Original Motion Picture Soundtrack)",
+      "artistId": "3b19b2bc-3b2e-4c40-9f68-2f30bce41b2e",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2017-09-08T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:00.787Z",
+      "updatedAt": "2026-08-19T09:46:00.787Z"
+    }
   },
   {
     "id": "b3bd1671-55e5-45bc-8e6b-290be357ec91",
@@ -1229,7 +1960,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:40.476Z",
-    "updatedAt": "2026-08-19T09:46:40.476Z"
+    "updatedAt": "2026-08-19T09:46:40.476Z",
+    "artist": {
+      "id": "09395c12-c46e-4bef-93bf-18c58d50a52c",
+      "name": "Sean Roldan, Dhee, G.V. Prakash Kumar & Ekadesi",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6f/6b/d5/6f6bd516-c895-1bc6-450b-389802267e5d/199806344118.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:39.261Z",
+      "updatedAt": "2026-08-19T09:46:39.261Z"
+    },
+    "album": {
+      "id": "765ec51f-ff36-4e8f-8241-773b62cd6a13",
+      "title": "Adi Alaye (From \"Parasakthi\") - Single",
+      "artistId": "09395c12-c46e-4bef-93bf-18c58d50a52c",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6f/6b/d5/6f6bd516-c895-1bc6-450b-389802267e5d/199806344118.jpg/1400x1400bb.jpg",
+      "releaseDate": "2025-11-06T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:39.869Z",
+      "updatedAt": "2026-08-19T09:46:39.869Z"
+    }
   },
   {
     "id": "c6097d46-1be8-4242-8e21-20db477f682c",
@@ -1257,7 +2005,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:36.605Z",
-    "updatedAt": "2026-08-19T09:46:36.605Z"
+    "updatedAt": "2026-08-19T09:46:36.605Z",
+    "artist": {
+      "id": "3b649d83-aa96-44ea-ada8-756eafa6d32f",
+      "name": "Anthony Daasan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1f/6d/35/1f6d359b-2bc2-a2e9-bfe9-80e828d46a6a/886447484166.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:35.364Z",
+      "updatedAt": "2026-08-19T09:47:17.791Z"
+    },
+    "album": {
+      "id": "1e901adf-dfbc-4fca-b7dd-6460430812a3",
+      "title": "Kadaikutty Singam (Additional Songs) [Original Motion Picture Soundtrack] - EP",
+      "artistId": "3b649d83-aa96-44ea-ada8-756eafa6d32f",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/df/91/76/df917691-b11a-63f6-2120-54f3b5bbaa89/886447222348.jpg/1400x1400bb.jpg",
+      "releaseDate": "2018-07-17T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:35.977Z",
+      "updatedAt": "2026-08-19T09:46:35.977Z"
+    }
   },
   {
     "id": "dc9406f0-5c41-4b5b-95ba-be49bf92e387",
@@ -1285,7 +2050,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:27.071Z",
-    "updatedAt": "2026-08-19T09:46:27.071Z"
+    "updatedAt": "2026-08-19T09:46:27.071Z",
+    "artist": {
+      "id": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "name": "D. Imman",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/0c/f4/53/0cf453f8-51d6-38a3-8876-ebcb1ce5330c/886445531435.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:07.752Z",
+      "updatedAt": "2026-08-19T09:47:06.336Z"
+    },
+    "album": {
+      "id": "80e32108-8c43-4f41-a7ae-b1198423d628",
+      "title": "Romeo Juliet (Original Motion Picture Soundtrack)",
+      "artistId": "882c3ef6-e752-4628-802d-18c42f8a6c02",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f0/e5/ee/f0e5ee44-8294-5b5c-d78f-2c80cef13af0/886445130249.jpg/1400x1400bb.jpg",
+      "releaseDate": "2015-03-12T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:26.464Z",
+      "updatedAt": "2026-08-19T09:46:26.464Z"
+    }
   },
   {
     "id": "2ea29c45-2e76-47d1-bc84-192e1a7d0eb4",
@@ -1313,7 +2095,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:23.174Z",
-    "updatedAt": "2026-08-19T09:46:23.174Z"
+    "updatedAt": "2026-08-19T09:46:23.174Z",
+    "artist": {
+      "id": "5fe5be34-b10b-4a52-8215-908dbeefab5f",
+      "name": "Harris Jayaraj, Krish, Benny Dayal & Shruti Haasan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/0e/1b/c1/0e1bc194-973e-9e04-c8d9-b12cfbc71289/888880794635.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:21.125Z",
+      "updatedAt": "2026-08-19T09:46:21.125Z"
+    },
+    "album": {
+      "id": "fee43c09-b2d3-4d57-bf69-002b8e3c05e3",
+      "title": "Vaaranam Aayiram (Original Motion Picture Soundtrack)",
+      "artistId": "5fe5be34-b10b-4a52-8215-908dbeefab5f",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/0e/1b/c1/0e1bc194-973e-9e04-c8d9-b12cfbc71289/888880794635.jpg/1400x1400bb.jpg",
+      "releaseDate": "2008-10-02T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:22.220Z",
+      "updatedAt": "2026-08-19T09:46:22.220Z"
+    }
   },
   {
     "id": "f95199a4-64ba-4e62-9eed-2bd2abb91f9a",
@@ -1341,7 +2140,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:25.062Z",
-    "updatedAt": "2026-08-19T09:46:25.062Z"
+    "updatedAt": "2026-08-19T09:46:25.062Z",
+    "artist": {
+      "id": "024b81fd-77ff-4743-a1b5-aff8c4cd56ad",
+      "name": "Dhibu Ninan Thomas & Kapil Kapilan",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d3/00/1b/d3001b7a-f99b-eb10-3535-999a8610a2dd/cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:23.849Z",
+      "updatedAt": "2026-08-19T09:46:23.849Z"
+    },
+    "album": {
+      "id": "cb5c3a1d-a840-496b-9a4a-a23df2872996",
+      "title": "Adiye (From \"Bachelor\") - Single",
+      "artistId": "024b81fd-77ff-4743-a1b5-aff8c4cd56ad",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d3/00/1b/d3001b7a-f99b-eb10-3535-999a8610a2dd/cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2021-09-30T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:24.456Z",
+      "updatedAt": "2026-08-19T09:46:24.456Z"
+    }
   },
   {
     "id": "8a78ba5c-c78e-4cfa-a320-3a163786753d",
@@ -1369,7 +2185,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:45.836Z",
-    "updatedAt": "2026-08-19T09:47:45.836Z"
+    "updatedAt": "2026-08-19T09:47:45.836Z",
+    "artist": {
+      "id": "e29c19db-a417-412d-9ae2-21c2cc7e8f73",
+      "name": "Sai Abhyankkar & Rokesh",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/28/77/e7/2877e719-1fbc-9a6c-ee06-27055e472925/1200214714024.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:44.622Z",
+      "updatedAt": "2026-08-19T09:47:44.622Z"
+    },
+    "album": {
+      "id": "b1e194c3-6e29-47c4-9b2e-bd9a90443056",
+      "title": "Alaakaa Loova (From \"OM Chapter 1: Udhiram  - The Blood Wood\") [Tamil] - Single",
+      "artistId": "e29c19db-a417-412d-9ae2-21c2cc7e8f73",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/28/77/e7/2877e719-1fbc-9a6c-ee06-27055e472925/1200214714024.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-07-28T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:45.229Z",
+      "updatedAt": "2026-08-19T09:47:45.229Z"
+    }
   },
   {
     "id": "9e0e2d25-dff6-4e7a-b8ed-dab49093bb24",
@@ -1397,7 +2230,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:40.034Z",
-    "updatedAt": "2026-08-19T09:47:40.034Z"
+    "updatedAt": "2026-08-19T09:47:40.034Z",
+    "artist": {
+      "id": "7a231fe1-6237-4c99-941c-bc902ef13130",
+      "name": "Anburaja Arul",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/91/9e/7a/919e7ac2-c6d8-b6c3-9db3-15077bb8949a/859717625149_cover.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:38.822Z",
+      "updatedAt": "2026-08-19T09:47:38.822Z"
+    },
+    "album": {
+      "id": "ac6c538f-37a7-4b25-8ea6-6cbec5b1e74f",
+      "title": "Kadhale Neeyadaa (feat. Meghana Kulkarni Joshi & PA Hariharan) - Single",
+      "artistId": "7a231fe1-6237-4c99-941c-bc902ef13130",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/91/9e/7a/919e7ac2-c6d8-b6c3-9db3-15077bb8949a/859717625149_cover.jpg/1400x1400bb.jpg",
+      "releaseDate": "2025-07-01T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:39.426Z",
+      "updatedAt": "2026-08-19T09:47:39.426Z"
+    }
   },
   {
     "id": "1ebb7107-fb97-475f-b632-a81998424c72",
@@ -1425,7 +2275,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:43.950Z",
-    "updatedAt": "2026-08-19T09:47:43.950Z"
+    "updatedAt": "2026-08-19T09:47:43.950Z",
+    "artist": {
+      "id": "7a920e0e-cc36-4644-be56-effbbaf451cd",
+      "name": "G.V. Prakash Kumar, Vaaheesan Rasaiya & V.M. Mahalingam",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9b/59/4b/9b594b5a-4bb9-6b7f-7663-a7fc39ee23b1/1200214606596.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:42.616Z",
+      "updatedAt": "2026-08-19T09:47:42.616Z"
+    },
+    "album": {
+      "id": "8956fdf7-c2a0-4a03-86b0-a477077835f5",
+      "title": "Mandaadi Mandaadi (From \"Mandaadi\") - Single",
+      "artistId": "7a920e0e-cc36-4644-be56-effbbaf451cd",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9b/59/4b/9b594b5a-4bb9-6b7f-7663-a7fc39ee23b1/1200214606596.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-07-18T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:43.345Z",
+      "updatedAt": "2026-08-19T09:47:43.345Z"
+    }
   },
   {
     "id": "75e1aef7-1709-48f0-9108-2bd21b174081",
@@ -1453,7 +2320,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:46:32.735Z",
-    "updatedAt": "2026-08-19T09:46:32.735Z"
+    "updatedAt": "2026-08-19T09:46:32.735Z",
+    "artist": {
+      "id": "45880915-4b7d-4da7-9621-71359946a123",
+      "name": "Arjan Dhillon",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/2d/ae/71/2dae710b-3a86-23d1-2629-621712e8338e/8905285240214.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:46:31.526Z",
+      "updatedAt": "2026-08-19T09:46:31.526Z"
+    },
+    "album": {
+      "id": "6e3ecbad-a422-4941-98ef-78b8fe1cbc37",
+      "title": "A for Arjan 2",
+      "artistId": "45880915-4b7d-4da7-9621-71359946a123",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/2d/ae/71/2dae710b-3a86-23d1-2629-621712e8338e/8905285240214.jpg/1400x1400bb.jpg",
+      "releaseDate": "2025-08-25T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:46:32.128Z",
+      "updatedAt": "2026-08-19T09:46:32.128Z"
+    }
   },
   {
     "id": "96d2a8b4-d653-4f6f-96c2-3dbf163db7af",
@@ -1481,7 +2365,24 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:47.931Z",
-    "updatedAt": "2026-08-19T09:47:47.931Z"
+    "updatedAt": "2026-08-19T09:47:47.931Z",
+    "artist": {
+      "id": "e71ff2a2-2220-456d-8626-46622baff440",
+      "name": "Sai Abhyankkar & Dhanush",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8b/18/b7/8b18b7cf-856d-5fb7-7f6e-7af1ca538bcf/1200214401061.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:46.513Z",
+      "updatedAt": "2026-08-19T09:47:46.513Z"
+    },
+    "album": {
+      "id": "25086234-62d8-4669-8fde-1b3a871578a5",
+      "title": "The Wild Theme (From \"OM Chapter 1: Udhiram - The Blood Wood\") - Single",
+      "artistId": "e71ff2a2-2220-456d-8626-46622baff440",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8b/18/b7/8b18b7cf-856d-5fb7-7f6e-7af1ca538bcf/1200214401061.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-06-19T12:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:47.135Z",
+      "updatedAt": "2026-08-19T09:47:47.135Z"
+    }
   },
   {
     "id": "7bd1f177-b4fb-4071-8fbf-24813770a421",
@@ -1509,6 +2410,23 @@
     "playCount": 0,
     "status": "active",
     "createdAt": "2026-08-19T09:47:41.941Z",
-    "updatedAt": "2026-08-19T09:47:41.941Z"
+    "updatedAt": "2026-08-19T09:47:41.941Z",
+    "artist": {
+      "id": "abc10b92-539a-4fb6-a2bb-541bfd26bee8",
+      "name": "G.V. Prakash Kumar, Jayashree Mathimaran, Kapil Kapilan & Sanjana Kalmanje",
+      "bio": null,
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/66/fc/72/66fc7212-a0ba-23c5-4112-57486247c303/1200214812867.jpg/1400x1400bb.jpg",
+      "createdAt": "2026-08-19T09:47:40.729Z",
+      "updatedAt": "2026-08-19T09:47:40.729Z"
+    },
+    "album": {
+      "id": "3eb1bf65-ee6e-4cff-9fd3-0e5af7574ef0",
+      "title": "Usure Needhan Pulla (From \"Mandaadi\") - Single",
+      "artistId": "abc10b92-539a-4fb6-a2bb-541bfd26bee8",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/66/fc/72/66fc7212-a0ba-23c5-4112-57486247c303/1200214812867.jpg/1400x1400bb.jpg",
+      "releaseDate": "2026-08-14T07:00:00.000Z",
+      "createdAt": "2026-08-19T09:47:41.334Z",
+      "updatedAt": "2026-08-19T09:47:41.334Z"
+    }
   }
 ]
