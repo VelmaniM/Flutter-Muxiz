@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/theme.dart';
+import '../../core/storage/local_storage.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 
 class UserAvatarButton extends StatelessWidget {
@@ -12,29 +14,67 @@ class UserAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarUrl = LocalStorageService.getUserAvatar();
+    final userName = LocalStorageService.getUserName();
+    final initial = (userName.isNotEmpty ? userName[0] : 'V').toUpperCase();
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (ctx) => const ProfileScreen()),
         );
+        // Force rebuild if user updated profile
+        (context as Element).markNeedsBuild();
       },
       child: Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryGreen, Color(0xFF007A33)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: avatarUrl == null || avatarUrl.isEmpty
+              ? const LinearGradient(
+                  colors: [AppTheme.primaryGreen, Color(0xFF007A33)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           border: Border.all(color: Colors.white24, width: 1.5),
         ),
-        child: Center(
-          child: Icon(Icons.person, color: Colors.black, size: size * 0.55),
-        ),
+        clipBehavior: Clip.antiAlias,
+        child: avatarUrl != null && avatarUrl.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: avatarUrl,
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+                placeholder: (context, url) => Container(
+                  color: AppTheme.card,
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: TextStyle(color: Colors.white, fontSize: size * 0.45, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: AppTheme.primaryGreen,
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: TextStyle(color: Colors.black, fontSize: size * 0.45, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              )
+            : Center(
+                child: Text(
+                  initial,
+                  style: TextStyle(color: Colors.black, fontSize: size * 0.48, fontWeight: FontWeight.bold),
+                ),
+              ),
       ),
     );
   }
 }
+

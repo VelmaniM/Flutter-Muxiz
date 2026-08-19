@@ -263,4 +263,69 @@ export class UploadsService {
 
     return song;
   }
+
+  async uploadUserAvatar(
+    imageBuffer: Buffer,
+    originalFilename: string,
+    mimeType: string = 'image/jpeg',
+    userId?: string,
+    displayName?: string,
+  ) {
+    const ext = originalFilename.split('.').pop() || 'jpg';
+    const cleanUserId = userId || 'listener-001';
+    const filename = `avatar_${cleanUserId}_${Date.now()}.${ext}`;
+
+    this.logger.log(`📸 [User Avatar Upload] Uploading avatar for user "${cleanUserId}" to Google Drive...`);
+
+    // 1. Upload avatar directly to Google Drive Covers/Avatars folder
+    const driveRes = await this.driveService.uploadFile('Covers', filename, imageBuffer, mimeType);
+    const avatarUrl = `https://drive.google.com/uc?id=${driveRes.fileId}&export=download`;
+
+    // 2. Persist in Supabase Cloud PostgreSQL User table
+    const user = await this.prisma.user.upsert({
+      where: { id: cleanUserId },
+      update: {
+        avatar: avatarUrl,
+        ...(displayName ? { displayName } : {}),
+      },
+      create: {
+        id: cleanUserId,
+        email: `${cleanUserId}@muxiz.app`,
+        displayName: displayName || 'Velmani Kandan',
+        avatar: avatarUrl,
+      },
+    });
+
+    this.logger.log(`✅ Avatar updated in Drive & Supabase DB for user: "${user.displayName}" (${user.avatar})`);
+
+    return {
+      success: true,
+      userId: user.id,
+      displayName: user.displayName,
+      avatarUrl: user.avatar,
+      driveFileId: driveRes.fileId,
+    };
+  }
+
+  async updateUserProfile(userId: string, displayName: string) {
+    const cleanUserId = userId || 'listener-001';
+    const user = await this.prisma.user.upsert({
+      where: { id: cleanUserId },
+      update: { displayName },
+      create: {
+        id: cleanUserId,
+        email: `${cleanUserId}@muxiz.app`,
+        displayName,
+      },
+    });
+
+    this.logger.log(`✅ Display name updated in DB: "${user.displayName}"`);
+
+    return {
+      success: true,
+      userId: user.id,
+      displayName: user.displayName,
+      avatarUrl: user.avatar,
+    };
+  }
 }

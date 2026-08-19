@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Body,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
@@ -24,5 +25,37 @@ export class UploadsController {
       file.originalname,
       file.mimetype,
     );
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('userId') userId?: string,
+    @Body('displayName') displayName?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No image file provided');
+    }
+
+    return this.uploadsService.uploadUserAvatar(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      userId,
+      displayName,
+    );
+  }
+
+  @Post('profile')
+  async updateProfile(
+    @Body('userId') userId: string,
+    @Body('displayName') displayName: string,
+  ) {
+    if (!displayName || !displayName.trim()) {
+      throw new BadRequestException('DisplayName is required');
+    }
+
+    return this.uploadsService.updateUserProfile(userId, displayName.trim());
   }
 }

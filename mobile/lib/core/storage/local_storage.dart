@@ -271,6 +271,43 @@ class LocalStorageService {
     return 'listener-001';
   }
 
+  static String getUserName() {
+    final userData = getUserData();
+    if (userData != null && userData['name'] != null && userData['name'].toString().trim().isNotEmpty) {
+      return userData['name'].toString();
+    }
+    return _prefs?.getString('muxiz_user_name') ?? 'Velmani Kandan';
+  }
+
+  static Future<void> saveUserName(String name) async {
+    await _prefs?.setString('muxiz_user_name', name.trim());
+    final current = getUserData() ?? {};
+    current['name'] = name.trim();
+    await setUserData(current);
+  }
+
+  static String? getUserAvatar() {
+    final userData = getUserData();
+    if (userData != null && userData['avatar'] != null && userData['avatar'].toString().trim().isNotEmpty) {
+      return userData['avatar'].toString();
+    }
+    return _prefs?.getString('muxiz_user_avatar');
+  }
+
+  static Future<void> saveUserAvatar(String avatarUrl) async {
+    await _prefs?.setString('muxiz_user_avatar', avatarUrl);
+    final current = getUserData() ?? {};
+    current['avatar'] = avatarUrl;
+    await setUserData(current);
+  }
+
+  static Future<void> saveUserProfile(String name, String? avatarUrl) async {
+    await saveUserName(name);
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      await saveUserAvatar(avatarUrl);
+    }
+  }
+
   // --- Favorites & Liked Songs ---
   static List<String> getFavoriteSongIds() {
     final raw = _prefs?.getStringList(AppConstants.keyFavorites) ?? [];
