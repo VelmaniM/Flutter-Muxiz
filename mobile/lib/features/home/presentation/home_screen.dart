@@ -18,6 +18,8 @@ import '../../details/presentation/see_all_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../player/presentation/player_screen.dart';
 
+import '../../../core/storage/local_storage.dart';
+
 enum SongSortOption {
   recentlyAdded('Recently Added', Icons.schedule_rounded),
   titleAZ('Title (A - Z)', Icons.sort_by_alpha_rounded),
@@ -40,7 +42,17 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedFilterIndex = 0;
   final List<String> _filterPills = ['All', 'Music'];
-  SongSortOption _currentSort = SongSortOption.recentlyAdded;
+  late SongSortOption _currentSort;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = LocalStorageService.getMusicSortOption();
+    _currentSort = SongSortOption.values.firstWhere(
+      (o) => o.name == saved,
+      orElse: () => SongSortOption.recentlyAdded,
+    );
+  }
 
   List<Song> _getSortedSongs(List<Song> source) {
     final list = List<Song>.from(source);
@@ -122,6 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       setState(() {
                         _currentSort = option;
                       });
+                      LocalStorageService.saveMusicSortOption(option.name);
                       Navigator.pop(ctx);
                     },
                   );

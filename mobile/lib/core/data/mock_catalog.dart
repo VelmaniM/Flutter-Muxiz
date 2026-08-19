@@ -220,8 +220,8 @@ class MockMusicCatalog {
 
     try {
       final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(milliseconds: 1500),
-        receiveTimeout: const Duration(milliseconds: 1500),
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
       ));
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -230,7 +230,6 @@ class MockMusicCatalog {
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000&t=$timestamp&nocache=1',
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000',
         ...AppConstants.fallbackApiBaseUrls.map((u) => '$u/songs?limit=10000&t=$timestamp'),
-        'https://muxiz.vercel.app/api/drive/songs?limit=10000&t=$timestamp',
       ];
 
       for (final endpoint in candidateEndpoints) {

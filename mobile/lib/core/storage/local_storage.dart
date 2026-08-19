@@ -792,4 +792,15 @@ class LocalStorageService {
   static Future<void> clearRecentSearches() async {
     await _prefs?.remove(keyRecentSearches);
   }
+
+  // --- Dynamic Music Sorting Preference ---
+  static const String keyMusicSortOption = 'muxiz_music_sort_option';
+
+  static String getMusicSortOption() {
+    return _prefs?.getString(keyMusicSortOption) ?? 'recentlyAdded';
+  }
+
+  static Future<void> saveMusicSortOption(String sortOptionName) async {
+    await _prefs?.setString(keyMusicSortOption, sortOptionName);
+  }
 }
