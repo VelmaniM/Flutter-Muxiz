@@ -1,0 +1,39 @@
+---
+description: Comprehensive architecture, coding rules, and development standards for Muxiz Flutter + NestJS Music App
+globs: ["**/*.dart", "**/*.ts", "**/*.prisma", "**/*.swift", "**/*.kt"]
+alwaysApply: true
+---
+
+# Muxiz Full-Stack Music Platform Architecture & Guidelines
+
+## 1. Core Architecture
+- **Mobile (Flutter)**:
+  - State: `flutter_riverpod` (StateNotifierProvider, NotifierProvider)
+  - Audio Engine: `just_audio` + `audio_service` with single `ConcatenatingAudioSource`
+  - Audio Routes: Native Platform Channel (`com.muxiz.app/audio_route`)
+  - Local Storage: `shared_preferences` / `local_storage.dart` for JWT tokens, cache, offline tracks
+  - Network: `dio` with automatic JWT Bearer token interceptor (`api_client.dart`)
+- **Backend (NestJS)**:
+  - Database: PostgreSQL with Prisma ORM
+  - Auth: JWT auth (`JwtAuthGuard`) + zero-friction Guest session generation (`/auth/guest`)
+  - Endpoints: `/songs`, `/playlists`, `/users`, `/favorites`, `/search`, `/recommendations`
+
+## 2. Audio Pipeline & Queue Rules
+- Never create duplicate `AudioPlayer` instances.
+- Never use unbound delays or microtask loops to append playlist sources; use direct single-pass `AudioSourceManager.createPlaylist()`.
+- Synchronize all queue insertions (`playNext`, `addToQueue`, `reorderQueue`) simultaneously across `QueueManager`, `MuxizAudioHandler`, and `just_audio`.
+- Honor `AudioRepeatMode` (off, all, one) and queue boundaries on next/previous track skips.
+
+## 3. UI/UX & Design Standards
+- Premium Spotify & Apple Music inspired aesthetic: Dark background (`#121212`), high contrast, vibrant dominant color extraction from album artwork.
+- Optimistic UI updates with instant user feedback for Likes, Playlists, and Downloads.
+- Floating Mini Player with smooth gestures (tap to expand, swipe horizontal for next/previous).
+- Hardware audio device picker with live battery indicator and native AirPlay/Bluetooth system routing.
+
+## 4. Automation Commands
+- `bash scripts/automate.sh dev-backend`
+- `bash scripts/automate.sh dev-mobile`
+- `bash scripts/automate.sh test`
+- `bash scripts/automate.sh analyze`
+- `bash scripts/automate.sh build-apk`
+- `bash scripts/automate.sh build-ipa`

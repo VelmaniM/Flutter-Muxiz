@@ -1,0 +1,28 @@
+# Muxiz - Production Native Music Streaming Platform (.cursorrules)
+
+## Architecture Overview
+- **Mobile Frontend**: Flutter (Dart) with Riverpod (StateNotifier), `just_audio`, and `audio_service`.
+- **Backend API**: NestJS (TypeScript) with Prisma ORM and PostgreSQL.
+- **Storage & Streaming**: PostgreSQL is the application source of truth (users, songs, favorites, playlists, play counts). Google Drive provides audio streaming via direct API.
+- **Native OS Integration**: iOS (`AVAudioSession`, `AVRoutePickerView`) and Android (`AudioManager`, `AudioDeviceCallback`) for background audio, lock-screen notifications, and hardware output route switching.
+
+## Non-Destructive Development Directives
+- **DO NOT** create a new Flutter project or replace existing architecture.
+- **DO NOT** remove existing working features.
+- **Google Drive is NOT the database**: PostgreSQL is the single source of truth for all relations.
+- **Secrets & Credentials**: Never hardcode or print JWT secrets, Google service account keys, passwords, or API tokens.
+- **Environment URLs**: Use `String.fromEnvironment('API_BASE_URL')` with automatic local LAN fallback; do not hardcode localhost into release builds.
+
+## State Management & Audio Rules
+1. **Audio Player**: Only ONE active instance of `AudioPlayer` exists, managed inside `AudioPlayerService` via `MuxizAudioHandler`.
+2. **State & Queue Sync**: `QueueManager` and `just_audio.ConcatenatingAudioSource` must maintain identical sequence indices (1:1 mapping).
+3. **Optimistic Updates**: User actions (Like/Unlike, Add to Playlist, Reorder Queue) update Flutter local state immediately (0ms UI latency) before syncing with PostgreSQL in the background.
+4. **Song Actions**: All song actions across all screens (Home, Search, Library, Artist, Playlist, Full Player, Queue) MUST route through `SongActionController` with appropriate `SongActionContext`.
+
+## CLI & Automation Shortcuts
+- `make dev-backend` - Start NestJS API with Prisma in watch mode
+- `make dev-mobile`  - Launch Flutter app on connected device / simulator
+- `make test`        - Run all backend and Flutter test suites
+- `make analyze`     - Run Flutter static analysis with zero warnings
+- `make build-apk`   - Build native Android release APK
+- `make build-ipa`   - Build native iOS release IPA
