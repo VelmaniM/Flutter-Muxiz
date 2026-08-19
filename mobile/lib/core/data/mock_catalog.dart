@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/constants.dart';
@@ -243,23 +241,11 @@ class MockMusicCatalog {
       debugPrint('Live backend sync error: $e');
     }
 
-    // 2. Offline Fallback only if live backend was unreachable
+    // 2. Offline Fallback only if live backend was unreachable and cached songs exist
     if (allSongs.isEmpty && !forceRefresh) {
       final cachedSongs = LocalStorageService.getCatalogSongsLocally();
       if (cachedSongs.isNotEmpty) {
         allSongs = cachedSongs.where((s) => !deletedSongIds.contains(s.id)).toList();
-      } else {
-        try {
-          final jsonString = await rootBundle.loadString('assets/data/music_catalog.json');
-          final dynamic decoded = json.decode(jsonString);
-          final list = (decoded is Map ? (decoded['data'] ?? decoded['songs']) : decoded) as List<dynamic>?;
-          if (list != null && list.isNotEmpty) {
-            allSongs = list
-                .map((item) => Song.fromJson(Map<String, dynamic>.from(item as Map)))
-                .where((s) => !deletedSongIds.contains(s.id))
-                .toList();
-          }
-        } catch (_) {}
       }
     }
 
@@ -270,6 +256,11 @@ class MockMusicCatalog {
   }
 
   static void _buildArtistsAndAlbums() {
+    if (allSongs.isEmpty) {
+      popularArtists = [];
+      topAlbums = [];
+      return;
+    }
     final Map<String, List<Song>> artistMap = {};
     final Map<String, List<Song>> albumMap = {};
     final Map<String, Set<String>> artistSongKeys = {};
@@ -368,7 +359,10 @@ class MockMusicCatalog {
   }
 
   static void _buildPlaylists() {
-    if (allSongs.isEmpty) return;
+    if (allSongs.isEmpty) {
+      featuredPlaylists = [];
+      return;
+    }
 
     final viralHits = allSongs.where((s) {
       final m = (s.movieName ?? s.album).toLowerCase();
