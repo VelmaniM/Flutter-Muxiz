@@ -183,49 +183,14 @@ class MockMusicCatalog {
       } catch (_) {}
     }
 
-    // 1. Instantly load locally cached songs from previous sessions so UI renders with 0ms delay
-    final cachedSongs = LocalStorageService.getCatalogSongsLocally();
-    if (allSongs.isEmpty && cachedSongs.isNotEmpty && !forceRefresh) {
-      allSongs = cachedSongs.where((s) => !deletedSongIds.contains(s.id)).toList();
-      _buildArtistsAndAlbums();
-      _buildPlaylists();
-      catalogNotifier.notify();
-    }
-
-    // 2. Load bundled asset catalog immediately if still empty (ensures instant 0ms offline/fresh start)
-    if (allSongs.isEmpty) {
-      try {
-        final jsonString = await rootBundle.loadString('assets/data/music_catalog.json');
-        final dynamic decoded = json.decode(jsonString);
-        final list = (decoded is Map ? (decoded['data'] ?? decoded['songs']) : decoded) as List<dynamic>?;
-        if (list != null && list.isNotEmpty) {
-          final List<Song> assetSongs = [];
-          for (final item in list) {
-            final id = (item['id'] ?? '').toString();
-            if (id.isEmpty || deletedSongIds.contains(id)) continue;
-            assetSongs.add(Song.fromJson(Map<String, dynamic>.from(item as Map)));
-          }
-          if (assetSongs.isNotEmpty) {
-            allSongs = assetSongs;
-            _buildArtistsAndAlbums();
-            _buildPlaylists();
-            isInitialized = true;
-            catalogNotifier.notify();
-          }
-        }
-      } catch (e) {
-        debugPrint('Error loading asset catalog: $e');
-      }
-    }
-
+    // 1. Direct Live Sync with PostgreSQL Database (Primary Source of Truth)
     try {
       final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 5),
+        connectTimeout: const Duration(seconds: 4),
+        receiveTimeout: const Duration(seconds: 4),
       ));
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      // Fetch live songs from PostgreSQL Database & Google Drive backend endpoints (fetch ALL DB songs)
       final candidateEndpoints = [
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000&t=$timestamp&nocache=1',
         '${AppConstants.defaultApiBaseUrl}/songs?limit=10000',
@@ -261,7 +226,7 @@ class MockMusicCatalog {
                 backendSongs.add(song);
               }
 
-              // EXACT DB SYNC: Frontend strictly reflects the exact songs currently in DB (even if 0)
+              // EXACT DB SYNC: Frontend strictly reflects the exact database songs (even if 0)
               allSongs = backendSongs;
               _buildArtistsAndAlbums();
               _buildPlaylists();
@@ -269,27 +234,39 @@ class MockMusicCatalog {
               isInitialized = true;
               catalogNotifier.notify();
               debugPrint('🎵 Muxiz Music Catalog Synced with DB: ${allSongs.length} Songs, ${popularArtists.length} Artists!');
-              break;
+              return;
             }
           }
         } catch (_) {}
       }
-
-      // Build All Unique Artists and All Unique Movie Albums
-      _buildArtistsAndAlbums();
-
-      // Build Featured Playlists
-      _buildPlaylists();
-
-      // Persist latest state
-      LocalStorageService.saveCatalogSongsLocally(allSongs);
-
-      isInitialized = true;
-      catalogNotifier.notify();
-      debugPrint('🎵 Muxiz Music Catalog: ${allSongs.length} Songs, ${popularArtists.length} Artists, ${topAlbums.length} Movie Albums!');
     } catch (e) {
-      debugPrint('Error loading music catalog: $e');
+      debugPrint('Live backend sync error: $e');
     }
+
+    // 2. Offline Fallback only if live backend was unreachable
+    if (allSongs.isEmpty && !forceRefresh) {
+      final cachedSongs = LocalStorageService.getCatalogSongsLocally();
+      if (cachedSongs.isNotEmpty) {
+        allSongs = cachedSongs.where((s) => !deletedSongIds.contains(s.id)).toList();
+      } else {
+        try {
+          final jsonString = await rootBundle.loadString('assets/data/music_catalog.json');
+          final dynamic decoded = json.decode(jsonString);
+          final list = (decoded is Map ? (decoded['data'] ?? decoded['songs']) : decoded) as List<dynamic>?;
+          if (list != null && list.isNotEmpty) {
+            allSongs = list
+                .map((item) => Song.fromJson(Map<String, dynamic>.from(item as Map)))
+                .where((s) => !deletedSongIds.contains(s.id))
+                .toList();
+          }
+        } catch (_) {}
+      }
+    }
+
+    _buildArtistsAndAlbums();
+    _buildPlaylists();
+    isInitialized = true;
+    catalogNotifier.notify();
   }
 
   static void _buildArtistsAndAlbums() {

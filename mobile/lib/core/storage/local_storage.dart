@@ -211,15 +211,12 @@ class LocalStorageService {
 
   static Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
-    // One-time fresh wipe for v4 reset (wipes all old legacy cached songs so library starts fresh with 0 songs)
-    if (_prefs?.getBool('muxiz_fresh_v4_zero_wipe_done') != true) {
-      await _prefs?.remove('muxiz_catalog_songs');
-      await _prefs?.remove('muxiz_liked_songs');
-      await _prefs?.remove('muxiz_custom_playlists');
-      await _prefs?.remove('muxiz_recently_played');
-      await _prefs?.remove(AppConstants.keyFavorites);
-      await _prefs?.setBool('muxiz_fresh_v4_zero_wipe_done', true);
-    }
+    // Wipe all cached songs and playlists so app starts 100% fresh with 0 songs
+    await _prefs?.remove('muxiz_catalog_songs');
+    await _prefs?.remove('muxiz_liked_songs');
+    await _prefs?.remove('muxiz_custom_playlists');
+    await _prefs?.remove('muxiz_recently_played');
+    await _prefs?.remove(AppConstants.keyFavorites);
   }
 
   static Future<void> clearAllData() async {
