@@ -477,6 +477,8 @@ class MockMusicCatalog {
       allSongs.insert(0, song);
       _buildArtistsAndAlbums();
       _buildPlaylists();
+      LocalStorageService.saveCatalogSongsLocally(allSongs);
+      catalogNotifier.notify();
     }
   }
 }
