@@ -245,6 +245,15 @@ class RecommendationService {
       greeting = 'Good evening';
     }
 
+    if (allSongs.isEmpty) {
+      return HomeFeedData(
+        greeting: greeting,
+        quickPlaySongs: [],
+        aiSpotlight: null,
+        sections: [],
+      );
+    }
+
     // 1. Live User Affinity Scoring Matrix
     final Map<String, int> artistAffinity = {};
 
