@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Delete,
   Body,
   UploadedFile,
   UseInterceptors,
@@ -45,6 +46,11 @@ export class UploadsController {
       userId,
       displayName,
     );
+  }
+
+  @Delete('avatar')
+  async removeAvatar(@Body('userId') userId?: string) {
+    return this.uploadsService.removeUserAvatar(userId || 'listener-001');
   }
 
   @Post('profile')

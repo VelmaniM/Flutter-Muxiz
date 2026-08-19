@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../app/theme.dart';
 import '../../core/storage/local_storage.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 
@@ -32,13 +31,7 @@ class UserAvatarButton extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: avatarUrl == null || avatarUrl.isEmpty
-              ? const LinearGradient(
-                  colors: [AppTheme.primaryGreen, Color(0xFF007A33)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
+          color: Colors.black,
           border: Border.all(color: Colors.white24, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
@@ -49,7 +42,7 @@ class UserAvatarButton extends StatelessWidget {
                 width: size,
                 height: size,
                 placeholder: (context, url) => Container(
-                  color: AppTheme.card,
+                  color: Colors.black,
                   child: Center(
                     child: Text(
                       initial,
@@ -58,11 +51,11 @@ class UserAvatarButton extends StatelessWidget {
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: AppTheme.primaryGreen,
+                  color: Colors.black,
                   child: Center(
                     child: Text(
                       initial,
-                      style: TextStyle(color: Colors.black, fontSize: size * 0.45, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontSize: size * 0.45, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -70,7 +63,7 @@ class UserAvatarButton extends StatelessWidget {
             : Center(
                 child: Text(
                   initial,
-                  style: TextStyle(color: Colors.black, fontSize: size * 0.48, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontSize: size * 0.48, fontWeight: FontWeight.bold),
                 ),
               ),
       ),

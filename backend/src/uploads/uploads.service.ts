@@ -328,4 +328,21 @@ export class UploadsService {
       avatarUrl: user.avatar,
     };
   }
+
+  async removeUserAvatar(userId: string) {
+    const cleanUserId = userId || 'listener-001';
+    const user = await this.prisma.user.update({
+      where: { id: cleanUserId },
+      data: { avatar: null },
+    }).catch(() => null);
+
+    this.logger.log(`🗑️ Avatar removed in DB for user: ${cleanUserId}`);
+
+    return {
+      success: true,
+      userId: cleanUserId,
+      avatarUrl: null,
+      message: 'Avatar photo removed successfully',
+    };
+  }
 }

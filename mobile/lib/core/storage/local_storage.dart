@@ -295,18 +295,23 @@ class LocalStorageService {
     return _prefs?.getString('muxiz_user_avatar');
   }
 
-  static Future<void> saveUserAvatar(String avatarUrl) async {
-    await _prefs?.setString('muxiz_user_avatar', avatarUrl);
-    final current = getUserData() ?? {};
-    current['avatar'] = avatarUrl;
-    await setUserData(current);
+  static Future<void> saveUserAvatar(String? avatarUrl) async {
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      await _prefs?.remove('muxiz_user_avatar');
+      final current = getUserData() ?? {};
+      current.remove('avatar');
+      await setUserData(current);
+    } else {
+      await _prefs?.setString('muxiz_user_avatar', avatarUrl);
+      final current = getUserData() ?? {};
+      current['avatar'] = avatarUrl;
+      await setUserData(current);
+    }
   }
 
   static Future<void> saveUserProfile(String name, String? avatarUrl) async {
     await saveUserName(name);
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      await saveUserAvatar(avatarUrl);
-    }
+    await saveUserAvatar(avatarUrl);
   }
 
   // --- Favorites & Liked Songs ---

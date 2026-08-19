@@ -9,6 +9,7 @@ import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/album_card.dart';
 import '../../../shared/components/artist_avatar.dart';
 import '../../details/presentation/playlist_detail_screen.dart';
+import 'profile_image_cropper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,16 +31,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _avatarUrl = LocalStorageService.getUserAvatar();
   }
 
+  void _showProfilePhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF181818),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Profile Photo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryGreen, size: 22),
+                  ),
+                  title: Text(
+                    _avatarUrl != null && _avatarUrl!.isNotEmpty ? 'Change Photo' : 'Upload New Photo',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  subtitle: const Text(
+                    'Resize & crop photo with Instagram/WhatsApp style circular zoom',
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickAndUploadAvatar();
+                  },
+                ),
+                if (_avatarUrl != null && _avatarUrl!.isNotEmpty) ...[
+                  const Divider(color: Colors.white10, height: 16),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                    ),
+                    title: const Text(
+                      'Remove Current Photo',
+                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 16),
+                    ),
+                    subtitle: const Text(
+                      'Reset to clean default round profile icon with black background',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _removeAvatar();
+                    },
+                  ),
+                ],
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _removeAvatar() async {
+    setState(() {
+      _isUploadingAvatar = true;
+    });
+
+    try {
+      await LocalStorageService.saveUserAvatar(null);
+
+      // Async backend remove
+      final dio = Dio();
+      const endpoints = [
+        'http://192.168.1.94:5001/api/v1/uploads/avatar',
+        'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
+        'http://localhost:5001/api/v1/uploads/avatar',
+      ];
+      for (final ep in endpoints) {
+        try {
+          await dio.delete(ep, data: {'userId': LocalStorageService.getUserId()});
+          break;
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          _avatarUrl = null;
+          _isUploadingAvatar = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
+                SizedBox(width: 10),
+                Text('Profile photo removed successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E1E1E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _avatarUrl = null;
+          _isUploadingAvatar = false;
+        });
+      }
+    }
+  }
+
   Future<void> _pickAndUploadAvatar() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 95,
       );
 
       if (image == null) return;
+
+      // WhatsApp / Instagram style Circular Cropper & Resizer Dialog
+      if (!mounted) return;
+      final croppedFile = await ProfileImageCropperDialog.show(context, File(image.path));
+      if (croppedFile == null) return;
 
       setState(() {
         _isUploadingAvatar = true;
@@ -52,17 +201,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
-          image.path,
-          filename: image.name.isNotEmpty ? image.name : 'avatar.jpg',
+          croppedFile.path,
+          filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.png',
         ),
         'userId': LocalStorageService.getUserId(),
         'displayName': _displayName,
       });
 
       const endpoints = [
+        'http://192.168.1.94:5001/api/v1/uploads/avatar',
         'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
         'http://localhost:5001/api/v1/uploads/avatar',
-        'http://192.168.1.94:5001/api/v1/uploads/avatar',
       ];
 
       String? uploadedUrl;
@@ -76,8 +225,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         } catch (_) {}
       }
 
-      // Fallback: If cloud offline, save local image file path as avatar
-      uploadedUrl ??= image.path;
+      // Fallback: If cloud offline, save cropped local image file path as avatar
+      uploadedUrl ??= croppedFile.path;
 
       await LocalStorageService.saveUserAvatar(uploadedUrl);
 
@@ -266,15 +415,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: 112,
           height: 112,
           placeholder: (context, url) => Container(
-            color: AppTheme.card,
+            color: Colors.black,
             child: const Center(
               child: CircularProgressIndicator(color: AppTheme.primaryGreen, strokeWidth: 2),
             ),
           ),
-          errorWidget: (context, url, error) => Center(
-            child: Text(
-              initial,
-              style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.black,
+            child: Center(
+              child: Text(
+                initial,
+                style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         );
@@ -284,25 +436,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fit: BoxFit.cover,
           width: 112,
           height: 112,
-          errorBuilder: (context, error, stackTrace) => Center(
-            child: Text(
-              initial,
-              style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.black,
+            child: Center(
+              child: Text(
+                initial,
+                style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         );
       }
     } else {
-      imageContent = Center(
-        child: Text(
-          initial,
-          style: const TextStyle(color: Colors.black, fontSize: 44, fontWeight: FontWeight.bold),
+      imageContent = Container(
+        color: Colors.black,
+        child: Center(
+          child: Text(
+            initial,
+            style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+          ),
         ),
       );
     }
 
     return GestureDetector(
-      onTap: _pickAndUploadAvatar,
+      onTap: _showProfilePhotoOptions,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -311,17 +469,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 116,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: _avatarUrl == null || _avatarUrl!.isEmpty
-                  ? const LinearGradient(
-                      colors: [AppTheme.primaryGreen, Color(0xFF007A33)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.6), width: 2.5),
-              boxShadow: [
+              color: Colors.black,
+              border: Border.all(color: Colors.white24, width: 2.0),
+              boxShadow: const [
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                  color: Colors.black54,
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
@@ -330,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             clipBehavior: Clip.antiAlias,
             child: _isUploadingAvatar
                 ? Container(
-                    color: Colors.black54,
+                    color: Colors.black87,
                     child: const Center(
                       child: CircularProgressIndicator(color: AppTheme.primaryGreen, strokeWidth: 3),
                     ),
