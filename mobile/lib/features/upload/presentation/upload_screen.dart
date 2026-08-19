@@ -10,7 +10,6 @@ import '../../../app/constants.dart';
 import '../../../app/theme.dart';
 import '../../../core/audio/audio_manager.dart';
 import '../../../core/data/mock_catalog.dart';
-import '../../../core/services/metadata_extractor_service.dart';
 import '../../../core/services/recommendation_service.dart';
 import '../../../shared/models/song.dart';
 import '../../../shared/components/user_avatar_button.dart';
@@ -78,14 +77,16 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
     _isProcessingQueue = true;
 
-    for (int i = 0; i < _uploadQueue.length; i++) {
-      final item = _uploadQueue[i];
-      if (item.status == 'completed') continue;
+    // Process up to 3 songs concurrently in parallel for high speed
+    final pendingItems = _uploadQueue.where((q) => q.status == 'pending').toList();
+
+    Future<void> processSingle(QueuedUpload item) async {
+      if (item.status == 'completed') return;
 
       setState(() {
         item.status = 'processing';
-        item.progress = 0.15;
-        item.statusMessage = 'Reading binary audio bytes...';
+        item.progress = 0.20;
+        item.statusMessage = 'Reading audio bytes...';
       });
 
       try {
@@ -98,31 +99,18 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           throw Exception('Could not read audio file bytes.');
         }
 
-        await Future.delayed(const Duration(milliseconds: 150));
         setState(() {
-          item.progress = 0.35;
-          item.statusMessage = 'Matching with Apple Music (Ultra-HD 1400px)...';
+          item.progress = 0.40;
+          item.statusMessage = 'Uploading to Drive & Cloud DB...';
         });
 
-        // 1. Extract ID3 Tags & Match Apple Music Ultra-HD 1400px Artwork
-        final metadata = await MetadataExtractorService.processSong(
-          filename: item.file.name,
-          fileBytes: audioBytes,
-        );
-
-        setState(() {
-          item.progress = 0.60;
-          item.statusMessage = 'Matched: "${metadata.title}" • Uploading to Server & Drive...';
-        });
-
-        // 2. Upload to Google Drive & PostgreSQL Database via Backend
         final dio = Dio(BaseOptions(
-          connectTimeout: const Duration(seconds: 30),
-          sendTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
+          connectTimeout: const Duration(seconds: 40),
+          sendTimeout: const Duration(seconds: 120),
+          receiveTimeout: const Duration(seconds: 120),
         ));
 
-        final cleanTitle = metadata.title.replaceAll(RegExp(r'[/\\?%*:|"<>]+'), '_');
+        final cleanTitle = item.file.name.replaceAll(RegExp(r'[/\\?%*:|"<>]+'), '_');
         final realAudioPath = item.file.path;
         String? backendSongId;
         String? finalAudioUrl;
@@ -134,23 +122,30 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           ...AppConstants.fallbackApiBaseUrls,
         ];
 
-        // Tier 1: Real multipart audio upload to NestJS Google Drive + PostgreSQL pipeline
+        // Direct high-speed multipart upload
         for (final baseUrl in candidateUrls) {
           if (backendSaved) break;
           try {
             final formData = FormData.fromMap({
               'file': MultipartFile.fromBytes(
                 audioBytes,
-                filename: '$cleanTitle.mp3',
+                filename: cleanTitle,
               ),
             });
 
             final uploadRes = await dio.post(
               '$baseUrl/uploads/song',
               data: formData,
+              onSendProgress: (sent, total) {
+                if (total > 0) {
+                  setState(() {
+                    item.progress = 0.40 + (sent / total) * 0.50;
+                  });
+                }
+              },
               options: Options(
-                sendTimeout: const Duration(seconds: 45),
-                receiveTimeout: const Duration(seconds: 45),
+                sendTimeout: const Duration(seconds: 90),
+                receiveTimeout: const Duration(seconds: 90),
               ),
             );
 
@@ -161,6 +156,31 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 finalAudioUrl = songData['audioUrl']?.toString();
                 finalArtworkUrl = songData['artworkUrl']?.toString() ?? songData['artwork']?.toString();
                 backendSaved = true;
+
+                final validatedSong = Song(
+                  id: backendSongId ?? 'upload_${DateTime.now().millisecondsSinceEpoch}',
+                  title: (songData['title'] ?? cleanTitle).toString(),
+                  artist: (songData['artistName'] ?? songData['artist']?['name'] ?? 'Tamil Artist').toString(),
+                  album: (songData['albumName'] ?? songData['album']?['title'] ?? 'Single').toString(),
+                  movieName: songData['movieName']?.toString(),
+                  artworkUrl: finalArtworkUrl ?? 'https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/1400x1400bb.jpg',
+                  audioUrl: finalAudioUrl ?? realAudioPath ?? '',
+                  duration: (songData['duration'] as num?)?.toInt() ?? 180,
+                  genre: (songData['genre'] ?? 'Tamil').toString(),
+                  language: 'Tamil',
+                  isDownloaded: false,
+                );
+
+                MockMusicCatalog.syncSong(validatedSong);
+                _recentUploads.insert(0, validatedSong);
+                ref.read(homeFeedProvider.notifier).refreshFeed();
+
+                setState(() {
+                  item.status = 'completed';
+                  item.progress = 1.0;
+                  item.statusMessage = 'Uploaded to Drive & DB ✅';
+                  item.song = validatedSong;
+                });
                 break;
               }
             }
@@ -169,97 +189,9 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           }
         }
 
-        // Tier 2: Direct /songs metadata endpoint
         if (!backendSaved) {
-          final newId = 'upload_${DateTime.now().millisecondsSinceEpoch}';
-          for (final baseUrl in candidateUrls) {
-            if (backendSaved) break;
-            try {
-              final syncRes = await dio.post(
-                '$baseUrl/songs',
-                data: {
-                  'id': newId,
-                  'title': metadata.title,
-                  'artistName': metadata.artist,
-                  'albumName': metadata.album,
-                  'movieName': metadata.movieName ?? metadata.album,
-                  'artworkUrl': metadata.artworkUrl,
-                  'audioUrl': realAudioPath ?? '',
-                  'duration': metadata.duration,
-                  'genre': metadata.genre,
-                  'language': metadata.language,
-                  'lyrics': [
-                    '🎵 ${metadata.title}',
-                    'Artist: ${metadata.artist}',
-                    'Movie / Album: ${metadata.album}',
-                    'Source: ${metadata.matchSource}',
-                  ],
-                },
-                options: Options(
-                  headers: {'Content-Type': 'application/json', 'x-user-id': 'listener-001'},
-                  sendTimeout: const Duration(seconds: 5),
-                  receiveTimeout: const Duration(seconds: 5),
-                ),
-              );
-
-              if (syncRes.statusCode == 200 || syncRes.statusCode == 201) {
-                final sData = syncRes.data is String ? jsonDecode(syncRes.data) : syncRes.data;
-                backendSongId = sData?['id']?.toString() ?? newId;
-                finalAudioUrl = sData?['audioUrl']?.toString() ?? realAudioPath;
-                finalArtworkUrl = sData?['artworkUrl']?.toString() ?? metadata.artworkUrl;
-                backendSaved = true;
-                break;
-              }
-            } catch (_) {}
-          }
+          throw Exception('Could not connect to Cloud Backend. Please check network.');
         }
-
-        // Tier 3: Local Offline / On-Device Guarantee (Upload NEVER fails with error!)
-        if (!backendSaved) {
-          backendSongId = 'local_${DateTime.now().millisecondsSinceEpoch}';
-          finalAudioUrl = realAudioPath ?? '';
-          finalArtworkUrl = metadata.artworkUrl;
-        }
-
-        setState(() {
-          item.progress = 0.95;
-          item.statusMessage = 'Verified & Synced!';
-        });
-
-        // 3. Construct validated Song model from confirmed backend DB response
-        final validatedSong = Song(
-          id: backendSongId ?? 'upload_${DateTime.now().millisecondsSinceEpoch}',
-          title: metadata.title,
-          artist: metadata.artist,
-          album: metadata.album,
-          movieName: metadata.movieName,
-          artworkUrl: (finalArtworkUrl != null && finalArtworkUrl.isNotEmpty) ? finalArtworkUrl : metadata.artworkUrl,
-          audioUrl: (finalAudioUrl != null && finalAudioUrl.isNotEmpty) ? finalAudioUrl : (item.file.path ?? ''),
-          duration: metadata.duration,
-          genre: metadata.genre,
-          language: metadata.language,
-          isDownloaded: false,
-          lyrics: [
-            '🎵 ${metadata.title}',
-            'Artist: ${metadata.artist}',
-            'Movie / Album: ${metadata.album}',
-            'Source: ${metadata.matchSource}',
-          ],
-        );
-
-        // Add to catalog, rebuild artists/albums & persist locally
-        MockMusicCatalog.syncSong(validatedSong);
-        _recentUploads.insert(0, validatedSong);
-
-        // Dynamically refresh Home & Search feed directly from backend DB
-        ref.read(homeFeedProvider.notifier).refreshFeed();
-
-        setState(() {
-          item.status = 'completed';
-          item.progress = 1.0;
-          item.statusMessage = 'Uploaded to DB & Drive ✅';
-          item.song = validatedSong;
-        });
       } catch (err) {
         setState(() {
           item.status = 'error';
@@ -268,6 +200,13 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           item.statusMessage = 'Upload error: ${err.toString().replaceAll(RegExp(r'DioException.*?:'), '').trim()}';
         });
       }
+    }
+
+    // Run parallel batches with concurrency = 3
+    const concurrency = 3;
+    for (int i = 0; i < pendingItems.length; i += concurrency) {
+      final batch = pendingItems.skip(i).take(concurrency);
+      await Future.wait(batch.map((item) => processSingle(item)));
     }
 
     setState(() {
