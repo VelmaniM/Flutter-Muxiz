@@ -1342,7 +1342,7 @@
     </div>
 
     <div class="sidebar-menu">
-      <div class="menu-heading">Navigation</div>
+      <div class="menu-heading">Music Catalog</div>
 
       <button class="sidebar-link active" onclick="switchTab('catalog')" title="Songs">
         <div class="link-left">
@@ -1369,7 +1369,21 @@
         <span class="link-badge" id="sideArtistsCount">0</span>
       </button>
 
-      <button class="sidebar-link" onclick="switchTab('users')" title="Users & Accounts">
+      <button class="sidebar-link" onclick="switchTab('upload')" title="Audio Ingestion">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Audio Ingestion</span>
+        </div>
+      </button>
+
+      <div class="menu-heading">User & Management</div>
+
+      <button class="sidebar-link" onclick="switchTab('users')" title="User Accounts & Management">
         <div class="link-left">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -1381,18 +1395,6 @@
           <span>Users & Accounts</span>
         </div>
         <span class="link-badge" id="sideUsersCount">0</span>
-      </button>
-
-      <button class="sidebar-link" onclick="switchTab('upload')" title="Audio Ingestion">
-        <div class="link-left">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          <span>Audio Ingestion</span>
-        </div>
       </button>
 
       <div class="menu-heading">Storage & Control</div>
