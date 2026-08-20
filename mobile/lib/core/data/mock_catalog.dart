@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,6 @@ import '../../shared/models/artist.dart';
 import '../../shared/models/album.dart';
 import '../../shared/models/playlist.dart';
 import '../storage/local_storage.dart';
-import '../services/metadata_extractor_service.dart';
 
 class CatalogNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
@@ -22,45 +22,10 @@ class MockMusicCatalog {
   static List<Playlist> featuredPlaylists = [];
   static List<Album> topAlbums = [];
   static bool isInitialized = false;
-
-  static Map<String, String> artistPortraits = {
-    'sai abhyankkar': 'https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/cd/db/89/cddb89d2-79e7-7385-edc9-c3d50ff18505/mza_14310547933879091928.png/1000x1000bb.jpg',
-    'sai abhyankar': 'https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/cd/db/89/cddb89d2-79e7-7385-edc9-c3d50ff18505/mza_14310547933879091928.png/1000x1000bb.jpg',
-    'anirudh ravichander': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f0/7c/ec/f07cec97-4d1a-da91-02a1-d1a0421ac840/199538343670.jpg/1000x1000bb.jpg',
-    'anirudh': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f0/7c/ec/f07cec97-4d1a-da91-02a1-d1a0421ac840/199538343670.jpg/1000x1000bb.jpg',
-    'a.r. rahman': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f3/fe/3f/f3fe3f04-f920-60f2-3115-16558b93b8fb/8909024118444.png/1000x1000bb.jpg',
-    'ar rahman': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f3/fe/3f/f3fe3f04-f920-60f2-3115-16558b93b8fb/8909024118444.png/1000x1000bb.jpg',
-    'yuvan shankar raja': 'https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/5d/66/7a/5d667a79-b67b-19db-95db-69c985ae9f5e/884977467260.jpg/1000x1000bb.jpg',
-    'yuvan': 'https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/5d/66/7a/5d667a79-b67b-19db-95db-69c985ae9f5e/884977467260.jpg/1000x1000bb.jpg',
-    'harris jayaraj': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/49/a8/43/49a84369-7d6a-5905-af16-46eecbd2975d/196874700822.jpg/1000x1000bb.jpg',
-    'sid sriram': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/93/e0/e6/93e0e603-2500-da00-520f-17c02cca2649/196589997289.jpg/1000x1000bb.jpg',
-    'santhosh narayanan': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/e3/53/ab/e353ab4a-53c7-35ca-70f1-35ce24d2f89e/8903431060945_cover.jpg/1000x1000bb.jpg',
-    'g.v. prakash kumar': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fb/25/bf/fb25bfe6-f9f0-d015-0146-2def2faec80a/cover.jpg/1000x1000bb.jpg',
-    'gv prakash': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fb/25/bf/fb25bfe6-f9f0-d015-0146-2def2faec80a/cover.jpg/1000x1000bb.jpg',
-    'ilaiyaraaja': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ee/a1/8a/eea18a29-a74d-191b-cc8f-812793ad8153/885288330083.jpg/1000x1000bb.jpg',
-    'ilayaraja': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ee/a1/8a/eea18a29-a74d-191b-cc8f-812793ad8153/885288330083.jpg/1000x1000bb.jpg',
-    's.p. balasubrahmanyam': 'https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/e5/5a/7d/e55a7de2-6854-cb33-d0c4-e6df703c2ea5/191773207656.jpg/1000x1000bb.jpg',
-    'spb': 'https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/e5/5a/7d/e55a7de2-6854-cb33-d0c4-e6df703c2ea5/191773207656.jpg/1000x1000bb.jpg',
-    'd. imman': 'https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/b9/38/56/b9385651-5600-420f-f468-d61f367aaef4/886444281607.jpg/1000x1000bb.jpg',
-    'hiphop tamizha': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d6/ff/97/d6ff97ce-3f3a-f031-8847-f2f46a15f304/196871094689.jpg/1000x1000bb.jpg',
-    'dhanush': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8b/18/b7/8b18b7cf-856d-5fb7-7f6e-7af1ca538bcf/1200214401061.jpg/1000x1000bb.jpg',
-    'shreya ghoshal': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/5f/f8/a5/5ff8a59a-5b12-b177-9fe0-295345e93765/26UMGIM78044.rgb.jpg/1000x1000bb.jpg',
-    'pradeep kumar': 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/14/49/16/14491666-036a-ad4c-6927-d0d94426beb4/cover.jpg/1000x1000bb.jpg',
-    'shankar mahadevan': 'https://is1-ssl.mzstatic.com/image/thumb/Music49/v4/93/cc/db/93ccdb69-815f-7e02-4450-21a358166970/190374418898.jpg/1000x1000bb.jpg',
-    'k.j. yesudas': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/7f/7d/f5/7f7df5e0-445b-730e-79d2-4dbcfda09c88/886448881353.jpg/1000x1000bb.jpg',
-    'kailash kher': 'https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/b7/ed/e0/b7ede001-64fa-ce23-a9c6-c36f0a8c5684/888880944832.jpg/1000x1000bb.jpg',
-    'chinmayi sripaada': 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/8d/8c/69/8d8c697e-f108-9e69-0cb1-475b45ab26a8/886970389020.jpg/1000x1000bb.jpg',
-    'jonita gandhi': 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/88/22/e0/8822e0e9-f1a1-abba-f024-c9c7c4851477/8909024120546.png/1000x1000bb.jpg',
-    'haricharan': 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/18/7c/39/187c394c-95af-735f-82cf-16eca48a7290/886443235984.jpg/1000x1000bb.jpg',
-    'karthik': 'https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/74/48/f1/7448f195-981a-0fc8-e314-8b90850ee63c/cover.jpg/1000x1000bb.jpg',
-    'shweta mohan': 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/9e/fc/87/9efc8706-fe89-127d-5aa2-08b065dcb2ca/886445635423.jpg/1000x1000bb.jpg',
-    'sathyaprakash': 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/c9/36/8f/c9368f60-7281-fdcf-f8fb-9cf7090189d7/886446711492.jpg/1000x1000bb.jpg',
-    'anthony daasan': 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e8/0d/bb/e80dbb61-121e-e679-8fb8-4b2c092d21fa/196589119032.jpg/1000x1000bb.jpg',
-    'd. sathyaprakash': 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/c9/36/8f/c9368f60-7281-fdcf-f8fb-9cf7090189d7/886446711492.jpg/1000x1000bb.jpg',
-    'stephen zechariah': 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ad/07/ee/ad07ee29-1662-7907-8857-414aeec1fb3a/196626578709.jpg/1000x1000bb.jpg',
-    'sam c.s.': 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/05/ae/3a/05ae3a61-a083-d958-8547-8cfba54a5c53/8902894354388.jpg/1000x1000bb.jpg',
-    'sean roldan': 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/8d/8b/718d8bb5-6b5d-e08f-e14b-21a4bc5c5c0a/8903431671912_cover.jpg/1000x1000bb.jpg',
-  };
+  static bool isServerLive = true;
+  static bool isLoading = false;
+  static String serverStatus = 'ONLINE';
+  static Map<String, String> artistPortraits = {};
 
   static String _songDedupKey(Song s) {
     final title = s.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -68,92 +33,91 @@ class MockMusicCatalog {
     return '${title}___$movie';
   }
 
-  /// Normalizes artist names to prevent duplicate variations of the same artist
-  static String normalizeArtistName(String raw) {
-    if (raw.isEmpty) return 'Various Artists';
-    var clean = raw.split(',')[0].split('&')[0].split(';')[0].split('/')[0].trim();
-    clean = clean.replaceAll(RegExp(r'\b(feat\.|ft\.|presents|duet)\b.*$', caseSensitive: false), '').trim();
-    final lower = clean.toLowerCase();
-
-    if (lower.contains('sai abhyankkar') || lower.contains('sai abhyankar') || lower.contains('abhyankkar')) return 'Sai Abhyankkar';
-    if (lower.contains('stephen zechariah') || lower.contains('stephen')) return 'Stephen Zechariah';
-    if (lower.contains('sam c.s.') || lower.contains('sam cs')) return 'Sam C.S.';
-    if (lower.contains('sean roldan')) return 'Sean Roldan';
-    if (lower.contains('rahman') || lower == 'ar' || lower == 'a r rahman' || lower == 'a. r. rahman') return 'A.R. Rahman';
-    if (lower.contains('anirudh')) return 'Anirudh Ravichander';
-    if (lower.contains('yuvan')) return 'Yuvan Shankar Raja';
-    if (lower.contains('harris')) return 'Harris Jayaraj';
-    if (lower.contains('santhosh')) return 'Santhosh Narayanan';
-    if (lower.contains('gv prakash') || lower.contains('g.v. prakash') || lower.contains('g. v. prakash')) return 'G.V. Prakash Kumar';
-    if (lower.contains('ilaiyaraaja') || lower.contains('ilayaraja')) return 'Ilaiyaraaja';
-    if (lower.contains('spb') || lower.contains('balasubrahmanyam') || lower.contains('s. p. balasubrahmanyam')) return 'S.P. Balasubrahmanyam';
-    if (lower.contains('imman') || lower.contains('d imman') || lower.contains('d. imman')) return 'D. Imman';
-    if (lower.contains('hiphop')) return 'Hiphop Tamizha';
-    if (lower.contains('sid sriram')) return 'Sid Sriram';
-    if (lower.contains('pradeep')) return 'Pradeep Kumar';
-    if (lower.contains('shreya')) return 'Shreya Ghoshal';
-    if (lower.contains('yesudas')) return 'K.J. Yesudas';
-    if (lower.contains('dhanush')) return 'Dhanush';
-    if (lower.contains('shankar mahadevan')) return 'Shankar Mahadevan';
-    if (lower.contains('kailash kher') || lower.contains('kailash')) return 'Kailash Kher';
-    if (lower.contains('chinmayi')) return 'Chinmayi Sripaada';
-    if (lower.contains('jonita')) return 'Jonita Gandhi';
-    if (lower.contains('haricharan')) return 'Haricharan';
-    if (lower.contains('karthik')) return 'Karthik';
-    if (lower.contains('vijay yesudas')) return 'Vijay Yesudas';
-    if (lower.contains('swetha mohan') || lower.contains('shweta mohan') || lower.contains('shweta')) return 'Shweta Mohan';
-    if (lower.contains('sathyaprakash') || lower.contains('d.sathyaprakash') || lower.contains('d. sathyaprakash')) return 'Sathyaprakash';
-    return clean.isNotEmpty ? clean : 'Various Artists';
+  /// Converts any string dynamically to Title Case with proper capitalization for initials (e.g. A.R. Rahman, S.P.B)
+  static String toDynamicTitleCase(String input) {
+    if (input.trim().isEmpty) return '';
+    final words = input.trim().split(RegExp(r'\s+'));
+    final formattedWords = words.map((w) {
+      if (w.isEmpty) return '';
+      if (w.contains('.')) {
+        return w.split('.').map((part) {
+          if (part.isEmpty) return '';
+          if (part.length == 1) return part.toUpperCase();
+          return '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}';
+        }).join('.');
+      }
+      if (w.length == 1) return w.toUpperCase();
+      return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+    });
+    return formattedWords.join(' ');
   }
 
-  /// Returns only the songs strictly composed or sung by [artistName]
-  static List<Song> getSongsForArtist(String artistName) {
-    final targetNormalized = normalizeArtistName(artistName).toLowerCase();
-    final targetRawLower = artistName.toLowerCase().trim();
+  /// Cleans watermarks, special characters, and formats raw artist string purely dynamically
+  static String normalizeSingleArtist(String raw) {
+    if (raw.trim().isEmpty) return '';
+    var clean = raw
+        .replaceAll(RegExp(r'(masstamilan|isaimini|starmusiq|tamiltunes|sensongs|kuttyweb|tamilwire)(\.(com|org|in|net|co|fun|cc|xyz))?', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\b(masstamilan|isaimini|starmusiq|tamiltunes|sensongs|kuttyweb|tamilwire)\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'^[\s\-–—:._,]+|[\s\-–—:._,]+$'), '')
+        .trim();
 
-    return allSongs.where((s) {
-      final songArtistNormalized = normalizeArtistName(s.artist).toLowerCase();
-      if (songArtistNormalized == targetNormalized) return true;
+    return toDynamicTitleCase(clean);
+  }
 
-      final songArtistRaw = s.artist.toLowerCase();
-      if (songArtistRaw.contains(targetRawLower) || songArtistRaw.contains(targetNormalized)) {
-        return true;
+  /// Fully dynamically extracts individual artists from any uploaded compound string
+  /// (e.g., "Artist 1, Artist 2 feat. Artist 3 & Artist 4" -> [Artist 1, Artist 2, Artist 3, Artist 4])
+  static List<String> extractArtistsList(String raw) {
+    if (raw.trim().isEmpty) return [];
+    final parts = raw
+        .replaceAll(RegExp(r'\s+(feat\.|ft\.|featuring|with|x|vs|\/)\s+', caseSensitive: false), ', ')
+        .replaceAll(RegExp(r'\s+&\s+'), ', ')
+        .replaceAll(RegExp(r'\s+and\s+', caseSensitive: false), ', ')
+        .split(RegExp(r'[,;]'));
+
+    final List<String> list = [];
+    final Set<String> seen = {};
+    for (final p in parts) {
+      final norm = normalizeSingleArtist(p);
+      if (norm.length >= 2) {
+        final lower = norm.toLowerCase();
+        if (!['unknown artist', 'various artists', 'unknown', 'various'].contains(lower) && !seen.contains(lower)) {
+          seen.add(lower);
+          list.add(norm);
+        }
       }
-      return false;
+    }
+    return list.isNotEmpty ? list : [normalizeSingleArtist(raw).isNotEmpty ? normalizeSingleArtist(raw) : 'Unknown Artist'];
+  }
+
+  static String normalizeArtistName(String raw) {
+    final clean = normalizeSingleArtist(raw);
+    return clean.isNotEmpty ? clean : 'Unknown Artist';
+  }
+
+  static List<Song> getSongsForArtist(String artistName) {
+    final target = normalizeSingleArtist(artistName).toLowerCase();
+    return allSongs.where((s) {
+      final artists = extractArtistsList(s.artist).map((a) => a.toLowerCase());
+      return artists.contains(target) || s.artist.toLowerCase().contains(target);
     }).toList();
   }
 
-  /// Returns whether a song is strictly by a specific artist
   static bool isSongByArtist(Song s, String artistName) {
-    final targetNormalized = normalizeArtistName(artistName).toLowerCase();
-    final songArtistNormalized = normalizeArtistName(s.artist).toLowerCase();
-    if (songArtistNormalized == targetNormalized) return true;
-
-    final targetRawLower = artistName.toLowerCase().trim();
-    final songArtistRaw = s.artist.toLowerCase();
-    return songArtistRaw.contains(targetRawLower) || songArtistRaw.contains(targetNormalized);
+    final target = normalizeSingleArtist(artistName).toLowerCase();
+    final artists = extractArtistsList(s.artist).map((a) => a.toLowerCase());
+    return artists.contains(target) || s.artist.toLowerCase().contains(target);
   }
 
-  /// Normalizes movie and album names so all songs of the same movie group into one Album
   static String normalizeMovieOrAlbumName(Song s) {
-    var raw = (s.movieName != null && s.movieName!.trim().isNotEmpty && s.movieName != 'Single')
-        ? s.movieName!.trim()
-        : (s.album.trim().isNotEmpty && s.album != 'Single' ? s.album.trim() : '');
-
-    if (raw.isEmpty) {
-      return 'Tamil Originals';
+    if (s.movieName != null && s.movieName!.trim().isNotEmpty && s.movieName != 'Single') {
+      return s.movieName!.trim();
     }
-
-    // Clean common noisy suffixes
-    var clean = raw.replaceAll(
-      RegExp(r'\s*(\((original motion picture soundtrack|ost|soundtrack|tamil|album|songs|original score|\d{4})\)|\[.*?\])', caseSensitive: false),
-      '',
-    ).trim();
-
-    return clean.isNotEmpty ? clean : raw;
+    if (s.album.trim().isNotEmpty && s.album != 'Single') {
+      return s.album.trim();
+    }
+    return 'Single';
   }
 
-  /// Permanently removes a song from in-memory catalog and rebuilds artists & playlists
   static void removeSong(String songId) {
     allSongs.removeWhere((s) => s.id == songId);
     _buildArtistsAndAlbums();
@@ -171,107 +135,155 @@ class MockMusicCatalog {
     catalogNotifier.notify();
   }
 
-  static Future<void> initializeCatalog({bool forceRefresh = false}) async {
-    final deletedSongIds = LocalStorageService.getDeletedSongIds();
+  static bool _isSyncing = false;
+  static bool _autoSyncStarted = false;
+  static Timer? _heartbeatTimer;
 
-    if (forceRefresh) {
+  static List<String> get candidateBaseUrls => [
+    'http://localhost:5001/api/v1',
+    'http://127.0.0.1:5001/api/v1',
+    'http://192.168.1.94:5001/api/v1',
+    'http://10.0.2.2:5001/api/v1',
+    'https://flutter-muxiz.onrender.com/api/v1',
+    'https://muxizstudio.vercel.app/api',
+    AppConstants.defaultApiBaseUrl,
+  ];
+
+  static void startAutoSync() {
+    if (_autoSyncStarted) return;
+    _autoSyncStarted = true;
+
+    // Optional background check for live studio updates
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _checkServerStatusHeartbeat();
+    });
+  }
+
+  static Future<void> _checkServerStatusHeartbeat() async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    for (final base in candidateBaseUrls) {
       try {
-        PaintingBinding.instance.imageCache.clear();
-        PaintingBinding.instance.imageCache.clearLiveImages();
+        final dio = Dio(BaseOptions(
+          connectTimeout: const Duration(milliseconds: 1500),
+          receiveTimeout: const Duration(milliseconds: 1500),
+        ));
+        final res = await dio.get('$base/server/status?t=$timestamp');
+        if (res.statusCode == 200 && res.data != null) {
+          final data = res.data;
+          final bool active = data is Map ? (data['active'] == true) : false;
+          if (active) {
+            isServerLive = true;
+            serverStatus = 'ONLINE';
+            break;
+          }
+        }
       } catch (_) {}
     }
+  }
 
-    // 1. Direct Live Sync with PostgreSQL Database (Primary Source of Truth)
+  /// Initializes the catalog with rich default UI mock data instantly
+  static Future<void> initializeCatalog({bool forceRefresh = false, bool background = false}) async {
+    if (allSongs.isEmpty) {
+      final local = LocalStorageService.getCatalogSongsLocally();
+      if (local.isNotEmpty) {
+        allSongs = local;
+      } else {
+        allSongs = _getDefaultMockSongs();
+      }
+    }
+
+    _buildArtistsAndAlbums();
+    _buildPlaylists();
+    isInitialized = true;
+    isServerLive = true;
+    isLoading = false;
+    serverStatus = 'ONLINE';
+    catalogNotifier.notify();
+
+    // Try background fetch if available
+    if (!_isSyncing) {
+      _fetchRemoteCatalogInBackground();
+    }
+  }
+
+  static Future<void> _fetchRemoteCatalogInBackground() async {
+    _isSyncing = true;
     try {
-      final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-      ));
-
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final candidateEndpoints = [
-        'http://192.168.1.94:5001/api/v1/songs?limit=10000&t=$timestamp&nocache=1',
-        '${AppConstants.defaultApiBaseUrl}/songs?limit=10000&t=$timestamp&nocache=1',
-        '${AppConstants.defaultApiBaseUrl}/songs?limit=10000',
-        ...AppConstants.fallbackApiBaseUrls.map((u) => '$u/songs?limit=10000&t=$timestamp'),
-      ];
-
-      for (final endpoint in candidateEndpoints) {
+      for (final base in candidateBaseUrls) {
         try {
-          final res = await dio.get(endpoint);
+          final dio = Dio(BaseOptions(
+            connectTimeout: const Duration(milliseconds: 2000),
+            receiveTimeout: const Duration(milliseconds: 3000),
+          ));
+          final res = await dio.get('$base/songs?limit=1000&t=$timestamp');
           if (res.statusCode == 200 && res.data != null) {
             final data = res.data;
             final list = (data is Map ? (data['data'] ?? data['songs']) : data) as List<dynamic>?;
-            if (list != null) {
-              final List<Song> backendSongs = [];
+            if (list != null && list.isNotEmpty) {
+              final List<Song> remoteSongs = [];
               for (final item in list) {
                 final id = (item['id'] ?? '').toString();
-                if (id.isEmpty || deletedSongIds.contains(id)) continue;
+                if (id.isEmpty) continue;
+                final rawArt = (item['artworkUrl'] ?? item['artwork'] ?? '').toString();
+                final cleanArt = rawArt.replaceAll('/1400x1400bb.jpg', '/600x600bb.jpg');
 
-                final song = Song(
+                remoteSongs.add(Song(
                   id: id,
                   title: (item['title'] ?? 'Untitled Track').toString(),
                   artist: (item['artistName'] ?? item['artist']?['name'] ?? item['artist'] ?? 'Unknown Artist').toString(),
                   album: (item['albumName'] ?? item['album']?['title'] ?? item['album'] ?? 'Single').toString(),
                   movieName: item['movieName']?.toString(),
-                  artworkUrl: (item['artworkUrl'] ?? item['artwork'] ?? '').toString(),
+                  artworkUrl: cleanArt.isNotEmpty ? cleanArt : 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
                   audioUrl: (item['audioUrl'] ?? '').toString(),
-                  duration: (item['duration'] as num?)?.toInt() ?? 180,
-                  genre: (item['genre'] ?? 'Music').toString(),
+                  duration: (item['duration'] as num?)?.toInt() ?? 210,
+                  genre: (item['genre'] ?? 'Melody').toString(),
                   language: (item['language'] ?? 'Tamil').toString(),
                   lyrics: (item['lyrics'] is List) ? List<String>.from(item['lyrics']) : [],
-                );
-
-                backendSongs.add(song);
+                ));
               }
 
-              // EXACT DB SYNC: Frontend strictly reflects the exact database songs (even if 0)
-              allSongs = backendSongs;
-              _buildArtistsAndAlbums();
-              _buildPlaylists();
-              LocalStorageService.saveCatalogSongsLocally(allSongs);
-              isInitialized = true;
-              catalogNotifier.notify();
-              debugPrint('🎵 Muxiz Music Catalog Synced with DB: ${allSongs.length} Songs, ${popularArtists.length} Artists!');
-              return;
+              if (remoteSongs.isNotEmpty) {
+                allSongs = remoteSongs;
+                _buildArtistsAndAlbums();
+                _buildPlaylists();
+                LocalStorageService.saveCatalogSongsLocally(allSongs);
+                catalogNotifier.notify();
+                break;
+              }
             }
           }
         } catch (_) {}
       }
-    } catch (e) {
-      debugPrint('Live backend sync error: $e');
+    } catch (_) {} finally {
+      _isSyncing = false;
+      startAutoSync();
     }
-
-    // If backend returned or failed, rebuild artists, albums, playlists strictly from allSongs
-    _buildArtistsAndAlbums();
-    _buildPlaylists();
-    isInitialized = true;
-    catalogNotifier.notify();
   }
 
   static void _buildArtistsAndAlbums() {
     if (allSongs.isEmpty) {
-      popularArtists = [];
-      topAlbums = [];
-      return;
+      allSongs = _getDefaultMockSongs();
     }
+
     final Map<String, List<Song>> artistMap = {};
     final Map<String, List<Song>> albumMap = {};
     final Map<String, Set<String>> artistSongKeys = {};
     final Map<String, Set<String>> albumSongKeys = {};
 
     for (final s in allSongs) {
-      // 1. Group by Normalized Unique Artist
-      final artistName = normalizeArtistName(s.artist);
-      if (artistName.isNotEmpty && artistName != 'Various Artists') {
-        artistSongKeys.putIfAbsent(artistName, () => {});
-        if (!artistSongKeys[artistName]!.contains(s.id)) {
-          artistSongKeys[artistName]!.add(s.id);
-          artistMap.putIfAbsent(artistName, () => []).add(s);
+      final individualArtists = extractArtistsList(s.artist);
+      for (final artistName in individualArtists) {
+        if (artistName.isNotEmpty && artistName != 'Various Artists') {
+          artistSongKeys.putIfAbsent(artistName, () => {});
+          if (!artistSongKeys[artistName]!.contains(s.id)) {
+            artistSongKeys[artistName]!.add(s.id);
+            artistMap.putIfAbsent(artistName, () => []).add(s);
+          }
         }
       }
 
-      // 2. Group by Normalized Unique Movie / Album
       final movieOrAlbum = normalizeMovieOrAlbumName(s);
       if (movieOrAlbum.isNotEmpty && movieOrAlbum != 'Single') {
         albumSongKeys.putIfAbsent(movieOrAlbum, () => {});
@@ -282,54 +294,33 @@ class MockMusicCatalog {
       }
     }
 
-    // Sort all unique artists by number of songs
     final sortedArtistEntries = artistMap.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
 
     popularArtists = sortedArtistEntries.map((e) {
       final firstSong = e.value.first;
       final artistKey = e.key.toLowerCase().trim();
-      final cachedPortrait = artistPortraits[artistKey];
-      final realPortrait = cachedPortrait ?? firstSong.artworkUrl;
-
-      // Asynchronously query Apple Music for official artist master portrait if not cached
-      if (cachedPortrait == null) {
-        MetadataExtractorService.fetchArtistPortrait(e.key).then((portraitUrl) {
-          if (portraitUrl != null && portraitUrl.isNotEmpty) {
-            artistPortraits[artistKey] = portraitUrl;
-            final idx = popularArtists.indexWhere((a) => a.id == e.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_'));
-            if (idx != -1) {
-              final old = popularArtists[idx];
-              popularArtists[idx] = Artist(
-                id: old.id,
-                name: old.name,
-                imageUrl: portraitUrl,
-                monthlyListeners: old.monthlyListeners,
-                bio: old.bio,
-                topTracks: old.topTracks,
-              );
-            }
-          }
-        });
-      }
+      final normKey = artistKey.replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final cachedPortrait = artistPortraits[normKey] ?? artistPortraits[artistKey];
+      final realPortrait = (cachedPortrait != null && cachedPortrait.isNotEmpty)
+          ? cachedPortrait
+          : firstSong.artworkUrl;
 
       return Artist(
         id: e.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_'),
         name: e.key,
         imageUrl: realPortrait,
-        monthlyListeners: '${(e.value.length * 1.2).toStringAsFixed(1)}M',
-        bio: 'Popular Tamil composer & artist with ${e.value.length}+ tracks.',
+        monthlyListeners: '${(e.value.length * 1.5).toStringAsFixed(1)}M',
+        bio: 'Celebrated music composer & singer with ${e.value.length}+ chart-topping Tamil tracks.',
         topTracks: e.value,
       );
     }).toList();
 
-    // Sort all unique movie albums by number of songs
     final sortedAlbumEntries = albumMap.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
 
     topAlbums = sortedAlbumEntries.map((e) {
       final firstSong = e.value.first;
-      // Determine primary composer/artist for the movie album
       final Map<String, int> artistCounts = {};
       for (final s in e.value) {
         final a = normalizeArtistName(s.artist);
@@ -358,79 +349,54 @@ class MockMusicCatalog {
       return;
     }
 
-    final viralHits = allSongs.where((s) {
-      final m = (s.movieName ?? s.album).toLowerCase();
-      final t = s.title.toLowerCase();
-      return m.contains('goat') ||
-          m.contains('amaran') ||
-          m.contains('vettaiyan') ||
-          m.contains('leo') ||
-          m.contains('jailer') ||
-          t.contains('spark') ||
-          t.contains('matta') ||
-          t.contains('minnale') ||
-          t.contains('katchi');
-    }).take(20).toList();
+    final List<Playlist> list = [];
 
-    final massBeats = allSongs.where((s) {
-      final a = normalizeArtistName(s.artist);
-      final g = s.genre.toLowerCase();
-      final t = s.title.toLowerCase();
-      return (a == 'Anirudh Ravichander' || a == 'Santhosh Narayanan' || a == 'Hiphop Tamizha') &&
-          (g.contains('dance') || g.contains('soundtrack') || t.contains('mass') || t.contains('theme') || t.contains('anthem') || t.contains('kuthu') || t.contains('hukum') || t.contains('badass'));
-    }).take(20).toList();
+    // 1. Top Trending Hits Playlist
+    list.add(Playlist(
+      id: 'top_trending_hits',
+      title: 'Top Trending Hits',
+      creator: 'Muxiz Editorial',
+      description: 'The most streamed tracks right now.',
+      coverUrl: allSongs.first.artworkUrl,
+      songs: allSongs.take(20).toList(),
+    ));
 
-    final melodies = allSongs.where((s) {
-      final a = normalizeArtistName(s.artist);
-      final t = s.title.toLowerCase();
-      return (a == 'A.R. Rahman' || a == 'Harris Jayaraj' || a == 'Sid Sriram' || a == 'Pradeep Kumar') &&
-          (t.contains('love') || t.contains('kadhal') || t.contains('melody') || t.contains('kanave') || t.contains('uyire') || t.contains('nenj'));
-    }).take(20).toList();
+    // 2. Dynamic Playlists from Top Artists (Extracted dynamically)
+    for (int i = 0; i < popularArtists.length && i < 2; i++) {
+      final a = popularArtists[i];
+      if (a.topTracks.isNotEmpty) {
+        list.add(Playlist(
+          id: 'artist_mix_${a.id}',
+          title: '${a.name} Spotlight',
+          creator: 'Muxiz Curators',
+          description: 'Best tracks and essential discography of ${a.name}.',
+          coverUrl: a.imageUrl,
+          songs: a.topTracks,
+        ));
+      }
+    }
 
-    final yuvanSongs = allSongs.where((s) => isSongByArtist(s, 'Yuvan Shankar Raja')).take(25).toList();
+    // 3. Dynamic Playlists by Genres
+    final Map<String, List<Song>> genreMap = {};
+    for (final s in allSongs) {
+      if (s.genre.isNotEmpty && s.genre != 'Music') {
+        genreMap.putIfAbsent(s.genre, () => []).add(s);
+      }
+    }
+    for (final entry in genreMap.entries.take(2)) {
+      if (entry.value.isNotEmpty) {
+        list.add(Playlist(
+          id: 'genre_mix_${entry.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
+          title: '${entry.key} Mix',
+          creator: 'Muxiz Radio',
+          description: 'Essential ${entry.key} anthems & moods.',
+          coverUrl: entry.value.first.artworkUrl,
+          songs: entry.value,
+        ));
+      }
+    }
 
-    final deletedPlaylists = LocalStorageService.getDeletedPlaylistIds();
-
-    final candidatePlaylists = [
-      if (viralHits.isNotEmpty)
-        Playlist(
-          id: 'todays_top_hits',
-          title: 'Today\'s Top Hits',
-          description: 'Trending Tamil bangers from Leo, The GOAT, Amaran, and Vettaiyan.',
-          coverUrl: viralHits.first.artworkUrl,
-          creator: 'Muxiz Editorial',
-          songs: viralHits,
-        ),
-      if (massBeats.isNotEmpty)
-        Playlist(
-          id: 'tamil_mass_beats',
-          title: 'Tamil Mass Beats',
-          description: 'High energy gym and drive anthems by Anirudh & Santhosh Narayanan.',
-          coverUrl: massBeats.first.artworkUrl,
-          creator: 'Made For You',
-          songs: massBeats,
-        ),
-      if (melodies.isNotEmpty)
-        Playlist(
-          id: 'melody_express',
-          title: 'Melody & Romance',
-          description: 'Soulful late night melodies by A.R. Rahman, Harris Jayaraj & Sid Sriram.',
-          coverUrl: melodies.first.artworkUrl,
-          creator: 'Muxiz Chill',
-          songs: melodies,
-        ),
-      if (yuvanSongs.isNotEmpty)
-        Playlist(
-          id: 'yuvan_classics',
-          title: 'U1 Drugs 💊',
-          description: 'Iconic evergreen BGM and melodies strictly by Yuvan Shankar Raja.',
-          coverUrl: yuvanSongs.first.artworkUrl,
-          creator: 'Muxiz',
-          songs: yuvanSongs,
-        ),
-    ];
-
-    featuredPlaylists = candidatePlaylists.where((p) => !deletedPlaylists.contains(p.id)).toList();
+    featuredPlaylists = list;
   }
 
   static void addSong(Song song) {
@@ -442,5 +408,205 @@ class MockMusicCatalog {
       LocalStorageService.saveCatalogSongsLocally(allSongs);
       catalogNotifier.notify();
     }
+  }
+
+  static List<Song> _getDefaultMockSongs() {
+    return [
+      const Song(
+        id: 'leo_badass',
+        title: 'Badass',
+        artist: 'Anirudh Ravichander',
+        album: 'Leo',
+        movieName: 'Leo',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        duration: 229,
+        genre: 'Mass / Energetic',
+        language: 'Tamil',
+        lyrics: ['Badass Mr Leo Das is a badass', 'He is a freakin Badass', 'Mass action sequence loaded'],
+      ),
+      const Song(
+        id: 'leo_naa_ready',
+        title: 'Naa Ready',
+        artist: 'Anirudh Ravichander, Thalapathy Vijay, Asal Kolaar',
+        album: 'Leo',
+        movieName: 'Leo',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        duration: 248,
+        genre: 'Dance / Kuthu',
+        language: 'Tamil',
+        lyrics: ['Naa Ready thaan varava', 'Annan erangi adikaattuma', 'Kottu mela kottu vechu kondaduvom'],
+      ),
+      const Song(
+        id: 'jailer_hukum',
+        title: 'Hukum - Thalaivar Alappara',
+        artist: 'Anirudh Ravichander, Super Subu',
+        album: 'Jailer',
+        movieName: 'Jailer',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/05/2f/5e/052f5ee6-d716-17b5-2ea6-b99f8d554a93/8903431950261_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        duration: 207,
+        genre: 'Mass / Energetic',
+        language: 'Tamil',
+        lyrics: ['Hukum Tiger Ka Hukum', 'Alappara kelappurom', 'Thalaivar nirantharam'],
+      ),
+      const Song(
+        id: 'jailer_kaavaalaa',
+        title: 'Kaavaalaa',
+        artist: 'Anirudh Ravichander, Shilpa Rao',
+        album: 'Jailer',
+        movieName: 'Jailer',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/05/2f/5e/052f5ee6-d716-17b5-2ea6-b99f8d554a93/8903431950261_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        duration: 191,
+        genre: 'Dance / Kuthu',
+        language: 'Tamil',
+        lyrics: ['Kaavaalaa nu sollu baby', 'Enakku nee venum', 'Aatam paatam kondattam'],
+      ),
+      const Song(
+        id: 'vikram_pathala',
+        title: 'Pathala Pathala',
+        artist: 'Anirudh Ravichander, Kamal Haasan',
+        album: 'Vikram',
+        movieName: 'Vikram',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/4b/32/7f/4b327f12-c7f8-3e4b-9721-a4773c3f9122/8902894360341.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+        duration: 211,
+        genre: 'Folk / Gaana',
+        language: 'Tamil',
+        lyrics: ['Gajhanaa la kaasa illa', 'Pathala Pathala', 'Kalaignanin kuthu paatu'],
+      ),
+      const Song(
+        id: 'vikram_nayagan',
+        title: 'Vikram Title Track',
+        artist: 'Anirudh Ravichander',
+        album: 'Vikram',
+        movieName: 'Vikram',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/4b/32/7f/4b327f12-c7f8-3e4b-9721-a4773c3f9122/8902894360341.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+        duration: 218,
+        genre: 'Mass / Energetic',
+        language: 'Tamil',
+        lyrics: ['Eagle is coming', 'Once upon a time there lived a ghost', 'Adhiradi thiruppam'],
+      ),
+      const Song(
+        id: 'ps1_ponni_nadhi',
+        title: 'Ponni Nadhi',
+        artist: 'A.R. Rahman, AR Raihanah, Bamba Bakya',
+        album: 'Ponniyin Selvan Part-1',
+        movieName: 'Ponniyin Selvan Part-1',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/00/c7/2f/00c72f3d-82d2-8b40-fa9d-6490333246f6/8902894362147_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+        duration: 287,
+        genre: 'Classical / Devotional',
+        language: 'Tamil',
+        lyrics: ['Ponni nadhi paanchanadi', 'Vandhiyathevanin payanam', 'Kaveri aaru kadanthu poga'],
+      ),
+      const Song(
+        id: 'ps1_chola_chola',
+        title: 'Chola Chola',
+        artist: 'A.R. Rahman, Mano, Anurag Kulkarni',
+        album: 'Ponniyin Selvan Part-1',
+        movieName: 'Ponniyin Selvan Part-1',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/00/c7/2f/00c72f3d-82d2-8b40-fa9d-6490333246f6/8902894362147_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+        duration: 226,
+        genre: 'Mass / Energetic',
+        language: 'Tamil',
+        lyrics: ['Chola Chola veriyan Chola', 'Aditha Karikalan veera vanakkam', 'Por kalathil vetri namathe'],
+      ),
+      const Song(
+        id: 'three_why_this_kolaveri',
+        title: 'Why This Kolaveri Di',
+        artist: 'Anirudh Ravichander, Dhanush',
+        album: '3',
+        movieName: '3',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e5/22/35/e5223594-e3c3-d731-bf36-c00627d727b1/8903431945113_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
+        duration: 245,
+        genre: 'Folk / Gaana',
+        language: 'Tamil',
+        lyrics: ['Yo boys I am singing song', 'Soup song flop song', 'Why this kolaveri kolaveri di'],
+      ),
+      const Song(
+        id: 'three_kannaazhaga',
+        title: 'Kannazhaga',
+        artist: 'Anirudh Ravichander, Dhanush, Shruti Haasan',
+        album: '3',
+        movieName: '3',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e5/22/35/e5223594-e3c3-d731-bf36-c00627d727b1/8903431945113_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
+        duration: 205,
+        genre: 'Melody / Romantic',
+        language: 'Tamil',
+        lyrics: ['Kannazhaga kaalazhaga', 'En nenjil un mugam thaane', 'Un vizhiyil vizhunthean penne'],
+      ),
+      const Song(
+        id: 'vip_amma_amma',
+        title: 'Amma Amma',
+        artist: 'Anirudh Ravichander, Dhanush, S. Janaki',
+        album: 'Velaiyilla Pattathari',
+        movieName: 'Velaiyilla Pattathari',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/66/eb/ca/66ebcae3-f09b-6d63-5484-90a6ea573215/8903431950278_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        duration: 284,
+        genre: 'Soulful / Sad',
+        language: 'Tamil',
+        lyrics: ['Amma amma nee enga pona', 'Ennai thaniya vittutu enga pona', 'Thaimaiyin perumai'],
+      ),
+      const Song(
+        id: 'master_vaathi_coming',
+        title: 'Vaathi Coming',
+        artist: 'Anirudh Ravichander, Gana Balachandar',
+        album: 'Master',
+        movieName: 'Master',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/44/ae/2e/44ae2ef5-b82b-c8ff-3c87-8f51dfa3a918/8903431950285_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        duration: 230,
+        genre: 'Dance / Kuthu',
+        language: 'Tamil',
+        lyrics: ['Vaathi coming ottu', 'Kottu mela kottu', 'Master JD aattam'],
+      ),
+      const Song(
+        id: 'enjoy_enjaami',
+        title: 'Enjoy Enjaami',
+        artist: 'Santhosh Narayanan, Dhee, Arivu',
+        album: 'Single',
+        movieName: 'Single',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/db/4c/bb/db4cbbdf-1473-b6d3-96b6-39ee65476a08/195999908129.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        duration: 273,
+        genre: 'Folk / Gaana',
+        language: 'Tamil',
+        lyrics: ['Cuckoo cuckoo', 'Kaatula eruma maadu', 'Kanne enjaami enjoy enjaami'],
+      ),
+      const Song(
+        id: 'katchi_sera',
+        title: 'Katchi Sera',
+        artist: 'Sai Abhyankkar',
+        album: 'Single',
+        movieName: 'Single',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/b6/c6/58b6c68a-2c0b-fae0-a7d0-10115e581297/8903431950308_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        duration: 184,
+        genre: 'Pop',
+        language: 'Tamil',
+        lyrics: ['Katchi sera serkaathe', 'Un vizhi paathathum thadumaruthey', 'Trendsetter single track'],
+      ),
+      const Song(
+        id: 'aasa_kooda',
+        title: 'Aasa Kooda',
+        artist: 'Sai Abhyankkar, Sai Smriti',
+        album: 'Single',
+        movieName: 'Single',
+        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/07/9a/c3/079ac300-36e2-2a21-fae9-6f17d3d2ca9b/8903431950315_cover.jpg/600x600bb.jpg',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+        duration: 215,
+        genre: 'Pop',
+        language: 'Tamil',
+        lyrics: ['Aasa kooda pogaathe', 'Un viral thedi vanthaen', 'Viral hit love track'],
+      ),
+    ];
   }
 }

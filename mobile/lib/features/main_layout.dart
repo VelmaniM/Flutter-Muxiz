@@ -5,7 +5,6 @@ import '../shared/components/mini_player.dart';
 import 'home/presentation/home_screen.dart';
 import 'search/presentation/search_screen.dart';
 import 'library/presentation/library_screen.dart';
-import 'upload/presentation/upload_screen.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
@@ -16,7 +15,6 @@ class MainLayout extends ConsumerWidget {
     HomeScreen(),
     SearchScreen(),
     LibraryScreen(),
-    UploadScreen(),
   ];
 
   @override

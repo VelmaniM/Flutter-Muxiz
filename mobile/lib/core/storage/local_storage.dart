@@ -436,17 +436,24 @@ class LocalStorageService {
     } catch (_) {}
   }
 
-  // --- Recently Played ---
+  // --- Recently Played (Strictly hydrated from live DB catalog) ---
   static List<Song> getRecentlyPlayed() {
     final raw = _prefs?.getString(AppConstants.keyRecentlyPlayed);
     if (raw == null || raw.isEmpty) return [];
     try {
       final List<dynamic> list = jsonDecode(raw);
       final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
-      return list
-          .map((item) => Song.fromJson(item as Map<String, dynamic>))
-          .where((s) => activeIds.contains(s.id))
-          .toList();
+      final List<Song> result = [];
+      for (final item in list) {
+        final id = (item is Map ? item['id'] : null)?.toString();
+        if (id != null && activeIds.contains(id)) {
+          final live = MockMusicCatalog.allSongs.where((s) => s.id == id).firstOrNull;
+          if (live != null) {
+            result.add(live);
+          }
+        }
+      }
+      return result;
     } catch (_) {
       return [];
     }
@@ -499,7 +506,7 @@ class LocalStorageService {
     } catch (_) {}
   }
 
-  // --- Custom Playlists ---
+  // --- Custom Playlists (Strictly hydrated from live DB catalog) ---
   static List<Playlist> getCustomPlaylists() {
     final raw = _prefs?.getString(AppConstants.keyCustomPlaylists);
     if (raw == null || raw.isEmpty) return [];
@@ -507,7 +514,17 @@ class LocalStorageService {
       final deleted = getDeletedPlaylistIds();
       final List<dynamic> list = jsonDecode(raw);
       return list
-          .map((item) => Playlist.fromJson(item as Map<String, dynamic>))
+          .map((item) {
+            final p = Playlist.fromJson(item as Map<String, dynamic>);
+            final rehydratedSongs = p.songs.map((s) {
+              final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
+              return live ?? s;
+            }).toList();
+            return p.copyWith(
+              songs: rehydratedSongs,
+              coverUrl: rehydratedSongs.isNotEmpty ? rehydratedSongs.first.artworkUrl : p.coverUrl,
+            );
+          })
           .where((p) => !deleted.contains(p.id))
           .toList();
     } catch (_) {
@@ -579,13 +596,17 @@ class LocalStorageService {
     } catch (_) {}
   }
 
-  // --- Downloaded Songs ---
+  // --- Downloaded Songs (Strictly hydrated from live DB catalog) ---
   static List<Song> getDownloadedSongs() {
     final raw = _prefs?.getString(AppConstants.keyDownloads);
     if (raw == null || raw.isEmpty) return [];
     try {
       final List<dynamic> list = jsonDecode(raw);
-      return list.map((item) => Song.fromJson(item as Map<String, dynamic>)).toList();
+      return list.map((item) {
+        final s = Song.fromJson(item as Map<String, dynamic>);
+        final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
+        return (live ?? s).copyWith(isDownloaded: true);
+      }).toList();
     } catch (_) {
       return [];
     }
@@ -683,19 +704,17 @@ class LocalStorageService {
       Song? song;
       if (songRaw != null && songRaw.isNotEmpty) {
         final parsed = Song.fromJson(jsonDecode(songRaw));
-        if (MockMusicCatalog.allSongs.any((s) => s.id == parsed.id)) {
-          song = parsed;
-        }
+        song = MockMusicCatalog.allSongs.where((s) => s.id == parsed.id).firstOrNull ?? parsed;
       }
 
       List<Song> queue = [];
-      if (queueRaw != null && queueRaw.isNotEmpty && song != null) {
+      if (queueRaw != null && queueRaw.isNotEmpty) {
         final List<dynamic> qList = jsonDecode(queueRaw);
-        final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
-        queue = qList
-            .map((item) => Song.fromJson(item as Map<String, dynamic>))
-            .where((s) => activeIds.contains(s.id))
-            .toList();
+        for (final item in qList) {
+          final s = Song.fromJson(item as Map<String, dynamic>);
+          final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
+          queue.add(live ?? s);
+        }
       }
 
       return (
@@ -794,6 +813,9 @@ class LocalStorageService {
   }
 
   static List<Song> getCatalogSongsLocally() {
+    if (MockMusicCatalog.allSongs.isNotEmpty) {
+      return MockMusicCatalog.allSongs;
+    }
     try {
       final raw = _prefs?.getString(keyPersistentCatalog);
       if (raw == null || raw.isEmpty) return [];

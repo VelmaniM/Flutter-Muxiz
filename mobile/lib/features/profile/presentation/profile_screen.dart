@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -118,6 +119,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
 
     try {
+      try {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final permanentFile = File('${docsDir.path}/user_profile_avatar.png');
+        if (await permanentFile.exists()) {
+          await permanentFile.delete();
+        }
+      } catch (_) {}
+
       await ref.read(userAvatarProvider.notifier).setAvatar(null);
 
       // Async backend remove
@@ -184,6 +193,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _isUploadingAvatar = true;
       });
 
+      // 1. Permanently copy to Application Documents Directory so it survives app restarts
+      final docsDir = await getApplicationDocumentsDirectory();
+      final permanentFile = File('${docsDir.path}/user_profile_avatar.png');
+      await croppedFile.copy(permanentFile.path);
+
       final dio = Dio(BaseOptions(
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 25),
@@ -191,7 +205,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
-          croppedFile.path,
+          permanentFile.path,
           filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.png',
         ),
         'userId': LocalStorageService.getUserId(),
@@ -215,8 +229,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         } catch (_) {}
       }
 
-      // Fallback: If cloud offline, save cropped local image file path as avatar
-      uploadedUrl ??= croppedFile.path;
+      // If cloud upload returned URL, save URL; otherwise save permanent local path
+      uploadedUrl ??= permanentFile.path;
 
       await ref.read(userAvatarProvider.notifier).setAvatar(uploadedUrl);
 
@@ -500,7 +514,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final avatarUrl = ref.watch(userAvatarProvider);
     final displayName = ref.watch(userNameProvider);
-    final playlists = MockMusicCatalog.featuredPlaylists;
+    final playlists = ref.watch(customPlaylistsProvider);
     final artists = MockMusicCatalog.popularArtists;
 
     return Scaffold(

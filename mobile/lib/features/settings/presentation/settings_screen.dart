@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
+import '../../../core/storage/local_storage.dart';
+import '../../../shared/components/user_avatar_button.dart';
+import '../../profile/presentation/profile_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _offlineMode = false;
   bool _gaplessPlayback = true;
   bool _automix = true;
@@ -17,6 +21,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userName = ref.watch(userNameProvider);
+    final displayName = userName.isNotEmpty ? userName : 'Velmani Kandan';
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -30,18 +37,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          // Account Tile
+          // Account Tile with live UserAvatarButton
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: const CircleAvatar(
-              radius: 26,
-              backgroundColor: AppTheme.card,
-              child: Icon(Icons.person, color: Colors.white, size: 28),
-            ),
-            title: const Text('Velmani Kandan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            leading: const UserAvatarButton(size: 48),
+            title: Text(displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             subtitle: const Text('View Profile • Premium Individual', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
             trailing: const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const ProfileScreen()),
+              );
+            },
           ),
           const Divider(color: AppTheme.divider, height: 1),
 

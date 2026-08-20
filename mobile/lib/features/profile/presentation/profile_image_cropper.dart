@@ -66,8 +66,8 @@ class _ProfileImageCropperDialogState extends State<ProfileImageCropperDialog> {
         return;
       }
 
-      final tempDir = await getTemporaryDirectory();
-      final targetFile = File('${tempDir.path}/cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png');
+      final docsDir = await getApplicationDocumentsDirectory();
+      final targetFile = File('${docsDir.path}/user_profile_avatar.png');
       await targetFile.writeAsBytes(byteData.buffer.asUint8List());
 
       if (mounted) {

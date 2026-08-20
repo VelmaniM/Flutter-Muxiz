@@ -33,7 +33,6 @@ class GlassBottomBar extends StatelessWidget {
           _buildNavItem(0, Icons.home_filled, Icons.home_outlined, 'Home'),
           _buildNavItem(1, Icons.search_rounded, Icons.search_rounded, 'Search'),
           _buildNavItem(2, Icons.library_music_rounded, Icons.library_music_outlined, 'Your Library'),
-          _buildNavItem(3, Icons.add_circle_rounded, Icons.add_circle_outline_rounded, 'Upload'),
         ],
       ),
     );

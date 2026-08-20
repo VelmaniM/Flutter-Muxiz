@@ -156,11 +156,12 @@ class RecommendationService {
 
   /// Generates the dynamic algorithmic Home Feed with Gemini AI trend analysis
   Future<HomeFeedData> generateHomeFeed({Song? currentSong}) async {
-    // 1. Fetch latest songs from PostgreSQL DB (paginated 100 tracks)
+    // 1. Fetch latest songs from PostgreSQL DB (live sync)
     try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final candidateEndpoints = [
-        '${AppConstants.defaultApiBaseUrl}/songs?limit=100',
-        ...AppConstants.fallbackApiBaseUrls.map((u) => '$u/songs?limit=100'),
+        '${AppConstants.defaultApiBaseUrl}/songs?limit=10000&nocache=1&t=$timestamp',
+        ...AppConstants.fallbackApiBaseUrls.map((u) => '$u/songs?limit=10000&nocache=1&t=$timestamp'),
       ];
 
       for (final endpoint in candidateEndpoints) {
@@ -332,112 +333,40 @@ class RecommendationService {
       return bTrendWeight.compareTo(aTrendWeight);
     });
 
-    final massAnthems = allSongs.where((s) {
-      final t = s.title.toLowerCase();
-      final m = (s.movieName ?? s.album).toLowerCase();
-      final g = s.genre.toLowerCase();
-      return g.contains('dance') ||
-          g.contains('hip-hop') ||
-          t.contains('matta') ||
-          t.contains('spark') ||
-          t.contains('hukum') ||
-          t.contains('badass') ||
-          t.contains('naa ready') ||
-          t.contains('jalabulajangu') ||
-          t.contains('arabic kuthu') ||
-          t.contains('aaluma') ||
-          t.contains('marana') ||
-          t.contains('whistle') ||
-          t.contains('mass') ||
-          t.contains('anthem') ||
-          t.contains('theme') ||
-          m.contains('goat') ||
-          m.contains('leo') ||
-          m.contains('jailer') ||
-          m.contains('vettaiyan');
-    }).take(20).toList();
-
-    final chillMelodies = allSongs.where((s) {
-      final t = s.title.toLowerCase();
-      final a = s.artist.toLowerCase();
-      return t.contains('love') ||
-          t.contains('kadhal') ||
-          t.contains('melody') ||
-          t.contains('kanave') ||
-          t.contains('uyire') ||
-          t.contains('minnale') ||
-          t.contains('nenj') ||
-          t.contains('poo') ||
-          t.contains('kadhale') ||
-          a.contains('sid sriram') ||
-          a.contains('pradeep kumar') ||
-          a.contains('shreya ghoshal') ||
-          a.contains('chinmayi') ||
-          a.contains('haricharan') ||
-          a.contains('shweta mohan');
-    }).take(20).toList();
-
-    final viralHits = trendingSongs.where((s) {
-      final t = s.title.toLowerCase();
-      final m = (s.movieName ?? s.album).toLowerCase();
-      return m.contains('goat') ||
-          m.contains('amaran') ||
-          m.contains('vettaiyan') ||
-          m.contains('leo') ||
-          t.contains('katchi sera') ||
-          t.contains('minnale') ||
-          t.contains('spark') ||
-          t.contains('matta');
-    }).take(15).toList();
-
-    // Curated Trending Playlists (Strictly matching titles)
-    final trendingTamilPlaylists = [
-      if (trendingSongs.isNotEmpty)
-        Playlist(
-          id: 'trending_tamil_top_50',
-          title: 'Trending Tamil Top 50',
-          description: 'The hottest Tamil tracks trending today across India & global charts.',
-          coverUrl: trendingSongs.first.artworkUrl,
-          creator: 'Spotify',
-          songs: trendingSongs.take(20).toList(),
-        ),
-      if (trendingSongs.length > 3)
-        Playlist(
-          id: 'hot_hits_tamil',
-          title: 'Hot Hits Tamil',
-          description: 'Catch the biggest viral blockbusters and fresh drops in Tamil cinema.',
-          coverUrl: trendingSongs[1].artworkUrl,
-          creator: 'Spotify',
-          songs: trendingSongs.skip(3).take(15).toList(),
-        ),
-      if (massAnthems.isNotEmpty)
-        Playlist(
-          id: 'kollywood_mass_anthems',
-          title: 'Kollywood Mass Anthems',
-          description: 'High-octane theater celebration songs from Leo, GOAT, Jailer & Vettaiyan.',
-          coverUrl: massAnthems.first.artworkUrl,
-          creator: 'Spotify',
-          songs: massAnthems,
-        ),
-      if (viralHits.isNotEmpty)
-        Playlist(
-          id: 'tamil_viral_hits',
-          title: 'Tamil Viral Hits',
-          description: 'The most viral tracks dominating streaming & social feeds.',
-          coverUrl: viralHits.first.artworkUrl,
-          creator: 'Spotify',
-          songs: viralHits,
-        ),
-      if (chillMelodies.isNotEmpty)
-        Playlist(
-          id: 'tamil_acoustic_chill',
-          title: 'Tamil Chill & Melodies',
-          description: 'Soulful acoustic vocals and evergreen soothing melodies.',
-          coverUrl: chillMelodies.first.artworkUrl,
-          creator: 'Spotify',
-          songs: chillMelodies,
-        ),
-    ];
+    // Curated Dynamic Playlists built strictly from real DB songs
+    final List<Playlist> trendingTamilPlaylists = [];
+    if (trendingSongs.isNotEmpty) {
+      trendingTamilPlaylists.add(Playlist(
+        id: 'muxiz_top_hits',
+        title: 'Top Hits',
+        description: 'Most popular tracks from your cloud database.',
+        coverUrl: trendingSongs.first.artworkUrl,
+        creator: 'Muxiz Editorial',
+        songs: trendingSongs.take(20).toList(),
+      ));
+    }
+    if (trendingSongs.length > 3) {
+      trendingTamilPlaylists.add(Playlist(
+        id: 'fresh_drops',
+        title: 'Fresh Drops',
+        description: 'Latest additions in your music database.',
+        coverUrl: trendingSongs[1].artworkUrl,
+        creator: 'Muxiz Database',
+        songs: trendingSongs.skip(2).take(15).toList(),
+      ));
+    }
+    for (final artist in MockMusicCatalog.popularArtists.take(3)) {
+      if (artist.topTracks.isNotEmpty) {
+        trendingTamilPlaylists.add(Playlist(
+          id: 'artist_mix_${artist.id}',
+          title: '${artist.name} Radio',
+          description: 'Tracks strictly by ${artist.name}.',
+          coverUrl: artist.imageUrl,
+          creator: 'Muxiz AI',
+          songs: artist.topTracks,
+        ));
+      }
+    }
 
     // 4. Dynamic Section: "Made For You" (Strictly ONLY songs by each specific artist)
     final mix1Songs = _getArtistMixTracks(allSongs, top1);
@@ -542,104 +471,76 @@ class RecommendationService {
       ];
     } else if (hour >= 12 && hour < 17) {
       timeSectionTitle = 'Afternoon Beats';
-      final partyHits = massAnthems.take(15).toList();
-      final driveHits = allSongs.where((s) {
-        final t = s.title.toLowerCase();
-        final a = s.artist.toLowerCase();
-        return a.contains('anirudh') ||
-            a.contains('harris') ||
-            a.contains('yuvan') ||
-            t.contains('ride') ||
-            t.contains('drive') ||
-            t.contains('beat') ||
-            t.contains('theme');
-      }).take(15).toList();
+      final partyHits = allSongs.take(15).toList();
+      final driveHits = allSongs.skip(2).take(15).toList();
 
       timePlaylists = [
         if (partyHits.isNotEmpty)
           Playlist(
             id: 'afternoon_flow',
-            title: 'Afternoon High Energy',
-            description: 'Mass beats and high-octane chartbusters.',
+            title: 'Afternoon Flow',
+            description: 'High energy tracks from your database.',
             coverUrl: partyHits.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: partyHits,
           ),
         if (driveHits.isNotEmpty)
           Playlist(
             id: 'kollywood_drive',
-            title: 'Kollywood Drive Beats',
+            title: 'Drive Beats',
             description: 'The ultimate driving soundtrack for your afternoon.',
             coverUrl: driveHits.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: driveHits,
           ),
       ];
     } else if (hour >= 17 && hour < 22) {
       timeSectionTitle = 'Evening Melodies';
-      final eveningUnwind = allSongs.where((s) {
-        final a = MockMusicCatalog.normalizeArtistName(s.artist);
-        return a == 'A.R. Rahman' || a == 'Harris Jayaraj' || a == 'Yuvan Shankar Raja';
-      }).take(15).toList();
-
-      final sunsetMelodies = chillMelodies.take(15).toList();
+      final eveningUnwind = allSongs.take(15).toList();
+      final sunsetMelodies = allSongs.skip(3).take(15).toList();
 
       timePlaylists = [
         if (eveningUnwind.isNotEmpty)
           Playlist(
             id: 'evening_unwind',
             title: 'Evening Unwind',
-            description: 'Relax and groove with iconic melodies & timeless hits.',
+            description: 'Relax and groove with iconic melodies from your vault.',
             coverUrl: eveningUnwind.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: eveningUnwind,
           ),
         if (sunsetMelodies.isNotEmpty)
           Playlist(
             id: 'sunset_melodies',
             title: 'Sunset Melodies',
-            description: 'Golden hour love songs and acoustic harmonies.',
+            description: 'Golden hour melodies and acoustic harmonies.',
             coverUrl: sunsetMelodies.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: sunsetMelodies,
           ),
       ];
     } else {
       timeSectionTitle = 'Late Night Chill';
-      final lateNightMelodies = allSongs.where((s) {
-        final t = s.title.toLowerCase();
-        final a = s.artist.toLowerCase();
-        return t.contains('melody') ||
-            t.contains('love') ||
-            t.contains('nenj') ||
-            t.contains('uyire') ||
-            a.contains('pradeep kumar') ||
-            a.contains('shreya ghoshal') ||
-            a.contains('sid sriram');
-      }).take(15).toList();
-
-      final midnightNostalgia = allSongs.where((s) {
-        final a = MockMusicCatalog.normalizeArtistName(s.artist);
-        return a == 'Yuvan Shankar Raja' || a == 'A.R. Rahman' || a == 'Ilaiyaraaja';
-      }).take(15).toList();
+      final lateNightMelodies = allSongs.take(15).toList();
+      final midnightNostalgia = allSongs.skip(2).take(15).toList();
 
       timePlaylists = [
         if (lateNightMelodies.isNotEmpty)
           Playlist(
             id: 'late_night_chill',
             title: 'Late Night Chill',
-            description: 'Soft strings, soul vocals & soothing midnight vibes.',
+            description: 'Soft soul vocals & soothing midnight vibes from your vault.',
             coverUrl: lateNightMelodies.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: lateNightMelodies,
           ),
         if (midnightNostalgia.isNotEmpty)
           Playlist(
             id: 'midnight_nostalgia',
             title: 'Midnight Nostalgia',
-            description: 'Classic evergreen night melodies by Yuvan & Rahman.',
+            description: 'Evergreen night tracks from your library.',
             coverUrl: midnightNostalgia.first.artworkUrl,
-            creator: 'Spotify',
+            creator: 'Muxiz',
             songs: midnightNostalgia,
           ),
       ];

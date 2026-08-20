@@ -351,7 +351,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
 
-            // Results or Browse All
+            // Results or Browse All Categories
             Expanded(
               child: RefreshIndicator(
                 color: AppTheme.primaryGreen,
@@ -363,7 +363,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
-                  if (_query.isNotEmpty) ...[
+                    if (_query.isNotEmpty) ...[
                     // Top Artists Matches
                     if (_matchedArtists.isNotEmpty) ...[
                       const SliverToBoxAdapter(

@@ -293,7 +293,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Scrollable Content Area
+            // Content Area: Live Feed & Full Design UI
             Expanded(
               child: RefreshIndicator(
                 color: AppTheme.primaryGreen,
@@ -305,58 +305,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
-                    if (songs.isEmpty) ...[
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.cardLight,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white10, width: 1.5),
-                                  ),
-                                  child: const Icon(
-                                    Icons.music_note_rounded,
-                                    size: 40,
-                                    color: AppTheme.primaryGreen,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                const Text(
-                                  'Your Music Library is Fresh',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.3,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Upload tracks from your phone to start streaming with Apple Music artwork and Google Drive storage.',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 14,
-                                    height: 1.4,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ]
                     // VIEW 1: MUSIC FILTER ACTIVE -> Show full library of sorted songs
-                    else if (isMusicOnly) ...[
+                    if (isMusicOnly) ...[
                       SliverPadding(
                         padding: const EdgeInsets.only(top: 8.0, bottom: 140.0),
                         sliver: SliverList(

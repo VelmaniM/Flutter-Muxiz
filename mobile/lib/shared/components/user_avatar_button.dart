@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -12,11 +13,55 @@ class UserAvatarButton extends ConsumerWidget {
     this.size = 36.0,
   });
 
+  Widget _buildInitialFallback(String initial) {
+    return Container(
+      color: const Color(0xFF1E1E1E),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.44,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final avatarUrl = ref.watch(userAvatarProvider);
     final userName = ref.watch(userNameProvider);
     final initial = (userName.isNotEmpty ? userName[0] : 'V').toUpperCase();
+
+    Widget imageContent;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      if (avatarUrl.startsWith('http')) {
+        imageContent = CachedNetworkImage(
+          imageUrl: avatarUrl,
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          memCacheWidth: (size * 2).toInt(),
+          memCacheHeight: (size * 2).toInt(),
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          placeholder: (context, url) => _buildInitialFallback(initial),
+          errorWidget: (context, url, error) => _buildInitialFallback(initial),
+        );
+      } else {
+        imageContent = Image.file(
+          File(avatarUrl),
+          fit: BoxFit.cover,
+          width: size,
+          height: size,
+          errorBuilder: (context, error, stackTrace) => _buildInitialFallback(initial),
+        );
+      }
+    } else {
+      imageContent = _buildInitialFallback(initial);
+    }
 
     return GestureDetector(
       onTap: () {
@@ -30,43 +75,14 @@ class UserAvatarButton extends ConsumerWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black,
+          color: const Color(0xFF1E1E1E),
           border: Border.all(color: Colors.white24, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
-        child: avatarUrl != null && avatarUrl.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: avatarUrl,
-                fit: BoxFit.cover,
-                width: size,
-                height: size,
-                placeholder: (context, url) => Container(
-                  color: Colors.black,
-                  child: Center(
-                    child: Text(
-                      initial,
-                      style: TextStyle(color: Colors.white, fontSize: size * 0.45, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.black,
-                  child: Center(
-                    child: Text(
-                      initial,
-                      style: TextStyle(color: Colors.white, fontSize: size * 0.45, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              )
-            : Center(
-                child: Text(
-                  initial,
-                  style: TextStyle(color: Colors.white, fontSize: size * 0.48, fontWeight: FontWeight.bold),
-                ),
-              ),
+        child: imageContent,
       ),
     );
   }
 }
+
 

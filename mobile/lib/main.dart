@@ -42,9 +42,16 @@ void main() async {
     );
   } catch (_) {}
 
-  // Initialize local storage safely
+  // Initialize local storage safely and load cached catalog in 0ms
   try {
     await LocalStorageService.init();
+    final cached = LocalStorageService.getCatalogSongsLocally();
+    if (cached.isNotEmpty) {
+      MockMusicCatalog.allSongs = cached;
+      MockMusicCatalog.isInitialized = true;
+    }
+    // Fast pre-fetch with live studio database before Home UI renders
+    await MockMusicCatalog.initializeCatalog().timeout(const Duration(milliseconds: 1500), onTimeout: () {});
   } catch (_) {}
 
   // Check if this is the 1st time or 2nd time onwards
@@ -53,7 +60,7 @@ void main() async {
     LocalStorageService.markSplashSeen();
   }
 
-  // Initialize background AudioService safely with timeout fallback
+  // Initialize background AudioService safely with non-blocking fallback
   MuxizAudioHandler audioHandler;
   try {
     audioHandler = await AudioService.init(
@@ -68,12 +75,12 @@ void main() async {
         androidStopForegroundOnPause: false,
         androidNotificationClickStartsActivity: true,
       ),
-    ).timeout(const Duration(milliseconds: 1000), onTimeout: () => MuxizAudioHandler());
+    ).timeout(const Duration(milliseconds: 500), onTimeout: () => MuxizAudioHandler());
   } catch (e) {
     audioHandler = MuxizAudioHandler();
   }
 
-  // Launch the app immediately on screen
+  // Launch the app immediately on screen with full preloaded data
   runApp(
     ProviderScope(
       overrides: [
@@ -82,13 +89,37 @@ void main() async {
       child: const MuxizApp(),
     ),
   );
-
-  // Load music catalog in background without delaying startup
-  MockMusicCatalog.initializeCatalog().catchError((_) {});
 }
 
-class MuxizApp extends StatelessWidget {
+class MuxizApp extends StatefulWidget {
   const MuxizApp({super.key});
+
+  @override
+  State<MuxizApp> createState() => _MuxizAppState();
+}
+
+class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Start continuous background auto-sync
+    MockMusicCatalog.startAutoSync();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-sync catalog as soon as user switches back to the app
+      MockMusicCatalog.initializeCatalog(background: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

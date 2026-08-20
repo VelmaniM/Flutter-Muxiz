@@ -63,11 +63,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final customPlaylists = ref.watch(customPlaylistsProvider);
     final allArtists = MockMusicCatalog.popularArtists;
     final allAlbums = MockMusicCatalog.topAlbums;
-    final deletedPlaylists = LocalStorageService.getDeletedPlaylistIds();
-    final allPlaylists = [
-      ...customPlaylists,
-      ...MockMusicCatalog.featuredPlaylists,
-    ].where((p) => !deletedPlaylists.contains(p.id)).toList();
+    final allPlaylists = customPlaylists;
 
     // Filter by search query
     final playlists = _searchQuery.isEmpty
@@ -439,7 +435,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ),
                               SizedBox(height: 6),
                               Text(
-                                'Upload songs or create playlists to get started.',
+                                'Ingest songs in Studio or create playlists to get started.',
                                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                               ),
                             ],
