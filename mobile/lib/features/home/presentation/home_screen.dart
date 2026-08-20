@@ -293,18 +293,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Content Area: Live Feed & Full Design UI
+            // Content Area: Live Feed & Full Design UI (Auto-updates strictly on new song uploads)
             Expanded(
-              child: RefreshIndicator(
-                color: AppTheme.primaryGreen,
-                onRefresh: () async {
-                  await MockMusicCatalog.initializeCatalog(forceRefresh: true);
-                  await ref.read(homeFeedProvider.notifier).refreshFeed();
-                  if (mounted) setState(() {});
-                },
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                  slivers: [
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
                     // VIEW 1: MUSIC FILTER ACTIVE -> Show full library of sorted songs
                     if (isMusicOnly) ...[
                       SliverPadding(
@@ -506,11 +499,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSongSection(HomeSection section) {

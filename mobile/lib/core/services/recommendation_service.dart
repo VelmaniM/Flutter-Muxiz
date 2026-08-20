@@ -92,21 +92,14 @@ class HomeFeedNotifier extends StateNotifier<AsyncValue<HomeFeedData>> {
   HomeFeedNotifier(this._service, this._ref) : super(const AsyncValue.loading()) {
     refreshFeed();
 
-    // 1. Reactive trigger: Adapt feed and recent listens only when a genuinely different song is played
-    _ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
-      if (next != null && next != previous) {
-        refreshFeed();
-      }
-    });
-
-    // 2. Network reconnection trigger: When internet comes back ON, refresh daily data
+    // 1. Network reconnection trigger: When internet comes back ON, refresh daily data
     _ref.listen(networkStatusProvider, (previous, next) {
       if (next == NetworkStatus.online && previous != NetworkStatus.online) {
         refreshFeed();
       }
     });
 
-    // 3. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
+    // 2. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
     _dailyCycleTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       final mostRecent530Am = _getMostRecent530AmIst();
       if (_lastGeneratedTime != null && _lastGeneratedTime!.isBefore(mostRecent530Am)) {

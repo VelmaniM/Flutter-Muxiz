@@ -442,15 +442,12 @@ class LocalStorageService {
     if (raw == null || raw.isEmpty) return [];
     try {
       final List<dynamic> list = jsonDecode(raw);
-      final activeIds = MockMusicCatalog.allSongs.map((s) => s.id).toSet();
       final List<Song> result = [];
       for (final item in list) {
-        final id = (item is Map ? item['id'] : null)?.toString();
-        if (id != null && activeIds.contains(id)) {
-          final live = MockMusicCatalog.allSongs.where((s) => s.id == id).firstOrNull;
-          if (live != null) {
-            result.add(live);
-          }
+        if (item is Map<String, dynamic>) {
+          final s = Song.fromJson(item);
+          final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
+          result.add(live ?? s);
         }
       }
       return result;
