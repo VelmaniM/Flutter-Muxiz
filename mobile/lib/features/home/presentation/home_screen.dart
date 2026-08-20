@@ -344,44 +344,140 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ),
-                      ] else ...[
-                        // Clean minimalist centered text prompt for new users
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
-                            child: Center(
+                      ] else if (feed.sections.isEmpty && rawSongs.isNotEmpty) ...[
+                        // Clean minimalist CENTERED prompt for new users (middle of screen)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 32.0),
                               child: InkWell(
                                 onTap: () {
                                   ref.read(selectedTabProvider.notifier).state = 1;
                                 },
-                                borderRadius: BorderRadius.circular(12),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF181818),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.white10),
+                                  ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      Container(
+                                        width: 64,
+                                        height: 64,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              AppTheme.primaryGreen.withValues(alpha: 0.25),
+                                              const Color(0xFF1DB954).withValues(alpha: 0.08),
+                                            ],
+                                          ),
+                                          border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(Icons.music_note_rounded, color: AppTheme.primaryGreen, size: 32),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
                                       const Text(
                                         'Search your favorite song and listen',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: AppTheme.textPrimary,
-                                          fontSize: 16.5,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: -0.3,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Tap here to find songs and personalize your home feed',
+                                        'Tap here to explore songs and personalize your home feed',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: AppTheme.textSecondary.withValues(alpha: 0.7),
                                           fontSize: 13,
                                         ),
                                       ),
+                                      const SizedBox(height: 18),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryGreen,
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.search_rounded, color: Colors.black, size: 16),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Explore Music',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Empty / Syncing State if Catalog is Loading
+                      if (rawSongs.isEmpty) ...[
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const Text(
+                                    'Connecting to Muxiz Music Vault...',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Loading your songs, albums, and playlists from Studio',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF222222),
+                                      foregroundColor: AppTheme.primaryGreen,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      side: const BorderSide(color: Colors.white12),
+                                    ),
+                                    onPressed: () => MockMusicCatalog.initializeCatalog(forceRefresh: true),
+                                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                                    label: const Text('Refresh Catalog'),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

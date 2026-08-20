@@ -184,7 +184,7 @@ class MockMusicCatalog {
 
   /// Initializes the catalog from local cache and triggers live Studio background sync
   static Future<void> initializeCatalog({bool forceRefresh = false, bool background = false}) async {
-    if (allSongs.isEmpty) {
+    if (allSongs.isEmpty || forceRefresh) {
       final local = LocalStorageService.getCatalogSongsLocally();
       if (local.isNotEmpty) {
         allSongs = local;
@@ -199,8 +199,11 @@ class MockMusicCatalog {
     serverStatus = 'ONLINE';
     catalogNotifier.notify();
 
-    // Trigger live background fetch from Studio backend
-    if (!_isSyncing) {
+    // If we have no songs or forceRefresh requested and not in background, await remote fetch immediately
+    if (allSongs.isEmpty && !background) {
+      await _fetchRemoteCatalogInBackground();
+    } else if (!_isSyncing) {
+      // Background non-blocking sync
       _fetchRemoteCatalogInBackground();
     }
   }

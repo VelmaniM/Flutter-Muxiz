@@ -115,12 +115,17 @@ class HomeFeedNotifier extends StateNotifier<AsyncValue<HomeFeedData>> {
                   : null) ??
               LocalStorageService.getLastPlaybackState().song,
         ))) {
-    // ⚡ REAL-TIME REACTIVE 6-GRID LISTENER:
-    // Whenever user plays or changes a song, immediately update the 6-grid live in 0ms!
+    // ⚡ REAL-TIME REACTIVE 6-GRID & CATALOG LISTENER:
+    // 1. Whenever user plays or changes a song, immediately update the 6-grid live in 0ms!
     _ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
       if (next != null && next != previous) {
         _updateFeedImmediate();
       }
+    });
+
+    // 2. Whenever music catalog syncs with Studio or finishes loading, re-render personalized feed!
+    _ref.listen(musicCatalogProvider, (_, __) {
+      _updateFeedImmediate();
     });
   }
 

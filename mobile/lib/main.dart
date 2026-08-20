@@ -53,7 +53,7 @@ void main() async {
       MockMusicCatalog.isInitialized = true;
     }
     // Fast pre-fetch with live studio database before Home UI renders
-    await MockMusicCatalog.initializeCatalog().timeout(const Duration(milliseconds: 1500), onTimeout: () {});
+    await MockMusicCatalog.initializeCatalog().timeout(const Duration(milliseconds: 4000), onTimeout: () {});
   } catch (_) {}
 
   // Check if this is the 1st time or 2nd time onwards
