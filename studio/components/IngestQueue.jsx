@@ -163,11 +163,94 @@ export default function IngestQueue({ onUploadSuccess, showToast }) {
     }
   };
 
-  // Upload single track to Next.js API
+  // Upload single track with direct Google Drive Resumable Stream (bypasses Vercel 4.5MB limit)
   const uploadSingle = async (item) => {
     updateQueueItem(item.id, 'uploadStatus', 'uploading');
+    updateQueueItem(item.id, 'uploadProgress', 0);
 
     try {
+      // 1. Try Direct Google Drive Resumable Session
+      let uploadSuccess = false;
+      try {
+        const sessionRes = await fetch('/api/uploads/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: item.title ? `${item.title}.mp3` : item.file.name,
+            mimeType: item.file.type || 'audio/mpeg',
+          }),
+        });
+
+        if (sessionRes.ok) {
+          const sessionJson = await sessionRes.json();
+          if (sessionJson.success && sessionJson.uploadUrl) {
+            // Upload directly to Google Drive via XMLHttpRequest for smooth progress
+            const fileId = await new Promise((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', sessionJson.uploadUrl, true);
+              xhr.setRequestHeader('Content-Type', item.file.type || 'audio/mpeg');
+
+              xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                  const pct = Math.round((e.loaded / e.total) * 100);
+                  updateQueueItem(item.id, 'uploadProgress', pct);
+                }
+              };
+
+              xhr.onload = () => {
+                if (xhr.status === 200 || xhr.status === 201) {
+                  try {
+                    const gData = JSON.parse(xhr.responseText);
+                    resolve(gData.id);
+                  } catch (err) {
+                    reject(new Error('Invalid Google Drive response'));
+                  }
+                } else {
+                  reject(new Error(`Google upload failed (${xhr.status})`));
+                }
+              };
+
+              xhr.onerror = () => reject(new Error('Network error uploading to Google Drive'));
+              xhr.send(item.file);
+            });
+
+            // Finalize metadata and save to PostgreSQL Database
+            const completeRes = await fetch('/api/uploads/complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fileId,
+                title: item.title || item.file.name,
+                artistName: item.artistName || 'Unknown Artist',
+                movieName: item.movieName || item.albumName || 'Single',
+                albumName: item.albumName || item.movieName || 'Single',
+                genre: item.genre || 'Tamil · Melody / Romantic',
+                language: item.language || 'Tamil',
+                artworkUrl: item.artworkUrl || '',
+              }),
+            });
+
+            const completeJson = await completeRes.json();
+            if (completeJson.success) {
+              uploadSuccess = true;
+              updateQueueItem(item.id, 'uploadStatus', 'success');
+              updateQueueItem(item.id, 'uploadProgress', 100);
+              showToast(`"${item.title}" ingested & saved to Google Drive!`);
+              if (onUploadSuccess) onUploadSuccess();
+              setTimeout(() => removeQueueItem(item.id), 1200);
+              return;
+            } else {
+              throw new Error(completeJson.message || 'Failed to save song in database');
+            }
+          }
+        }
+      } catch (directErr) {
+        console.warn('[Direct Upload Fallback]', directErr.message);
+      }
+
+      if (uploadSuccess) return;
+
+      // 2. Fallback to standard Multipart Ingestion route
       const formData = new FormData();
       formData.append('file', item.file);
       formData.append('title', item.title || item.file.name);
@@ -185,9 +268,17 @@ export default function IngestQueue({ onUploadSuccess, showToast }) {
         body: formData,
       });
 
-      const json = await res.json();
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error(text.length < 120 ? text : 'Server returned an invalid response (payload too large).');
+      }
+
       if (json.success) {
         updateQueueItem(item.id, 'uploadStatus', 'success');
+        updateQueueItem(item.id, 'uploadProgress', 100);
         showToast(`Uploaded "${item.title}" successfully!`);
         if (onUploadSuccess) onUploadSuccess();
         setTimeout(() => removeQueueItem(item.id), 1200);

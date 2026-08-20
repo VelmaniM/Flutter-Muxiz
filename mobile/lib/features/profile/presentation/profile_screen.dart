@@ -6,12 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/data/mock_catalog.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/album_card.dart';
 import '../../../shared/components/artist_avatar.dart';
 import '../../details/presentation/playlist_detail_screen.dart';
-import '../../auth/presentation/login_screen.dart';
 import 'profile_image_cropper.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -448,24 +448,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                     Navigator.pop(ctx);
                     await ref.read(userNameProvider.notifier).setName(newName);
+                    await LocalStorageService.saveUserName(newName);
 
-                    // Sync with backend asynchronously
+                    // Sync with PostgreSQL database via apiClient
                     try {
-                      final dio = Dio();
-                      const endpoints = [
-                        'https://flutter-muxiz.onrender.com/api/v1/uploads/profile',
-                        'http://localhost:5001/api/v1/uploads/profile',
-                        'http://192.168.1.94:5001/api/v1/uploads/profile',
-                      ];
-                      for (final ep in endpoints) {
-                        try {
-                          await dio.post(ep, data: {
-                            'userId': LocalStorageService.getUserId(),
-                            'displayName': newName,
-                          });
-                          break;
-                        } catch (_) {}
-                      }
+                      final userId = LocalStorageService.getUserId();
+                      final email = LocalStorageService.getUserEmail();
+                      await ref.read(apiClientProvider).updateProfile(
+                        userId: userId.isNotEmpty ? userId : (email.isNotEmpty ? email : 'listener-001'),
+                        displayName: newName,
+                      );
                     } catch (_) {}
 
                     if (mounted) {
@@ -475,7 +467,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             children: [
                               Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
                               SizedBox(width: 10),
-                              Text('Name updated successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              Text('Name updated successfully in database! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           backgroundColor: Color(0xFF1E1E1E),
@@ -815,30 +807,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 32),
                     ],
 
-                    // Log Out Button
+                    // Reset Cache Button
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          side: const BorderSide(color: Colors.white24, width: 1.2),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           minimumSize: const Size(double.infinity, 46),
                         ),
                         onPressed: () async {
-                          await LocalStorageService.logout();
+                          await LocalStorageService.clearAllPlaybackAndCache();
                           if (context.mounted) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (ctx) => const LoginScreen()),
-                              (route) => false,
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Cache reset successfully!'),
+                                backgroundColor: Color(0xFF1E1E1E),
+                                behavior: SnackBarBehavior.floating,
+                              ),
                             );
                           }
                         },
-                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                        icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 20),
                         label: const Text(
-                          'Log out of Muxiz',
-                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                          'Reset App History & Cache',
+                          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ),
                     ),

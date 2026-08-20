@@ -319,6 +319,9 @@ class LocalStorageService {
 
   static Future<void> setUserData(Map<String, dynamic> data) async {
     await _prefs?.setString(AppConstants.keyUserData, jsonEncode(data));
+    if (data['id'] != null) {
+      await _prefs?.setString('muxiz_user_id', data['id'].toString());
+    }
   }
 
   static String getUserId() {
@@ -326,21 +329,49 @@ class LocalStorageService {
     if (userData != null && userData['id'] != null) {
       return userData['id'].toString();
     }
-    return 'listener-001';
+    return _prefs?.getString('muxiz_user_id') ?? 'listener-001';
+  }
+
+  static Future<void> saveUserId(String id) async {
+    await _prefs?.setString('muxiz_user_id', id.trim());
+    final current = getUserData() ?? {};
+    current['id'] = id.trim();
+    await setUserData(current);
   }
 
   static String getUserName() {
     final userData = getUserData();
-    if (userData != null && userData['name'] != null && userData['name'].toString().trim().isNotEmpty) {
-      return userData['name'].toString();
+    if (userData != null) {
+      if (userData['displayName'] != null && userData['displayName'].toString().trim().isNotEmpty) {
+        return userData['displayName'].toString();
+      }
+      if (userData['name'] != null && userData['name'].toString().trim().isNotEmpty) {
+        return userData['name'].toString();
+      }
     }
-    return _prefs?.getString('muxiz_user_name') ?? 'Velmani Kandan';
+    return _prefs?.getString('muxiz_user_name') ?? '';
   }
 
   static Future<void> saveUserName(String name) async {
     await _prefs?.setString('muxiz_user_name', name.trim());
     final current = getUserData() ?? {};
     current['name'] = name.trim();
+    current['displayName'] = name.trim();
+    await setUserData(current);
+  }
+
+  static String getUserEmail() {
+    final userData = getUserData();
+    if (userData != null && userData['email'] != null && userData['email'].toString().trim().isNotEmpty) {
+      return userData['email'].toString();
+    }
+    return _prefs?.getString('muxiz_user_email') ?? '';
+  }
+
+  static Future<void> saveUserEmail(String email) async {
+    await _prefs?.setString('muxiz_user_email', email.trim());
+    final current = getUserData() ?? {};
+    current['email'] = email.trim();
     await setUserData(current);
   }
 
@@ -444,7 +475,7 @@ class LocalStorageService {
       final dio = Dio();
       dio.post(
         '${AppConstants.defaultApiBaseUrl}/songs/$songId/like',
-        data: {'userId': 'listener-001'},
+        data: {'userId': getUserId()},
         options: Options(
           sendTimeout: const Duration(seconds: 3),
           receiveTimeout: const Duration(seconds: 3),
@@ -504,7 +535,7 @@ class LocalStorageService {
       dio.post(
         '${AppConstants.defaultApiBaseUrl}/users/recently-played/$songId',
         options: Options(
-          headers: {'x-user-id': 'listener-001'},
+          headers: {'x-user-id': getUserId()},
           sendTimeout: const Duration(seconds: 3),
           receiveTimeout: const Duration(seconds: 3),
         ),
@@ -522,7 +553,7 @@ class LocalStorageService {
           'duration': durationSec,
         },
         options: Options(
-          headers: {'x-user-id': 'listener-001'},
+          headers: {'x-user-id': getUserId()},
           sendTimeout: const Duration(seconds: 3),
           receiveTimeout: const Duration(seconds: 3),
         ),
@@ -580,10 +611,10 @@ class LocalStorageService {
           'title': playlist.title,
           'description': playlist.description,
           'cover': playlist.coverUrl,
-          'userId': 'listener-001',
+          'userId': getUserId(),
         },
         options: Options(
-          headers: {'x-user-id': 'listener-001'},
+          headers: {'x-user-id': getUserId()},
           sendTimeout: const Duration(seconds: 3),
           receiveTimeout: const Duration(seconds: 3),
         ),
@@ -612,7 +643,7 @@ class LocalStorageService {
           dio.delete(
             '$baseUrl/playlists/$playlistId',
             options: Options(
-              headers: {'x-user-id': 'listener-001'},
+              headers: {'x-user-id': getUserId()},
             ),
           ).catchError((_) => Response(requestOptions: RequestOptions()));
         } catch (_) {}
@@ -665,7 +696,7 @@ class LocalStorageService {
           '${AppConstants.defaultApiBaseUrl}/users/downloads',
           data: {'songId': songId, 'deviceId': 'ios-device', 'fileSize': 1024000},
           options: Options(
-            headers: {'x-user-id': 'listener-001'},
+            headers: {'x-user-id': getUserId()},
             sendTimeout: const Duration(seconds: 3),
             receiveTimeout: const Duration(seconds: 3),
           ),
@@ -674,7 +705,7 @@ class LocalStorageService {
         dio.delete(
           '${AppConstants.defaultApiBaseUrl}/users/downloads/$songId',
           options: Options(
-            headers: {'x-user-id': 'listener-001'},
+            headers: {'x-user-id': getUserId()},
             sendTimeout: const Duration(seconds: 3),
             receiveTimeout: const Duration(seconds: 3),
           ),

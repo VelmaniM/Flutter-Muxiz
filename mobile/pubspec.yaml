@@ -62,6 +62,9 @@ dependencies:
   image_picker: ^1.2.3
   flutter_blue_plus: ^2.3.12
   url_launcher: ^6.3.1
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:

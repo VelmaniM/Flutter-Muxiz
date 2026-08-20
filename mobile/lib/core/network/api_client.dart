@@ -202,6 +202,43 @@ class ApiClient {
     return null;
   }
 
+  Future<({Map<String, dynamic>? user, String? error})> updateProfile({
+    required String userId,
+    String? displayName,
+    String? avatar,
+  }) async {
+    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
+      try {
+        final res = await Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        )).post(
+          '$baseUrl/auth/profile',
+          data: {
+            'userId': userId,
+            if (displayName != null) 'displayName': displayName,
+            if (avatar != null) 'avatar': avatar,
+          },
+        );
+        if (res.statusCode == 200 && res.data != null) {
+          final data = res.data as Map<String, dynamic>;
+          final user = data['user'] as Map<String, dynamic>?;
+          if (user != null) {
+            await LocalStorageService.setUserData(user);
+            if (user['displayName'] != null) {
+              await LocalStorageService.saveUserName(user['displayName'].toString());
+            }
+            if (user['avatar'] != null) {
+              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            }
+          }
+          return (user: user, error: null);
+        }
+      } catch (_) {}
+    }
+    return (user: null, error: 'Failed to update profile on backend');
+  }
+
   // --- Songs & Search ---
   Future<List<Song>> fetchSongs({int page = 1, int limit = 50, String? genre}) async {
     for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls, 'https://muxiz.vercel.app/api/drive']) {

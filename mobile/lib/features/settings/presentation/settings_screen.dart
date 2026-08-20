@@ -4,7 +4,6 @@ import '../../../app/theme.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/user_avatar_button.dart';
 import '../../profile/presentation/profile_screen.dart';
-import '../../auth/presentation/login_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -23,7 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final userName = ref.watch(userNameProvider);
-    final displayName = userName.isNotEmpty ? userName : 'Velmani Kandan';
+    final displayName = userName.isNotEmpty ? userName : 'Music Listener';
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -156,18 +155,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const SizedBox(height: 12),
           // Account / Session Section
-          _buildSectionHeader('Account & Session'),
+          _buildSectionHeader('Storage & Cache'),
           ListTile(
-            leading: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
-            title: const Text('Log out', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)),
-            subtitle: const Text('Sign out and return to Google Login screen', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            leading: const Icon(Icons.cleaning_services_rounded, color: AppTheme.primaryGreen, size: 22),
+            title: const Text('Clear Playback Cache', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+            subtitle: const Text('Free up local storage without affecting saved playlists', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             onTap: () async {
-              await LocalStorageService.logout();
+              await LocalStorageService.clearAllPlaybackAndCache();
               if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (ctx) => const LoginScreen()),
-                  (route) => false,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Playback cache cleared!'),
+                    backgroundColor: Color(0xFF1E1E1E),
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
               }
             },

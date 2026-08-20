@@ -3,16 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'app/theme.dart';
 import 'core/audio/audio_manager.dart';
 import 'core/data/mock_catalog.dart';
 import 'core/services/remote_sync_service.dart';
 import 'core/storage/local_storage.dart';
 import 'features/main_layout.dart';
-import 'features/auth/presentation/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase safely
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {}
 
   // Global exception shields to prevent app from closing/crashing
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -62,7 +70,7 @@ void main() async {
     LocalStorageService.markSplashSeen();
   }
 
-  // Initialize background AudioService safely with non-blocking fallback
+  // Initialize background AudioService safely with proper native registration
   MuxizAudioHandler audioHandler;
   try {
     audioHandler = await AudioService.init(
@@ -77,7 +85,7 @@ void main() async {
         androidStopForegroundOnPause: false,
         androidNotificationClickStartsActivity: true,
       ),
-    ).timeout(const Duration(milliseconds: 500), onTimeout: () => MuxizAudioHandler());
+    );
   } catch (e) {
     audioHandler = MuxizAudioHandler();
   }
@@ -134,7 +142,7 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
       title: 'Muxiz',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: LocalStorageService.isLoggedIn() ? const MainLayout() : const LoginScreen(),
+      home: const MainLayout(),
     );
   }
 }

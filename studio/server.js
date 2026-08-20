@@ -9,12 +9,69 @@ const { Readable } = require('stream');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const admin = require('firebase-admin');
 require('dotenv').config();
+
+// --- Process Crash Shields ---
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('⚠️ [Process Shield] Handled async rejection:', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.log('⚠️ [Process Shield] Handled uncaught exception:', err?.message || err);
+});
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.STUDIO_PORT || process.env.PORT || 5001;
 const JWT_SECRET = process.env.JWT_SECRET || 'muxiz_secure_jwt_secret_token_2026_super_safe';
+
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+
+// --- Firebase Admin SDK & Cloud Firestore Initialization ---
+let firestoreDb = null;
+let firebaseAuth = null;
+let hasServiceAccount = false;
+
+try {
+  const serviceAccountPaths = [
+    path.join(__dirname, 'serviceAccountKey.json'),
+    path.join(__dirname, '..', 'serviceAccountKey.json'),
+    path.join(process.cwd(), 'serviceAccountKey.json'),
+    path.join(process.env.HOME || '', 'Downloads', 'serviceAccountKey.json'),
+  ];
+  
+  let serviceAccountFile = serviceAccountPaths.find((p) => fs.existsSync(p));
+  if (!serviceAccountFile) {
+    try {
+      const downloadsDir = path.join(process.env.HOME || '', 'Downloads');
+      if (fs.existsSync(downloadsDir)) {
+        const files = fs.readdirSync(downloadsDir);
+        const match = files.find((f) => f.startsWith('muxiz-app') && f.endsWith('.json'));
+        if (match) serviceAccountFile = path.join(downloadsDir, match);
+      }
+    } catch (_) {}
+  }
+
+  let firebaseApp;
+  if (serviceAccountFile) {
+    console.log(`🔑 Loading Firebase Admin Credentials from: ${serviceAccountFile}`);
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountFile, 'utf8'));
+    firebaseApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: 'muxiz-app',
+    });
+    hasServiceAccount = true;
+    firestoreDb = getFirestore(firebaseApp);
+    firebaseAuth = getAuth(firebaseApp);
+    console.log('🔥 Cloud Firestore & Firebase Auth successfully connected with Service Account!');
+  } else {
+    console.log('ℹ️ Firebase Admin initialized in fallback mode for project: muxiz-app');
+  }
+} catch (fbErr) {
+  console.log('ℹ️ Firebase Admin initialization note:', fbErr.message);
+}
 
 // --- Server Online / Offline State Management ---
 let serverActive = true;
@@ -362,6 +419,135 @@ app.post('/api/v1/songs', async (req, res) => {
     res.status(201).json({
       success: true,
       message: `Song "${cleanTitle}" created successfully!`,
+      song: savedSong,
+      data: savedSong,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Resumable Session Generator for Direct Google Drive Streaming
+app.post(['/api/v1/uploads/session', '/api/uploads/session'], express.json(), async (req, res) => {
+  try {
+    const { fileName, mimeType } = req.body || {};
+    const auth = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    auth.setCredentials({ refresh_token: process.env.GOOGLE_DRIVE_REFRESH_TOKEN });
+    const tokenRes = await auth.getAccessToken();
+    const accessToken = tokenRes.token;
+
+    if (!accessToken) {
+      return res.status(500).json({ success: false, message: 'Could not obtain Google Drive access token' });
+    }
+
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    const metadata = {
+      name: fileName || 'song.mp3',
+      parents: folderId ? [folderId] : [],
+      mimeType: mimeType || 'audio/mpeg',
+    };
+
+    const gRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': mimeType || 'audio/mpeg',
+      },
+      body: JSON.stringify(metadata),
+    });
+
+    const uploadUrl = gRes.headers.get('location');
+    if (!uploadUrl) {
+      const errText = await gRes.text();
+      return res.status(500).json({ success: false, message: `Google Drive Error: ${errText}` });
+    }
+
+    res.json({ success: true, uploadUrl });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Finalize Resumable Upload and Save in DB
+app.post(['/api/v1/uploads/complete', '/api/uploads/complete'], express.json(), async (req, res) => {
+  try {
+    const { fileId, title, artistName, movieName, albumName, genre, language, artworkUrl } = req.body || {};
+    if (!fileId) {
+      return res.status(400).json({ success: false, message: 'Google Drive fileId is required.' });
+    }
+
+    const cleanTitle = sanitize(title) || 'Untitled Track';
+    const cleanArtist = sanitize(artistName) || 'Unknown Artist';
+    const cleanMovie = sanitize(movieName || albumName) || 'Single';
+    const cleanGenre = genre || 'Tamil · Melody / Romantic';
+    const cleanLang = language || 'Tamil';
+
+    try {
+      const drive = getDriveClient();
+      await drive.permissions.create({
+        fileId,
+        requestBody: { role: 'reader', type: 'anyone' },
+      });
+    } catch (_) {}
+
+    const audioUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+    let artistRecord = await prisma.artist.findFirst({
+      where: { name: { equals: cleanArtist, mode: 'insensitive' } },
+    });
+    if (!artistRecord && cleanArtist !== 'Unknown Artist') {
+      artistRecord = await prisma.artist.create({
+        data: {
+          name: cleanArtist,
+          image: artworkUrl || null,
+          bio: `Popular Tamil artist with tracks in Muxiz.`,
+        },
+      });
+    }
+
+    let albumRecord = null;
+    if (cleanMovie && cleanMovie !== 'Single') {
+      albumRecord = await prisma.album.findFirst({
+        where: { title: { equals: cleanMovie, mode: 'insensitive' } },
+      });
+      if (!albumRecord) {
+        albumRecord = await prisma.album.create({
+          data: {
+            title: cleanMovie,
+            artistId: artistRecord?.id || null,
+            artwork: artworkUrl || null,
+          },
+        });
+      }
+    }
+
+    const savedSong = await prisma.song.create({
+      data: {
+        title: cleanTitle,
+        artistName: cleanArtist,
+        albumName: cleanMovie,
+        movieName: cleanMovie,
+        artistId: artistRecord?.id || null,
+        albumId: albumRecord?.id || null,
+        genre: cleanGenre,
+        language: cleanLang,
+        audioUrl,
+        artworkUrl: artworkUrl || null,
+        driveFileId: fileId,
+      },
+    });
+
+    const totalCount = await prisma.song.count();
+    broadcastServerEvent('catalog_update', { action: 'upload', song: savedSong, totalSongs: totalCount });
+
+    res.status(201).json({
+      success: true,
+      message: `Song "${cleanTitle}" ingested and saved successfully!`,
       song: savedSong,
       data: savedSong,
     });
@@ -801,6 +987,35 @@ app.post(['/api/v1/auth/google', '/api/auth/google'], async (req, res) => {
       console.log(`[SQL Auth] Existing Google User validated from PostgreSQL: ${cleanEmail} (ID: ${user.id})`);
     }
 
+    // Sync user record to Cloud Firestore
+    if (firestoreDb) {
+      try {
+        await firestoreDb.collection('users').doc(user.id).set({
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          avatar: user.avatar,
+          authProvider: 'google',
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+        console.log(`[Firestore] Synced user profile to Firestore: ${user.id}`);
+      } catch (fErr) {
+        console.log('[Firestore] User sync notice:', fErr.message);
+      }
+    }
+
+    let firebaseCustomToken = null;
+    if (firebaseAuth) {
+      try {
+        firebaseCustomToken = await firebaseAuth.createCustomToken(user.id, {
+          email: user.email,
+          displayName: user.displayName,
+        });
+      } catch (fTokErr) {
+        console.log('[Firebase Auth] Custom token notice:', fTokErr.message);
+      }
+    }
+
     const token = generateJwtToken(user);
     return res.json({
       success: true,
@@ -814,10 +1029,190 @@ app.post(['/api/v1/auth/google', '/api/auth/google'], async (req, res) => {
         authProvider: user.authProvider,
       },
       token,
+      firebaseCustomToken,
     });
   } catch (err) {
     console.error('[SQL Auth] Google Error:', err);
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Official Google OAuth Initiation for Desktop & Web
+app.get(['/api/v1/auth/google/oauth', '/api/auth/google/oauth'], (req, res) => {
+  const redirectUri = `http://localhost:${PORT}/api/v1/auth/google/callback`;
+  const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=375632972665-5qjb6gukcgd70fl20h5q20jhpv9oqhis.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile%20openid&prompt=select_account`;
+  res.redirect(oauthUrl);
+});
+
+// Official Google OAuth Callback
+app.get(['/api/v1/auth/google/callback', '/api/auth/google/callback'], async (req, res) => {
+  const { code, error } = req.query;
+  if (error || !code) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <body style="background:#121212;color:white;font-family:sans-serif;text-align:center;padding-top:80px;">
+          <h2>⚠️ Google Authentication Cancelled</h2>
+          <p>You can close this tab and return to the Muxiz app.</p>
+        </body>
+      </html>
+    `);
+  }
+
+  try {
+    const redirectUri = `http://localhost:${PORT}/api/v1/auth/google/callback`;
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: code.toString(),
+        client_id: '375632972665-5qjb6gukcgd70fl20h5q20jhpv9oqhis.apps.googleusercontent.com',
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    let email = null;
+    let displayName = null;
+    let avatar = null;
+
+    if (tokenData.access_token) {
+      const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      const userInfo = await userRes.json();
+      email = userInfo.email;
+      displayName = userInfo.name;
+      avatar = userInfo.picture;
+    }
+
+    if (!email) {
+      throw new Error('Could not retrieve email from Google OAuth API');
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    let isNewUser = false;
+    let finalAvatar = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || cleanEmail)}&background=1DB954&color=ffffff&bold=true&size=256`;
+
+    if (!user) {
+      isNewUser = true;
+      user = await prisma.user.create({
+        data: {
+          email: cleanEmail,
+          displayName: displayName || cleanEmail.split('@')[0],
+          avatar: finalAvatar,
+          authProvider: 'google',
+        },
+      });
+    }
+
+    if (firestoreDb) {
+      try {
+        await firestoreDb.collection('users').doc(user.id).set({
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          avatar: user.avatar,
+          authProvider: 'google',
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } catch (_) {}
+    }
+
+    let firebaseCustomToken = null;
+    if (firebaseAuth) {
+      try {
+        firebaseCustomToken = await firebaseAuth.createCustomToken(user.id, {
+          email: user.email,
+          displayName: user.displayName,
+        });
+      } catch (_) {}
+    }
+
+    const token = generateJwtToken(user);
+
+    broadcastServerEvent('auth_success', {
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatar: user.avatar,
+      },
+      token,
+      firebaseCustomToken,
+    });
+
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Muxiz - Signed In</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body {
+              background: #121212;
+              color: white;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              text-align: center;
+            }
+            .card {
+              background: #1E1E1E;
+              border-radius: 20px;
+              padding: 40px;
+              max-width: 380px;
+              box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            }
+            .icon {
+              width: 64px;
+              height: 64px;
+              border-radius: 50%;
+              background: #1ED760;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 20px;
+            }
+            h1 { font-size: 22px; margin: 0 0 10px; font-weight: 800; }
+            p { color: #A7A7A7; font-size: 14px; margin: 0 0 24px; line-height: 1.5; }
+            .btn {
+              background: #1ED760;
+              color: black;
+              font-weight: bold;
+              text-decoration: none;
+              padding: 12px 28px;
+              border-radius: 24px;
+              font-size: 14px;
+              display: inline-block;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h1>Signed In to Muxiz!</h1>
+            <p>Welcome, <strong>${user.displayName}</strong>!<br>Returning you to Muxiz now...</p>
+            <script>
+              setTimeout(() => { window.close(); }, 2500);
+            </script>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Google Callback Error:', err);
+    return res.status(500).send('Google authentication encountered an issue: ' + err.message);
   }
 });
 
@@ -1027,6 +1422,51 @@ app.post(['/api/v1/auth/validate', '/api/auth/validate'], async (req, res) => {
 // 5. Logout
 app.post(['/api/v1/auth/logout', '/api/auth/logout'], (req, res) => {
   return res.json({ success: true, message: 'Session logged out successfully' });
+});
+
+// 5b. Update User Profile (displayName, avatar) in PostgreSQL DB
+app.post(['/api/v1/auth/profile', '/api/auth/profile', '/api/v1/users/profile', '/api/v1/uploads/profile'], async (req, res) => {
+  try {
+    const { userId, displayName, avatar } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    const updateData = {};
+    if (displayName && displayName.trim()) {
+      updateData.displayName = displayName.trim();
+    }
+    if (avatar && avatar.trim()) {
+      updateData.avatar = avatar.trim();
+    }
+
+    let updatedUser;
+    if (userId.includes('@')) {
+      updatedUser = await prisma.user.update({
+        where: { email: userId.trim().toLowerCase() },
+        data: updateData,
+      });
+    } else {
+      updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        displayName: updatedUser.displayName,
+        avatar: updatedUser.avatar,
+      },
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // 6. User Accounts Management for Studio Dashboard

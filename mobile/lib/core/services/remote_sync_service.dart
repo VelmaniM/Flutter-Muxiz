@@ -19,6 +19,9 @@ class RemoteSyncService {
   int _lastKnownEpoch = 0;
   bool _isListening = false;
   CancelToken? _cancelToken;
+  final _authSuccessController = StreamController<Map<String, dynamic>>.broadcast();
+
+  Stream<Map<String, dynamic>> get onAuthSuccess => _authSuccessController.stream;
 
   /// Starts real-time SSE listener and background epoch watcher
   void start() {
@@ -113,6 +116,15 @@ class RemoteSyncService {
       } else if (eventName == 'catalog_update') {
         debugPrint('🔄 [RemoteSync] Received catalog update signal from Studio.');
         MockMusicCatalog.initializeCatalog(background: true);
+      } else if (eventName == 'auth_success') {
+        debugPrint('🔑 [RemoteSync] Received auth_success from official Google OAuth flow!');
+        for (final line in lines) {
+          if (line.startsWith('data:')) {
+            final dataStr = line.substring(5).trim();
+            final parsed = jsonDecode(dataStr) as Map<String, dynamic>;
+            _authSuccessController.add(parsed);
+          }
+        }
       }
     } catch (_) {}
   }
