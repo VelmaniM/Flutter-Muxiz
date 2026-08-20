@@ -1,0 +1,4380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muxiz Studio — Music Database & Ingestion Engine</title>
+  <link rel="icon" type="image/png" href="/app_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #F9FAFB;
+      --bg-sidebar: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F3F4F6;
+      --bg-hover: #F3F4F6;
+
+      --text-main: #111827;
+      --text-muted: #6B7280;
+      --text-dim: #9CA3AF;
+
+      --border-main: #E5E7EB;
+      --border-dark: #D1D5DB;
+
+      --sidebar-width: 250px;
+
+      --btn-dark: #111827;
+      --btn-dark-hover: #1F2937;
+
+      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fixed Left Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-main);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 60;
+    }
+
+    .sidebar-brand-section {
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border-main);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-app-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid var(--border-main);
+      background: #111827;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .brand-name {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .backend-connection-badge {
+      margin-top: 10px;
+      padding: 4px 10px;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #059669;
+      transition: all 0.2s ease;
+    }
+
+    .backend-connection-badge.disconnected {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #DC2626;
+    }
+
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+      flex-shrink: 0;
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+      }
+
+      70% {
+        box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .live-pulse-dot.offline {
+      background: #EF4444;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+      animation: none;
+    }
+
+    /* Server Power Toggle Control */
+    .server-control-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      border: 1px solid var(--border-main);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .server-switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .server-switch-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .server-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .server-toggle-btn.online {
+      background: #ECFDF5;
+      border-color: #A7F3D0;
+      color: #059669;
+    }
+
+    .server-toggle-btn.offline {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #DC2626;
+    }
+
+    .server-sub-status {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* Top Bar Header Controls */
+    .catalog-count-pill {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-main);
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .top-server-power-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .top-server-power-btn.online {
+      background: #ECFDF5;
+      border: 1px solid #10B981;
+      color: #047857;
+    }
+
+    .top-server-power-btn.online:hover {
+      background: #D1FAE5;
+    }
+
+    .top-server-power-btn.offline {
+      background: #FEF2F2;
+      border: 1px solid #EF4444;
+      color: #B91C1C;
+    }
+
+    .top-server-power-btn.offline:hover {
+      background: #FEE2E2;
+    }
+
+    .backend-connection-badge.disconnected .live-pulse-dot {
+      background: #EF4444;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+      animation: none;
+    }
+
+    /* Minimal Aesthetic Artist Cards Grid */
+    .artists-grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 16px;
+      padding: 16px 0 24px;
+    }
+
+    .artist-minimal-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 14px;
+      padding: 20px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      min-height: 285px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-xs);
+    }
+
+    .artist-minimal-card:hover {
+      border-color: #CBD5E1;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -4px rgba(0, 0, 0, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    .artist-card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      flex: 1;
+    }
+
+    .artist-card-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2.5px solid #F1F5F9;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      margin-bottom: 12px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      cursor: pointer;
+    }
+
+    .artist-minimal-card:hover .artist-card-avatar {
+      transform: scale(1.05);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .artist-card-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      cursor: pointer;
+      line-height: 1.3;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.15s ease;
+    }
+
+    .artist-card-name:hover {
+      color: #2563EB;
+    }
+
+    .artist-track-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    .artist-sample-tracks {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.4;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 4px;
+    }
+
+    .artist-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid #F1F5F9;
+    }
+
+    .btn-artist-play {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 8px;
+      background: #10B981;
+      color: #FFFFFF;
+      border: 1px solid #059669;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-artist-play:hover {
+      background: #059669;
+      transform: scale(1.02);
+    }
+
+    .btn-artist-view {
+      flex: 1;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      background: #F8FAFC;
+      color: var(--text-main);
+      border: 1px solid var(--border-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-artist-view:hover {
+      background: #0F172A;
+      color: #FFFFFF;
+      border-color: #0F172A;
+    }
+
+    /* View Switcher Segmented Control */
+    .view-switcher-pills {
+      display: inline-flex;
+      background: #F1F5F9;
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border-main);
+      gap: 2px;
+    }
+
+    .view-pill-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .view-pill-btn.active {
+      background: #FFFFFF;
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar-menu {
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .menu-heading {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 8px 4px;
+      margin-top: 8px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: all 0.15s ease;
+      width: 100%;
+      text-align: left;
+    }
+
+    .sidebar-link:hover {
+      background: #F3F4F6;
+      color: var(--text-main);
+      border-color: #E5E7EB;
+    }
+
+    .sidebar-link.active {
+      background: #111827;
+      color: #FFFFFF;
+      font-weight: 600;
+      border-color: #111827;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .sidebar-link.active .link-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .sidebar-link.active svg {
+      stroke: #FFFFFF;
+    }
+
+    .link-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .link-badge {
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      padding: 1px 7px;
+      border-radius: 12px;
+      color: var(--text-main);
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border-main);
+      background: #FAFAFA;
+    }
+
+    .status-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .dot-online {
+      width: 7px;
+      height: 7px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+      flex-shrink: 0;
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 0 40px 32px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Fixed / Top Header Section */
+    .sticky-header-section {
+      flex-shrink: 0;
+      background: var(--bg-app);
+      padding-top: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-main);
+      margin-bottom: 16px;
+    }
+
+    .page-top-bar {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.4px;
+    }
+
+    .page-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    #tab-catalog {
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+    }
+
+    #tab-catalog.active {
+      display: flex;
+    }
+
+    /* Minimal Metrics Row */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 0;
+    }
+
+    .metric-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 10px;
+      padding: 14px 18px;
+      box-shadow: var(--shadow-xs);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .metric-box:hover {
+      border-color: #9CA3AF;
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .metric-box:active {
+      transform: translateY(0);
+    }
+
+    .metric-view-pill {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      float: right;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: color 0.15s;
+    }
+
+    .metric-box:hover .metric-view-pill {
+      color: var(--text-main);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .metric-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.5px;
+    }
+
+    /* Table Container */
+    .table-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-header-bar {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-main);
+      background: #FAFAFA;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .table-scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      min-height: 0;
+    }
+
+    .search-container {
+      flex: 1;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .search-input-field {
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 8px;
+      padding: 8px 14px 8px 36px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .search-input-field:focus {
+      border-color: var(--btn-dark);
+    }
+
+    .search-svg-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-minimal-dark {
+      background: var(--btn-dark);
+      color: #FFFFFF;
+      border: 1px solid var(--btn-dark);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-minimal-dark:hover {
+      background: var(--btn-dark-hover);
+    }
+
+    .btn-minimal-light {
+      background: #FFFFFF;
+      color: var(--text-main);
+      border: 1px solid var(--border-main);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-minimal-light:hover {
+      background: var(--bg-subtle);
+    }
+
+    .btn-minimal-danger {
+      background: #FFFFFF;
+      color: #DC2626;
+      border: 1px solid #FCA5A5;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-minimal-danger:hover {
+      background: #FEF2F2;
+      border-color: #DC2626;
+    }
+
+    /* Clean Data Table */
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .clean-table th {
+      background: #FAFAFA;
+      padding: 14px 18px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-main);
+      font-size: 12px;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 0 var(--border-main);
+    }
+
+    .clean-table td {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-main);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .clean-table tbody tr {
+      transition: background-color 0.1s;
+    }
+
+    .clean-table tbody tr:hover {
+      background-color: #FAFAFA;
+    }
+
+    /* Large & Clear Cover Artwork Thumbnail */
+    .clean-art {
+      width: 54px;
+      height: 54px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border-main);
+      background: var(--bg-subtle);
+      box-shadow: var(--shadow-xs);
+      display: block;
+    }
+
+    .btn-play-minimal {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-play-minimal:hover {
+      background: var(--btn-dark);
+      color: #FFFFFF;
+      border-color: var(--btn-dark);
+    }
+
+    .movie-neutral-tag {
+      display: inline-block;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #374151;
+      background: #F3F4F6;
+      border: 1px solid #E5E7EB;
+      padding: 2px 8px;
+      border-radius: 5px;
+    }
+
+    .artist-neutral {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .mono-neutral {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .btn-icon-plain {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: transparent;
+      border: 1px solid var(--border-main);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .btn-icon-plain:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      border-color: var(--border-dark);
+    }
+
+    .btn-icon-plain.delete-hover:hover {
+      color: #DC2626;
+      border-color: #FCA5A5;
+      background: #FEF2F2;
+    }
+
+    /* Uploader & Manager Panes */
+    .ingest-box-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .dropzone-minimal {
+      border: 1px dashed var(--border-dark);
+      border-radius: 10px;
+      padding: 48px 24px;
+      text-align: center;
+      background: #FAFAFA;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .dropzone-minimal:hover,
+    .dropzone-minimal.dragover {
+      border-color: var(--btn-dark);
+      background: #F3F4F6;
+    }
+
+    .dropzone-title-min {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .dropzone-sub-min {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Ingestion Queue */
+    .queue-box-list {
+      margin-top: 24px;
+    }
+
+    .queue-row-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .queue-grid-inputs {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .input-minimal-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .input-minimal-ctrl {
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .input-minimal-ctrl:focus {
+      border-color: var(--btn-dark);
+    }
+
+    /* Storage & Cache Management Cards */
+    .storage-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .storage-tool-card {
+      background: #FAFAFA;
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tool-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .tool-card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* Artists Hub Grid & Discography Styles */
+    .artists-grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 16px;
+      padding-bottom: 32px;
+    }
+
+    .artist-card-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      padding: 22px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-xs);
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .artist-card-item:hover {
+      border-color: #9CA3AF;
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+
+    .artist-avatar-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border-main);
+      box-shadow: var(--shadow-xs);
+      margin-bottom: 14px;
+      background: var(--bg-subtle);
+    }
+
+    .artist-card-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      line-height: 1.3;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .artist-card-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: inline-block;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-main);
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    /* Minimal Document Modal */
+    .modal-backdrop-clean {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop-clean.show {
+      display: flex;
+    }
+
+    .modal-window-clean {
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-modal);
+    }
+
+    .modal-clean-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #FAFAFA;
+    }
+
+    .modal-clean-head h3 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .modal-clean-body {
+      padding: 20px;
+    }
+
+    .modal-clean-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .modal-clean-foot {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-main);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #FAFAFA;
+    }
+
+    /* Minimal Floating Audio Player */
+    .player-floating-bar {
+      position: fixed;
+      bottom: 0;
+      left: var(--sidebar-width);
+      right: 0;
+      z-index: 90;
+      background: #FFFFFF;
+      border-top: 1px solid var(--border-main);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .table-art-wrap {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 1px solid var(--border-main);
+    }
+
+    .table-art-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s;
+    }
+
+    .table-art-wrap:hover img {
+      transform: scale(1.06);
+    }
+
+    .table-play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      color: #FFFFFF;
+    }
+
+    .table-art-wrap:hover .table-play-overlay,
+    .table-art-wrap.is-playing .table-play-overlay {
+      opacity: 1;
+    }
+
+    .table-play-overlay svg {
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .play-icon-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #4B5563;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .play-icon-btn:hover {
+      color: #111827;
+      background: #F3F4F6;
+      transform: scale(1.12);
+    }
+
+    .play-icon-btn.playing {
+      color: #10B981;
+      background: #ECFDF5;
+    }
+
+    tr.is-active-row {
+      background: #F0FDF4 !important;
+    }
+
+    .player-ctrl-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--btn-dark);
+      color: #FFFFFF;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .range-minimal {
+      flex: 1;
+      height: 3px;
+      -webkit-appearance: none;
+      background: var(--border-main);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range-minimal::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--btn-dark);
+      cursor: pointer;
+    }
+
+    /* Minimal Toast */
+    .toast-minimal {
+      position: fixed;
+      bottom: 80px;
+      right: 32px;
+      z-index: 200;
+      background: #111827;
+      color: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-md);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .toast-minimal.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Fixed Left Sidebar (No collapse toggle clutter) -->
+  <aside class="sidebar" id="mainSidebar">
+    <div class="sidebar-brand-section">
+      <div class="sidebar-brand">
+        <img src="/app_logo.png" class="brand-app-logo" alt="Muxiz" onerror="this.src='/logo.png'">
+        <div>
+          <div class="brand-name">Muxiz</div>
+          <div class="brand-sub">Music Studio · prod-01</div>
+        </div>
+      </div>
+
+      <!-- Studio Server Power Switch (STOP / ON) -->
+      <div class="server-control-box">
+        <div class="server-switch-row">
+          <div class="server-switch-label">
+            <span class="live-pulse-dot" id="sidebarPulseDot"></span>
+            <span id="sidebarStatusText">LIVE</span>
+          </div>
+          <button class="server-toggle-btn online" id="sidebarPowerBtn" onclick="toggleServerPower()" title="Click to Stop or Start Server">
+            <span id="sidebarPowerBtnLabel">Server ON</span>
+          </button>
+        </div>
+        <div class="server-sub-status" id="sidebarSubStatus">Broadcasting catalog live to App</div>
+      </div>
+    </div>
+
+    <div class="sidebar-menu">
+      <div class="menu-heading">Navigation</div>
+
+      <button class="sidebar-link active" onclick="switchTab('catalog')" title="Songs">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+          <span>Songs</span>
+        </div>
+        <span class="link-badge" id="sideCatalogCount">0</span>
+      </button>
+
+      <button class="sidebar-link" onclick="switchTab('artists')" title="Artists">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Artists</span>
+        </div>
+        <span class="link-badge" id="sideArtistsCount">0</span>
+      </button>
+
+      <button class="sidebar-link" onclick="switchTab('users')" title="Users & Accounts">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Users & Accounts</span>
+        </div>
+        <span class="link-badge" id="sideUsersCount">0</span>
+      </button>
+
+      <button class="sidebar-link" onclick="switchTab('upload')" title="Audio Ingestion">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Audio Ingestion</span>
+        </div>
+      </button>
+
+      <div class="menu-heading">Storage & Control</div>
+
+      <button class="sidebar-link" onclick="switchTab('cache-manager')" title="Data & Storage">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+          <span>Data & Storage</span>
+        </div>
+      </button>
+
+      <div class="menu-heading">Infrastructure</div>
+
+      <button class="sidebar-link" onclick="switchTab('diagnostics')" title="Health & Metrics">
+        <div class="link-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Health & Metrics</span>
+        </div>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Layout -->
+  <main class="main-wrapper">
+
+    <!-- TAB 1: DATA CATALOG -->
+    <section id="tab-catalog" class="tab-pane active">
+      <div class="sticky-header-section">
+        <div class="page-top-bar">
+          <div>
+            <h1 class="page-title">Music Data Catalog</h1>
+            <p class="page-desc">Direct control over studio music engine, live sync to mobile app, and audio catalog.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- Server Power Switch in Top Header -->
+            <button class="top-server-power-btn online" id="topPowerSwitchBtn" onclick="toggleServerPower()" title="Toggle Studio Server ON/OFF">
+              <span class="live-pulse-dot" id="topPulseDot"></span>
+              <span id="topPowerSwitchText">Server: ON (Live)</span>
+            </button>
+
+            <!-- Song Count Badge -->
+            <div class="catalog-count-pill" id="topCatalogCountBadge">
+              <span>🎵</span>
+              <span id="topSongsCountText">0 Tracks</span>
+            </div>
+
+            <!-- Add Song Button -->
+            <button class="btn-minimal-dark" onclick="openAddSongModal()" title="Add New Song / Ingest Audio">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Song
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Row (Click to Inspect Detailed Lists) -->
+        <div class="metrics-row">
+          <div class="metric-box" onclick="openInspectModal('tracks')" title="Click to view all active tracks">
+            <span class="metric-view-pill">View →</span>
+            <div class="metric-label">Active Tracks</div>
+            <div class="metric-val" id="metricTracks">0</div>
+          </div>
+          <div class="metric-box" onclick="openInspectModal('artists')" title="Click to view all artists">
+            <span class="metric-view-pill">View →</span>
+            <div class="metric-label">Artists</div>
+            <div class="metric-val" id="metricArtists">0</div>
+          </div>
+          <div class="metric-box" onclick="openInspectModal('albums')" title="Click to view all albums & films">
+            <span class="metric-view-pill">View →</span>
+            <div class="metric-label">Albums / Films</div>
+            <div class="metric-val" id="metricAlbums">0</div>
+          </div>
+          <div class="metric-box" onclick="openInspectModal('drive')" title="Click to view Google Drive vault status">
+            <span class="metric-view-pill">View →</span>
+            <div class="metric-label">Google Drive Vault</div>
+            <div class="metric-val" id="metricDrive"
+              style="font-size: 15px; color: var(--text-main); font-weight: 600; padding-top: 6px;">0 Online</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clean Minimal Table -->
+      <div class="table-wrapper">
+        <div class="table-header-bar">
+          <div class="search-container">
+            <span class="search-svg-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <input type="text" class="search-input-field" placeholder="Search track, movie, artist, or genre..."
+              oninput="filterCatalog(this.value)">
+          </div>
+          <button class="btn-minimal-light" onclick="loadCatalog(true)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+
+        <div class="table-scroll-container">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th style="width: 52px; text-align: center;">Play</th>
+                <th style="width: 58px;">Cover</th>
+                <th>Track Title</th>
+                <th>Movie / Film</th>
+                <th>Album</th>
+                <th>Artist(s)</th>
+                <th>Genre</th>
+                <th>Duration</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: ARTISTS DIRECTORY & DISCOGRAPHY -->
+    <section id="tab-artists" class="tab-pane">
+      <div class="sticky-header-section">
+        <div class="page-top-bar">
+          <div>
+            <h1 class="page-title">Artists Directory</h1>
+            <p class="page-desc">Manage music artists, update profile cover artworks, edit artist names, and view full discographies.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- Artist Count Badge -->
+            <div class="catalog-count-pill" id="topArtistsCountBadge">
+              <span>👥</span>
+              <span id="topArtistsCountText">0 Artists</span>
+            </div>
+
+            <!-- Add Song Button -->
+            <button class="btn-minimal-dark" onclick="openAddSongModal()" title="Add New Song / Ingest Audio">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Song
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 1: All Artists Main View (Grid & Table Switcher) -->
+      <div id="artistsMainView">
+        <div class="table-wrapper" style="border: none; background: transparent; box-shadow: none;">
+          <div class="table-header-bar" style="border: 1px solid var(--border-main); border-radius: 12px; background: #FFFFFF; padding: 10px 16px; margin-bottom: 16px;">
+            <div class="search-container" style="flex: 1; max-width: 380px;">
+              <span class="search-svg-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </span>
+              <input type="text" class="search-input-field" placeholder="Search artists by name..."
+                oninput="filterArtistsGrid(this.value)">
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <!-- View Switcher Pills -->
+              <div class="view-switcher-pills">
+                <button class="view-pill-btn active" id="artistGridBtn" onclick="setArtistViewMode('grid')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                  Cards
+                </button>
+                <button class="view-pill-btn" id="artistTableBtn" onclick="setArtistViewMode('table')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  Table
+                </button>
+              </div>
+
+              <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;" id="artistsTotalCount">0 Artists</span>
+              <button class="btn-minimal-light" onclick="renderArtistsHub(true)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Minimal Cards Grid Container -->
+          <div id="artistsGridContainer" class="artists-grid-container">
+            <!-- Dynamically populated artist cards -->
+          </div>
+
+          <!-- Compact Table View Container -->
+          <div id="artistsTableContainer" class="table-scroll-container" style="display: none; background: #FFFFFF; border: 1px solid var(--border-main); border-radius: 12px;">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th style="width: 72px;">Cover</th>
+                  <th>Artist Name</th>
+                  <th>Tracks in Catalog</th>
+                  <th>Sample Songs</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="artistsTableBody">
+                <!-- Dynamically populated artists table -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Single Artist Full Discography -->
+      <div id="artistDetailView" style="display: none;">
+        <div
+          style="background: var(--bg-card); border: 1px solid var(--border-main); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 18px;">
+            <img id="detailArtistImg" src="" class="clean-art"
+              style="width: 68px; height: 68px; border-radius: 50%; object-fit: cover; box-shadow: var(--shadow-sm); border: 2px solid var(--border-main);"
+              onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Crect width=\'120\' height=\'120\' fill=\'%23111827\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'28\' fill=\'%236B7280\'%3E🎵%3C/text%3E%3C/svg%3E'">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h2 id="detailArtistName"
+                  style="font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0;">Artist Name</h2>
+                <span class="link-badge" id="detailArtistSongCount" style="font-size: 11.5px; padding: 3px 9px;">0
+                  Tracks</span>
+              </div>
+              <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px; margin-bottom: 0;"
+                id="detailArtistSub">Complete discography & tracks</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-minimal-light" onclick="closeArtistDetail()">
+              ← Back to All Artists
+            </button>
+            <button class="btn-minimal-dark" onclick="switchTab('upload')">
+              + Ingest Song for Artist
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <div class="table-scroll-container">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th style="width: 52px; text-align: center;">Play</th>
+                  <th style="width: 58px;">Cover</th>
+                  <th>Track Title</th>
+                  <th>Movie / Film</th>
+                  <th>Album</th>
+                  <th>Genre</th>
+                  <th>Duration</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="artistSongsTableBody">
+                <!-- Dynamically populated songs by this artist -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: USER ACCOUNTS & AUTHENTICATION (PostgreSQL) -->
+    <section id="tab-users" class="tab-pane">
+      <div class="sticky-header-section">
+        <div class="page-top-bar">
+          <div>
+            <h1 class="page-title">User Accounts & Authentication</h1>
+            <p class="page-desc">Real-time registered users, Google connected accounts, email credentials & profile avatars stored in PostgreSQL.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- User Count Badge -->
+            <div class="catalog-count-pill" id="topUsersCountBadge">
+              <span>👥</span>
+              <span id="topUsersCountText">0 Users</span>
+            </div>
+
+            <!-- Refresh Users Button -->
+            <button class="btn-minimal-dark" onclick="loadUsers(true)" title="Refresh Users from PostgreSQL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              Sync DB
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Cards -->
+      <div class="metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">TOTAL REGISTERED USERS</span>
+            <div class="metric-icon">👥</div>
+          </div>
+          <div class="metric-value" id="metricTotalUsers">0</div>
+          <div class="metric-sub" id="metricUsersSub">Stored in PostgreSQL</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">GOOGLE CONNECTED</span>
+            <div class="metric-icon">🌐</div>
+          </div>
+          <div class="metric-value" id="metricGoogleUsers" style="color: #1DB954;">0</div>
+          <div class="metric-sub">OAuth 2.0 Accounts</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">EMAIL & PASSWORD</span>
+            <div class="metric-icon">🔑</div>
+          </div>
+          <div class="metric-value" id="metricLocalUsers" style="color: #6366F1;">0</div>
+          <div class="metric-sub">Bcrypt Hashed Security</div>
+        </div>
+      </div>
+
+      <!-- Users Table Wrapper -->
+      <div class="table-wrapper">
+        <div class="table-header-bar">
+          <div class="search-container">
+            <span class="search-svg-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <input type="text" id="userSearchInput" class="search-input-field" placeholder="Search users by name, email, or auth provider..."
+              oninput="filterUsers(this.value)">
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 12px; color: var(--text-muted);" id="userFilterCount">Showing all users</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">AVATAR</th>
+                <th>DISPLAY NAME</th>
+                <th>EMAIL / GMAIL</th>
+                <th style="width: 140px;">AUTH PROVIDER</th>
+                <th style="width: 180px;">JOINED DATE</th>
+                <th style="width: 180px;">DATABASE ID</th>
+                <th style="width: 80px; text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                  Loading user records from PostgreSQL database...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: INGEST AUDIO -->
+    <section id="tab-upload" class="tab-pane">
+      <div class="sticky-header-section">
+        <div class="page-top-bar" style="margin-bottom: 0;">
+          <div>
+            <h1 class="page-title">Audio Ingestion Pipeline</h1>
+            <p class="page-desc">Upload audio files with automated spam-tag stripping and 1400x1400 Apple Music cover
+              art matcher.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ingest-box-wrap">
+        <input type="file" id="picker" multiple accept="audio/*" style="display: none;"
+          onchange="handleSelectedFiles(this.files); this.value = '';">
+        <div class="dropzone-minimal" id="dropzoneMin" onclick="document.getElementById('picker').click()">
+          <div style="font-size: 28px; margin-bottom: 4px;">☁️</div>
+          <div class="dropzone-title-min">Select audio files or drop them here</div>
+          <div class="dropzone-sub-min">Supported formats: MP3, M4A, WAV, FLAC, AAC</div>
+          <button class="btn-minimal-dark" type="button"
+            onclick="event.stopPropagation(); document.getElementById('picker').click()">
+            Browse Local Audio Files
+          </button>
+        </div>
+
+        <!-- Ingestion Queue -->
+        <div class="queue-box-list" id="queueWrap" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="font-size: 14px; font-weight: 600;">
+              Ingestion Queue (<span id="queueTotal">0</span>)
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-minimal-dark" onclick="uploadAllQueue()">Ingest & Upload All</button>
+              <button class="btn-minimal-light" onclick="clearQueue()">Clear Queue</button>
+            </div>
+          </div>
+          <div id="queueList">
+            <!-- Queue items -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DATA & STORAGE MANAGER -->
+    <section id="tab-cache-manager" class="tab-pane">
+      <div class="sticky-header-section">
+        <div class="page-top-bar" style="margin-bottom: 0;">
+          <div>
+            <h1 class="page-title">Data & Storage Control</h1>
+            <p class="page-desc">Flush Redis server cache, clear device & app storage, force database re-sync, or
+              perform bulk song catalog operations.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ingest-box-wrap">
+        <div class="storage-cards-grid">
+
+          <!-- Redis Card -->
+          <div class="storage-tool-card">
+            <div>
+              <div class="tool-card-title">
+                <span>⚡</span> Flush Redis Server Cache
+              </div>
+              <p class="tool-card-desc">
+                Completely flushes all active keys across Redis cache instances (including song feeds, artist graphs,
+                albums, and search indexes). Forces the backend to pull fresh data on the next request.
+              </p>
+            </div>
+            <div>
+              <button class="btn-minimal-danger" onclick="purgeRedisCache()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Flush Redis Cache
+              </button>
+            </div>
+          </div>
+
+          <!-- LocalStorage Card -->
+          <div class="storage-tool-card">
+            <div>
+              <div class="tool-card-title">
+                <span>🗑️</span> Clear App & Local Storage
+              </div>
+              <p class="tool-card-desc">
+                Clears client-side <code>localStorage</code>, <code>sessionStorage</code>, active upload queues, and
+                resets cached state so all frontend screens immediately re-render clean.
+              </p>
+            </div>
+            <div>
+              <button class="btn-minimal-light" onclick="clearStudioLocalStorage()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <polyline points="23 20 23 14 17 14"></polyline>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                Clear Local Storage & Session
+              </button>
+            </div>
+          </div>
+
+          <!-- Catalog Re-sync Card -->
+          <div class="storage-tool-card">
+            <div>
+              <div class="tool-card-title">
+                <span>🔄</span> Force Database Direct Re-Sync
+              </div>
+              <p class="tool-card-desc">
+                Bypasses all cache wrappers with <code>nocache=1</code>, queries PostgreSQL directly, and re-populates
+                the studio catalog and mobile feeds in real-time.
+              </p>
+            </div>
+            <div>
+              <button class="btn-minimal-dark" onclick="loadCatalog(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Force Re-Sync All Apps
+              </button>
+            </div>
+          </div>
+
+          <!-- Danger: Full Song Wipe Card -->
+          <div class="storage-tool-card" style="border-color: #FECACA; background: #FFFBFB;">
+            <div>
+              <div class="tool-card-title" style="color: #DC2626;">
+                <span>⚠️</span> Full Song Delete (All-in-One Wipe)
+              </div>
+              <p class="tool-card-desc" style="color: #7F1D1D;">
+                Permanently deletes <strong>ALL songs</strong>, albums, playlists, and listening history from the
+                PostgreSQL database, purges Redis cache, and cleans Google Drive storage records.
+              </p>
+            </div>
+            <div>
+              <button class="btn-minimal-danger" style="background: #DC2626; color: #FFFFFF; border-color: #DC2626;"
+                onclick="wipeAllSongsCatalog()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                Wipe All Songs from DB & Cache
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: METRICS & STATUS -->
+    <section id="tab-diagnostics" class="tab-pane">
+      <div class="sticky-header-section">
+        <div class="page-top-bar" style="margin-bottom: 0;">
+          <div>
+            <h1 class="page-title">Cluster Metrics & Infrastructure</h1>
+            <p class="page-desc">Live status of database instances, cache nodes, and Google Drive audio vaults.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ingest-box-wrap">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;">
+          <div style="background: #FAFAFA; border: 1px solid var(--border-main); border-radius: 10px; padding: 18px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">PostgreSQL Database</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">Primary data store hosting
+              songs, artist relations, albums, and playlists on Supabase.</p>
+            <span class="movie-neutral-tag">Connected · PostgreSQL 16</span>
+          </div>
+
+          <div style="background: #FAFAFA; border: 1px solid var(--border-main); border-radius: 10px; padding: 18px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Redis Cache Layer</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">In-memory key-value cache
+              handling catalog feeds with instant cache invalidation.</p>
+            <span class="movie-neutral-tag">Online · Active Wrap</span>
+          </div>
+
+          <div style="background: #FAFAFA; border: 1px solid var(--border-main); border-radius: 10px; padding: 18px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Google Drive Storage</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">Cloud audio storage with HTTP
+              byte range stream proxying.</p>
+            <span class="movie-neutral-tag">Operational</span>
+          </div>
+
+          <div style="background: #FAFAFA; border: 1px solid var(--border-main); border-radius: 10px; padding: 18px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Apple Music Metadata API</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;">Parallel metadata lookup engine
+              fetching official 1400x1400 cover art.</p>
+            <span class="movie-neutral-tag">Online</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Document Modal (Songs) -->
+  <div class="modal-backdrop-clean" id="editModal">
+    <div class="modal-window-clean">
+      <div class="modal-clean-head">
+        <h3>Edit Track Metadata</h3>
+        <button onclick="closeModal()"
+          style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <div class="modal-clean-body">
+        <input type="hidden" id="editSongId">
+
+        <div class="modal-clean-grid">
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Track Title</label>
+            <input type="text" id="editTitle" class="input-minimal-ctrl">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Movie / Film Name</label>
+            <input type="text" id="editMovie" class="input-minimal-ctrl">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Artist Name(s)</label>
+            <input type="text" id="editArtist" class="input-minimal-ctrl">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Album Name</label>
+            <input type="text" id="editAlbum" class="input-minimal-ctrl">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Genre</label>
+            <input type="text" id="editGenre" class="input-minimal-ctrl">
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Artwork URL (1400x1400 HD)</label>
+            <input type="text" id="editArtworkUrl" class="input-minimal-ctrl"
+              onchange="document.getElementById('cleanModalArt').src = this.value">
+          </div>
+
+          <div style="grid-column: span 2; display: flex; align-items: center; gap: 12px;">
+            <img id="cleanModalArt" src=""
+              style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-main);">
+            <div>
+              <input type="file" id="modalFileArt" accept="image/*" style="display: none;"
+                onchange="uploadCustomArtwork(this.files[0])">
+              <button type="button" class="btn-minimal-light" onclick="document.getElementById('modalFileArt').click()">
+                Upload Custom Cover to Drive
+              </button>
+            </div>
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Audio Stream URL</label>
+            <input type="text" id="editAudioUrl" class="input-minimal-ctrl">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-clean-foot">
+        <button class="btn-minimal-light" onclick="closeModal()">Cancel</button>
+        <button class="btn-minimal-dark" onclick="saveDocument()">Save & Sync to App</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Artist Modal -->
+  <div class="modal-backdrop-clean" id="editArtistModal">
+    <div class="modal-window-clean">
+      <div class="modal-clean-head">
+        <h3>Edit Artist Profile</h3>
+        <button onclick="closeEditArtistModal()"
+          style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <div class="modal-clean-body">
+        <input type="hidden" id="editArtistId">
+
+        <div class="modal-clean-grid">
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Artist Name</label>
+            <input type="text" id="editArtistNameInput" class="input-minimal-ctrl">
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Artist Avatar / Cover Image URL</label>
+            <input type="text" id="editArtistImageInput" class="input-minimal-ctrl"
+              onchange="document.getElementById('artistModalPreview').src = this.value">
+          </div>
+
+          <div style="grid-column: span 2; display: flex; align-items: center; gap: 14px;">
+            <img id="artistModalPreview" src=""
+              style="width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-main);"
+              onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Crect width=\'120\' height=\'120\' fill=\'%23111827\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'28\' fill=\'%236B7280\'%3E🎵%3C/text%3E%3C/svg%3E'">
+            <div>
+              <input type="file" id="artistModalFile" accept="image/*" style="display: none;"
+                onchange="uploadCustomArtistPhoto(this.files[0])">
+              <button type="button" class="btn-minimal-light"
+                onclick="document.getElementById('artistModalFile').click()">
+                Upload Artist Photo to Drive
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-clean-foot">
+  <!-- ADD SONG MODAL -->
+  <div class="modal-backdrop-clean" id="addSongModal" onclick="if(event.target===this) closeAddSongModal()">
+    <div class="modal-window-clean" style="max-width: 580px;">
+      <div class="modal-clean-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🎵</span>
+          <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">Add Song to Catalog</h3>
+        </div>
+        <button onclick="closeAddSongModal()"
+          style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <div class="modal-clean-body">
+        <div class="modal-clean-grid">
+          <!-- Audio file or URL selection -->
+          <div style="grid-column: span 2; background: #F9FAFB; border: 1px dashed var(--border-main); border-radius: 8px; padding: 14px; text-align: center;">
+            <input type="file" id="addSongAudioFile" accept="audio/*" style="display: none;"
+              onchange="handleQuickAddAudioSelected(this.files[0])">
+            <div id="addSongAudioLabel" style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+              📁 Select Local Audio File (MP3, M4A, WAV, FLAC)
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px;">Or specify direct audio URL below</p>
+            <button type="button" class="btn-minimal-light" onclick="document.getElementById('addSongAudioFile').click()">
+              Choose Audio File
+            </button>
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Track Title *</label>
+            <input type="text" id="addSongTitle" class="input-minimal-ctrl" placeholder="e.g. Arabic Kuthu">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Artist Name(s) *</label>
+            <input type="text" id="addSongArtist" class="input-minimal-ctrl" placeholder="e.g. Anirudh Ravichander, Jonita Gandhi">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Movie / Film Name</label>
+            <input type="text" id="addSongMovie" class="input-minimal-ctrl" placeholder="e.g. Beast">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Album Name</label>
+            <input type="text" id="addSongAlbum" class="input-minimal-ctrl" placeholder="e.g. Beast (OST)">
+          </div>
+
+          <div>
+            <label class="input-minimal-label">Genre</label>
+            <input type="text" id="addSongGenre" class="input-minimal-ctrl" list="genreMoodList" placeholder="Tamil · Dance / Kuthu">
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label class="input-minimal-label">Cover Artwork (Image URL or 1400x1400 Apple Music Link)</label>
+            <input type="text" id="addSongArtworkUrl" class="input-minimal-ctrl" placeholder="https://..." onchange="document.getElementById('addSongArtPreview').src = this.value">
+          </div>
+
+          <div style="grid-column: span 2; display: flex; align-items: center; gap: 12px;">
+            <img id="addSongArtPreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='28' fill='%236B7280'%3E🎵%3C/text%3E%3C/svg%3E"
+              style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-main);">
+            <div style="flex: 1;">
+              <input type="file" id="addSongArtFile" accept="image/*" style="display: none;"
+                onchange="handleQuickAddArtSelected(this.files[0])">
+              <button type="button" class="btn-minimal-light" onclick="document.getElementById('addSongArtFile').click()">
+                Upload Cover Artwork to Drive
+              </button>
+            </div>
+          </div>
+
+          <div style="grid-column: span 2;" id="addSongAudioUrlWrap">
+            <label class="input-minimal-label">Direct Audio Stream URL (Optional if local file chosen)</label>
+            <input type="text" id="addSongAudioUrl" class="input-minimal-ctrl" placeholder="https://drive.google.com/uc?export=download&id=...">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-clean-foot">
+        <button class="btn-minimal-light" onclick="closeAddSongModal()">Cancel</button>
+        <button class="btn-minimal-dark" id="btnSubmitAddSong" onclick="submitQuickAddSong()">
+          <span>Upload & Ingest Song</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSPECT MODAL (Shows Artists, Albums/Films, Tracks, or Google Drive) -->
+  <div class="modal-backdrop-clean" id="inspectModal" onclick="if(event.target===this) closeInspectModal()">
+    <div class="modal-window-clean" style="max-width: 660px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-clean-head">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="inspectModalIcon" style="font-size: 20px;">📁</span>
+          <div>
+            <h3 id="inspectModalTitle" style="font-size: 15px; font-weight: 700; color: var(--text-main);">Directory
+            </h3>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="inspectModalSub">Browse items
+            </div>
+          </div>
+        </div>
+        <button class="btn-icon-plain" onclick="closeInspectModal()">&times;</button>
+      </div>
+
+      <div style="padding: 10px 18px; border-bottom: 1px solid var(--border-main); background: #FAFAFA;">
+        <input type="text" id="inspectSearchInput" class="input-minimal-ctrl" placeholder="Search..."
+          oninput="filterInspectList(this.value)">
+      </div>
+
+      <div id="inspectModalBody" style="flex: 1; overflow-y: auto; padding: 14px 18px;">
+        <!-- Dynamic content -->
+      </div>
+
+      <div
+        style="padding: 12px 18px; border-top: 1px solid var(--border-main); background: #FAFAFA; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: var(--text-muted);" id="inspectModalCount">0 items</span>
+        <button class="btn-minimal-light" onclick="closeInspectModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimal Floating Audio Player -->
+  <footer class="player-floating-bar" id="playerBar" style="display: none;">
+    <div style="display: flex; align-items: center; gap: 12px; width: 280px;">
+      <img id="playerArt" class="clean-art"
+        style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid var(--border-main);" src="">
+      <div style="min-width: 0;">
+        <div id="playerTitle"
+          style="font-size: 13.5px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          Track Title</div>
+        <div id="playerArtist"
+          style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">
+          Artist</div>
+      </div>
+    </div>
+
+    <div style="flex: 1; max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-icon-plain" onclick="playPrevTrack()" title="Previous Track" style="padding: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="19 20 9 12 19 4 19 20"></polygon>
+            <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"></line>
+          </svg>
+        </button>
+        <button class="player-ctrl-btn" id="playBtn" onclick="togglePlay()" title="Play / Pause">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
+        <button class="btn-icon-plain" onclick="playNextTrack()" title="Next Track" style="padding: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line>
+          </svg>
+        </button>
+      </div>
+      <div
+        style="width: 100%; display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+        <span id="curTime">0:00</span>
+        <input type="range" class="range-minimal" id="seekSlider" min="0" max="100" value="0"
+          oninput="seekAudio(this.value)">
+        <span id="totalTime">0:00</span>
+      </div>
+    </div>
+
+    <div style="width: 160px; display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+      <span style="font-size: 11.5px; color: var(--text-muted);">Vol</span>
+      <input type="range" class="range-minimal" style="max-width: 70px;" min="0" max="1" step="0.05" value="1"
+        oninput="setAudioVolume(this.value)">
+      <button class="btn-icon-plain" style="font-size: 16px; line-height: 1; padding: 4px;" onclick="closePlayerBar()"
+        title="Close Player">
+        &times;
+      </button>
+    </div>
+  </footer>
+
+  <!-- Minimal Toast -->
+  <div class="toast-minimal" id="toast">
+    <span id="toastMsg">Success</span>
+  </div>
+
+  <audio id="audioEngine" preload="none"></audio>
+
+  <datalist id="genreMoodList">
+    <option value="Tamil · Melody / Romantic"></option>
+    <option value="Tamil · Dance / Kuthu"></option>
+    <option value="Tamil · Mass / Energetic"></option>
+    <option value="Tamil · Soulful / Sad"></option>
+    <option value="Tamil · Chill / Lo-Fi"></option>
+    <option value="Tamil · Folk / Gaana"></option>
+    <option value="Tamil · Hip-Hop / Rap"></option>
+    <option value="Tamil · Classical / Devotional"></option>
+    <option value="Soundtrack / Film Score"></option>
+    <option value="Indie / Pop"></option>
+    <option value="Party / Club EDM"></option>
+  </datalist>
+
+  <script>
+    const FALLBACK_ART = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='28' fill='%236B7280'%3E🎵%3C/text%3E%3C/svg%3E";
+    let catalog = [];
+    let queue = [];
+    let usersList = [];
+    const audio = document.getElementById('audioEngine');
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.classList.add('active');
+
+      const btn = Array.from(document.querySelectorAll('.sidebar-link')).find(b => b.getAttribute('onclick')?.includes(tabId));
+      if (btn) btn.classList.add('active');
+
+      if (tabId === 'catalog') {
+        loadCatalog();
+      } else if (tabId === 'artists') {
+        renderArtistsHub();
+      } else if (tabId === 'users') {
+        loadUsers();
+      }
+    }
+
+    // --- User Accounts Management Functions (PostgreSQL) ---
+    async function loadUsers(force = false) {
+      if (!force && usersList.length > 0) {
+        renderUsersTable(usersList);
+        updateUsersMetrics(usersList);
+        return;
+      }
+      try {
+        const cached = localStorage.getItem('muxiz_users_cache');
+        if (cached && !usersList.length) {
+          usersList = JSON.parse(cached);
+          renderUsersTable(usersList);
+          updateUsersMetrics(usersList);
+        }
+      } catch (_) {}
+
+      try {
+        const res = await fetch('/api/v1/users');
+        if (res.ok) {
+          const data = await res.json();
+          usersList = data.users || [];
+          try {
+            localStorage.setItem('muxiz_users_cache', JSON.stringify(usersList));
+          } catch (_) {}
+          renderUsersTable(usersList);
+          updateUsersMetrics(usersList);
+          if (force) showToast('User database synced from PostgreSQL');
+        }
+      } catch (err) {
+        console.error('[Studio Users Error]', err);
+      }
+    }
+
+    function updateUsersMetrics(users) {
+      const total = users.length;
+      const googleCount = users.filter(u => u.authProvider === 'google').length;
+      const localCount = users.filter(u => u.authProvider === 'local' || !u.authProvider).length;
+
+      const totalEl = document.getElementById('metricTotalUsers');
+      if (totalEl) totalEl.innerText = total;
+
+      const googleEl = document.getElementById('metricGoogleUsers');
+      if (googleEl) googleEl.innerText = googleCount;
+
+      const localEl = document.getElementById('metricLocalUsers');
+      if (localEl) localEl.innerText = localCount;
+
+      const sideCount = document.getElementById('sideUsersCount');
+      if (sideCount) sideCount.innerText = total;
+
+      const topText = document.getElementById('topUsersCountText');
+      if (topText) topText.innerText = `${total} User${total === 1 ? '' : 's'}`;
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!tbody) return;
+
+      if (!users || !users.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">No user accounts registered yet in database.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const isGoogle = u.authProvider === 'google';
+        const name = u.displayName || u.email.split('@')[0];
+        const email = u.email;
+        const initial = (name ? name[0] : email[0]).toUpperCase();
+
+        let avatarHtml = '';
+        if (u.avatar && u.avatar.startsWith('http')) {
+          avatarHtml = `<img src="${u.avatar}" alt="${name}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-main);" onerror="this.outerHTML='<div style=\\'width: 36px; height: 36px; border-radius: 50%; background: #1DB954; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;\\'>${initial}</div>'">`;
+        } else if (u.avatar && u.avatar.startsWith('emoji:')) {
+          avatarHtml = `<div style="width: 36px; height: 36px; border-radius: 50%; background: #1F2937; display: flex; align-items: center; justify-content: center; font-size: 18px;">${u.avatar.replace('emoji:', '')}</div>`;
+        } else {
+          avatarHtml = `<div style="width: 36px; height: 36px; border-radius: 50%; background: ${isGoogle ? '#1DB954' : '#6366F1'}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">${initial}</div>`;
+        }
+
+        const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
+
+        const providerBadge = isGoogle
+          ? `<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; background: rgba(29, 185, 84, 0.12); color: #15803D; font-size: 11.5px; font-weight: 700;">
+              <svg width="12" height="12" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.3-.8-.4-1.8-.4-2.8s.2-2 .4-2.8L1.9 6.3C.7 8.7 0 11.3 0 14s.7 5.3 1.9 7.7l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
+              Google
+            </span>`
+          : `<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; background: rgba(99, 102, 241, 0.12); color: #4338CA; font-size: 11.5px; font-weight: 700;">
+              ✉️ Email
+            </span>`;
+
+        return `<tr>
+          <td style="padding: 10px 14px;">${avatarHtml}</td>
+          <td style="font-weight: 600; color: var(--text-main); font-size: 13.5px;">${name}</td>
+          <td style="color: var(--text-muted); font-size: 13px; font-family: monospace;">${email}</td>
+          <td>${providerBadge}</td>
+          <td style="color: var(--text-muted); font-size: 12px;">${dateStr}</td>
+          <td><code style="font-size: 11px; background: var(--bg-subtle); padding: 3px 6px; border-radius: 4px; color: var(--text-muted); cursor: pointer;" title="Click to copy" onclick="navigator.clipboard.writeText('${u.id}'); showToast('User ID copied!');">${u.id.substring(0, 8)}...</code></td>
+          <td style="text-align: right; padding-right: 14px;">
+            <button class="action-btn" title="Delete User from Database" onclick="deleteUser('${u.id}', '${email}')" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.2);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterUsers(query) {
+      if (!query || !query.trim()) {
+        renderUsersTable(usersList);
+        document.getElementById('userFilterCount').innerText = `Showing all ${usersList.length} users`;
+        return;
+      }
+      const q = query.trim().toLowerCase();
+      const filtered = usersList.filter(u =>
+        (u.displayName && u.displayName.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.authProvider && u.authProvider.toLowerCase().includes(q)) ||
+        (u.id && u.id.toLowerCase().includes(q))
+      );
+      renderUsersTable(filtered);
+      document.getElementById('userFilterCount').innerText = `Showing ${filtered.length} of ${usersList.length} users`;
+    }
+
+    async function deleteUser(userId, email) {
+      if (!confirm(`Are you sure you want to delete user account: ${email} from PostgreSQL database?`)) return;
+      showToast(`Deleting user ${email}...`);
+
+      try {
+        const res = await fetch(`/api/v1/users/${userId}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('User account deleted from PostgreSQL database!');
+          usersList = usersList.filter(u => u.id !== userId);
+          renderUsersTable(usersList);
+          updateUsersMetrics(usersList);
+        } else {
+          showToast('Failed to delete user.');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    // Cache & LocalStorage Cleaners
+    async function purgeRedisCache() {
+      if (!confirm('Are you sure you want to flush all Redis server cache keys?')) return;
+      showToast('Flushing Redis cache keys...');
+
+      try {
+        const res = await fetch('/api/v1/songs/cache/clear', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          showToast(data.message || 'Redis cache flushed successfully!');
+          loadCatalog(true);
+        } else {
+          showToast('Failed to flush Redis cache.');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message);
+      }
+    }
+
+    function clearStudioLocalStorage() {
+      if (!confirm('Clear browser LocalStorage, queue, and cached preferences?')) return;
+
+      localStorage.clear();
+      sessionStorage.clear();
+      clearQueue();
+      showToast('Browser LocalStorage & Session cleared!');
+    }
+
+    function cleanString(str) {
+      if (!str) return '';
+      return str
+        .replace(/\.(mp3|m4a|wav|flac|aac|ogg|opus)$/i, '')
+        .replace(/https?:\/\/[^\s]+/gi, '')
+        .replace(/www\.[^\s]+/gi, '')
+        .replace(/(masstamilan|isaimini|starmusiq|tamiltunes|sensongs|kuttyweb|tamilwire|5starmusiq|tamilmp3|mp3paw|pendujatt|waploft|djmaza|mobcup|gaana|wynk|jiosaavn|saavn|hungama|raaga|musicbadshah|pagalworld|songsall|naasongs|atozmp3|southmp3)(\.(org|com|in|co|net|info|fun|cc|ws|site|vip|xyz|me|live|pro|is|io|app|fm))?/gi, '')
+        .replace(/\b(org|com|in|net|info|fun|site|vip|xyz)\b/gi, '')
+        .replace(/\[\s*(320kbps|128kbps|192kbps|256kbps|64kbps|kbps|vbr|lossless|cd-rip|flac|hq|hd|original|audio)\s*\]/gi, '')
+        .replace(/\(\s*(320kbps|128kbps|192kbps|256kbps|64kbps|kbps|vbr|lossless|cd-rip|flac|hq|hd|original|audio)\s*\)/gi, '')
+        .replace(/\b(320kbps|128kbps|192kbps|256kbps|64kbps|kbps|vbr|lossless|cd-rip)\b/gi, '')
+        .replace(/\[\s*\]/g, '')
+        .replace(/\(\s*\)/g, '')
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/^[\s\-–—:._,]+|[\s\-–—:._,]+$/g, '')
+        .trim();
+    }
+
+    function cleanMovieOrAlbumName(str) {
+      if (!str) return '';
+      let s = cleanString(str);
+      s = s
+        .replace(/[\(\[]\s*(original\s+motion\s+picture\s+soundtrack|original\s+soundtrack|original\s+motion\s+picture\s+score|motion\s+picture\s+soundtrack|soundtrack|official\s+soundtrack|tamil|ost)\s*[\)\]]/gi, '')
+        .replace(/\b(original\s+motion\s+picture\s+soundtrack|original\s+soundtrack|original\s+motion\s+picture\s+score|motion\s+picture\s+soundtrack|soundtrack)\b/gi, '')
+        .replace(/\s*-\s*(single|ep|ost|full\s+album|audio\s+launch)\s*$/gi, '')
+        .replace(/[\(\[]\s*(single|ep)\s*[\)\]]/gi, '')
+        .replace(/^[\s\-–—:._,]+|[\s\-–—:._,]+$/g, '')
+        .trim();
+      return s || cleanString(str);
+    }
+
+    function cleanTrackTitle(str) {
+      if (!str) return '';
+      let s = cleanString(str);
+      s = s
+        .replace(/[\(\[]\s*from\s+["']?([^"')\]]+)["']?\s*[\)\]]/gi, '')
+        .replace(/^[\s\-–—:._,]+|[\s\-–—:._,]+$/g, '')
+        .trim();
+      return s || cleanString(str);
+    }
+
+    function parseMetadata(filename) {
+      const cleanFull = cleanString(filename);
+      let base = cleanString(cleanFull.replace(/\.[^/.]+$/, ''));
+      base = cleanString(base.replace(/^\s*\d{1,3}\s*[-._]\s*/, ''));
+
+      let title = base;
+      let movieName = '';
+      let artist = 'Unknown Artist';
+
+      const fromMatch = base.match(/(.*?)\s*[\(\[]\s*from\s+["']?([^"')\]]+)["']?\s*[\)\]]/i);
+      if (fromMatch) {
+        title = cleanTrackTitle(fromMatch[1]);
+        movieName = cleanMovieOrAlbumName(fromMatch[2]);
+      } else if (base.includes(' - ')) {
+        const parts = base.split(' - ').map(p => cleanString(p)).filter(Boolean);
+        if (parts.length === 2) {
+          title = cleanTrackTitle(parts[0]);
+          movieName = cleanMovieOrAlbumName(parts[1]);
+        } else if (parts.length >= 3) {
+          title = cleanTrackTitle(parts[0]);
+          movieName = cleanMovieOrAlbumName(parts[1]);
+          artist = cleanString(parts[2]);
+        }
+      } else {
+        title = cleanTrackTitle(base);
+      }
+
+      const finalMovie = movieName || title;
+      return {
+        title: title || 'Untitled Track',
+        movieName: finalMovie,
+        artist: artist || 'Unknown Artist',
+        album: finalMovie, // Movie Name and Album Name are ALWAYS identical
+      };
+    }
+
+    async function loadCatalog(force = false) {
+      if (!force && catalog.length > 0) {
+        renderTable(catalog);
+        loadMetrics();
+        return;
+      }
+
+      // 1. Instant Cache-First Render (0ms latency)
+      try {
+        const cached = localStorage.getItem('muxiz_catalog_cache');
+        if (cached && !catalog.length) {
+          catalog = JSON.parse(cached);
+          renderTable(catalog);
+          loadMetrics();
+        }
+      } catch (_) {}
+
+      // 2. High Speed Concurrent API Revalidation
+      try {
+        const t = Date.now();
+        const url = force ? `/api/v1/songs?limit=10000&nocache=1&t=${t}` : `/api/v1/songs?limit=10000`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          catalog = json.data || [];
+          try {
+            localStorage.setItem('muxiz_catalog_cache', JSON.stringify(catalog));
+          } catch (_) {}
+          renderTable(catalog);
+          loadMetrics();
+          if (force) showToast('Catalog re-synced directly from PostgreSQL');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadMetrics() {
+      try {
+        const uniqueArtists = getUniqueArtists();
+        const uniqueAlbums = getUniqueAlbums();
+        const driveCount = catalog.filter(s => s.audioUrl || s.driveFileId).length;
+        const totalArtCount = uniqueArtists.length || 0;
+        const totalAlbCount = uniqueAlbums.length || 0;
+
+        document.getElementById('metricTracks').innerText = catalog.length;
+        document.getElementById('metricArtists').innerText = totalArtCount;
+        document.getElementById('metricAlbums').innerText = totalAlbCount;
+
+        const driveEl = document.getElementById('metricDrive');
+        if (driveEl) {
+          driveEl.innerText = `${driveCount} Track${driveCount === 1 ? '' : 's'} Online`;
+        }
+
+        document.getElementById('sideCatalogCount').innerText = catalog.length;
+        const sideArt = document.getElementById('sideArtistsCount');
+        if (sideArt) sideArt.innerText = totalArtCount;
+
+        const topCount = document.getElementById('topSongsCountText');
+        if (topCount) topCount.innerText = `${catalog.length} Track${catalog.length === 1 ? '' : 's'}`;
+        const topArtCount = document.getElementById('topArtistsCountText');
+        if (topArtCount) topArtCount.innerText = `${totalArtCount} Artists`;
+      } catch (_) { }
+    }
+
+    let currentPlayingSongId = null;
+    const playIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    const pauseIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+
+    function renderTable(songs) {
+      const tbody = document.getElementById('tableBody');
+      if (!songs || !songs.length) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">No records found. Ingest audio tracks!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = songs.map(song => {
+        const art = song.artworkUrl || FALLBACK_ART;
+        const mins = Math.floor((song.duration || 180) / 60);
+        const secs = String((song.duration || 180) % 60).padStart(2, '0');
+        const dur = `${mins}:${secs}`;
+        const movie = cleanMovieOrAlbumName(song.movieName || song.albumName || 'Single');
+        const album = cleanMovieOrAlbumName(song.albumName || song.movieName || 'Single');
+        const artist = song.artistName || song.artist?.name || 'Unknown Artist';
+        const isPlaying = currentPlayingSongId === song.id && !audio.paused;
+
+        return `
+          <tr class="${isPlaying ? 'is-active-row' : ''}">
+            <td style="text-align: center;">
+              <button class="play-icon-btn ${isPlaying ? 'playing' : ''}" onclick="toggleTrackPlay('${song.id}')" title="Play / Pause ${song.title}">
+                ${isPlaying ? pauseIconSvg : playIconSvg}
+              </button>
+            </td>
+            <td>
+              <div class="table-art-wrap ${isPlaying ? 'is-playing' : ''}" onclick="toggleTrackPlay('${song.id}')" title="Click to play ${song.title}">
+                <img src="${art}" class="clean-art" loading="lazy" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+                <div class="table-play-overlay">
+                  ${isPlaying ? pauseIconSvg : playIconSvg}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 600; font-size: 14px; color: var(--text-main); cursor: pointer;" onclick="toggleTrackPlay('${song.id}')">${song.title}</div>
+            </td>
+            <td>
+              <span class="movie-neutral-tag">${movie}</span>
+            </td>
+            <td>
+              <span style="font-size: 13.5px; font-weight: 500; color: #374151;">${album}</span>
+            </td>
+            <td class="artist-neutral">
+              ${artist}
+            </td>
+            <td style="color: var(--text-muted); font-size: 13px;">
+              ${song.genre || 'Tamil'}
+            </td>
+            <td class="mono-neutral">
+              ${dur}
+            </td>
+            <td style="text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                <button class="btn-icon-plain" title="Edit Metadata" onclick="openEditModal('${song.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button class="btn-icon-plain delete-hover" title="Delete Track" onclick="deleteTrack('${song.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterCatalog(val) {
+      const q = (val || '').toLowerCase().trim();
+      if (!q) {
+        renderTable(catalog);
+        return;
+      }
+      const filtered = catalog.filter(s => {
+        return (s.title || '').toLowerCase().includes(q) ||
+          (s.movieName || '').toLowerCase().includes(q) ||
+          (s.artistName || s.artist?.name || '').toLowerCase().includes(q) ||
+          (s.albumName || '').toLowerCase().includes(q) ||
+          (s.genre || '').toLowerCase().includes(q);
+      });
+      renderTable(filtered);
+    }
+
+    function toggleTrackPlay(songId) {
+      if (currentPlayingSongId === songId) {
+        togglePlay();
+        return;
+      }
+      playTrack(songId);
+    }
+
+    function playTrack(songId) {
+      const song = catalog.find(s => s.id === songId);
+      if (!song) return;
+
+      currentPlayingSongId = songId;
+      audio.src = `/api/v1/songs/${song.id}/stream`;
+      audio.play().then(() => {
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn) playBtn.innerHTML = pauseIconSvg;
+        syncTablePlayingIcons();
+      }).catch((e) => {
+        console.error(e);
+        showToast('Connecting audio stream...');
+      });
+
+      document.getElementById('playerBar').style.display = 'flex';
+      document.getElementById('playerArt').src = song.artworkUrl || FALLBACK_ART;
+      document.getElementById('playerTitle').innerText = song.title;
+      document.getElementById('playerArtist').innerText = `${song.artistName || song.artist?.name || 'Unknown Artist'} · ${cleanMovieOrAlbumName(song.movieName || song.albumName || 'Single')}`;
+      const playBtn = document.getElementById('playBtn');
+      if (playBtn) playBtn.innerHTML = pauseIconSvg;
+      syncTablePlayingIcons();
+    }
+
+    function playNextTrack() {
+      if (!catalog.length) return;
+      const idx = catalog.findIndex(s => s.id === currentPlayingSongId);
+      const nextIdx = (idx + 1) % catalog.length;
+      playTrack(catalog[nextIdx].id);
+    }
+
+    function playPrevTrack() {
+      if (!catalog.length) return;
+      const idx = catalog.findIndex(s => s.id === currentPlayingSongId);
+      const prevIdx = idx <= 0 ? catalog.length - 1 : idx - 1;
+      playTrack(catalog[prevIdx].id);
+    }
+
+    function togglePlay() {
+      if (!audio.src) {
+        if (catalog.length > 0) playTrack(catalog[0].id);
+        return;
+      }
+      if (audio.paused) {
+        audio.play().then(() => {
+          document.getElementById('playBtn').innerHTML = pauseIconSvg;
+          syncTablePlayingIcons();
+        }).catch(() => { });
+      } else {
+        audio.pause();
+        document.getElementById('playBtn').innerHTML = playIconSvg;
+        syncTablePlayingIcons();
+      }
+    }
+
+    function closePlayerBar() {
+      audio.pause();
+      currentPlayingSongId = null;
+      document.getElementById('playerBar').style.display = 'none';
+      syncTablePlayingIcons();
+    }
+
+    function syncTablePlayingIcons() {
+      const activeTab = document.querySelector('.tab-pane.active')?.id;
+      if (activeTab === 'tab-catalog') {
+        const tbody = document.getElementById('tableBody');
+        if (tbody) renderTable(catalog);
+      }
+    }
+
+    audio.addEventListener('ended', () => {
+      playNextTrack();
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if (audio.duration) {
+        const cur = audio.currentTime;
+        const dur = audio.duration;
+        document.getElementById('seekSlider').value = (cur / dur) * 100;
+        document.getElementById('curTime').innerText = formatTime(cur);
+        document.getElementById('totalTime').innerText = formatTime(dur);
+      }
+    });
+
+    function seekAudio(val) {
+      if (audio.duration) {
+        audio.currentTime = (val / 100) * audio.duration;
+      }
+    }
+
+    function setAudioVolume(val) {
+      audio.volume = parseFloat(val);
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Drag & Drop
+    const dropzone = document.getElementById('dropzoneMin');
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', e => {
+      if (e.dataTransfer.files?.length) {
+        handleSelectedFiles(e.dataTransfer.files);
+      }
+    });
+
+    function detectSongGenreAndMood(title, movie, artist, primaryGenre) {
+        const text = `${title || ''} ${movie || ''} ${artist || ''} ${primaryGenre || ''}`.toLowerCase();
+
+        // 1. Classical / Devotional / Spiritual
+        if (/\b(sivan|murugan|krishna|amman|sai|ganesha|devotional|bhajan|stotram|mantra|om|namah|raga|carnatic|fusion|thillana|varnam|suprabhatam|swami|temple|divine|spiritual)\b/i.test(text)) {
+          return 'Tamil · Classical / Devotional';
+        }
+
+        // 2. Folk / Gaana / Native / Village
+        if (/\b(gaana|folk|gramathu|thiruvizha|karuppu|nattuppura|villu|parai|therukoothu|dindigul|madurai|thanjavur|morattu|gana|kothu|kuthu pattu)\b/i.test(text)) {
+          return 'Tamil · Folk / Gaana';
+        }
+
+        // 3. Fast Beat / Dance / Kuthu / Party / Club
+        if (/\b(kuthu|dance|party|beat|danga|marana|aalu|vaathi|arabic kuthu|chellama|naa ready|jalabulajangu|badass|hukum|taana|kaavalaa|tum tum|local|thara local|dappan|chumma kizhi|sodakku|club|edm|remix|dj)\b/i.test(text)) {
+          return 'Tamil · Dance / Kuthu';
+        }
+
+        // 4. Mass / Action / Energetic / Hero Theme
+        if (/\b(theme|mass|anthem|bgm|roar|beast|jailer|leo|vikram|master|kabali|vettaiyan|fire|thalaivar|alappara|verithanam|singam|surya|don|valimai|thunivu|thuppakki|kaththi|hero|power|clash|war|fighter|devara|kalki|salaar|pushpa|action)\b/i.test(text)) {
+          return 'Tamil · Mass / Energetic';
+        }
+
+        // 5. Soulful / Sad / Emotional / Heartbreak
+        if (/\b(sad|pirivu|valigal|kaneer|alone|pain|heartbreak|maranthu|po nee po|kanave|unnaley|vazhi|thaniyaga|theeradha|azhuvatha|vidai|marakkuma|thaaye|amma|appa|kannaana kanne|chinnachiru|aararo|lullaby|emotional|tears|grief)\b/i.test(text)) {
+          return 'Tamil · Soulful / Sad';
+        }
+
+        // 6. Chill / Lo-Fi / Acoustic / Midnight Breeze
+        if (/\b(lofi|lo-fi|acoustic|chill|unplugged|slowed|reverb|midnight|breeze|coffee|relax|peaceful|calm|ambient|night|rain|moonlight)\b/i.test(text)) {
+          return 'Tamil · Chill / Lo-Fi';
+        }
+
+        // 7. Hip-Hop / Rap / Urban / Trap
+        if (/\b(hip hop|hiphop|rap|trap|urban|aadhi|yogi b|mc|rhyme|flow|street|cypher|drill|bloody sweet|hip-hop)\b/i.test(text)) {
+          return 'Tamil · Hip-Hop / Rap';
+        }
+
+        // 8. Melody / Romantic / Love
+        if (/\b(kadhal|kadhale|anbe|uyire|vizhi|melody|love|romantic|poove|nenje|azhage|kanmani|unakkul|thaen|priya|enodu|nee|pesu|idhayam|kaatru|mazhai|vaseegara|munbe|vinnathaandi|mallipoo|devathai|kanmoodi|mayakkama|piraye|thodu|unmai|heart)\b/i.test(text)) {
+          return 'Tamil · Melody / Romantic';
+        }
+
+        if (primaryGenre && primaryGenre.toLowerCase() !== 'music' && primaryGenre.toLowerCase() !== 'tamil') {
+          return `${primaryGenre} · Melody`;
+        }
+
+        return 'Tamil · Melody / Romantic';
+      }
+
+      function handleSelectedFiles(files) {
+        if (!files || !files.length) return;
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const id = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          const parsed = parseMetadata(file.name);
+          const detectedGenre = detectSongGenreAndMood(parsed.title, parsed.movieName, parsed.artist, '');
+
+          const item = {
+            id,
+            file,
+            filename: file.name,
+            title: parsed.title,
+            movieName: parsed.movieName,
+            artistName: parsed.artist,
+            albumName: parsed.album,
+            genre: detectedGenre,
+            language: 'Tamil',
+            artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/e2/37/b3e237ba-7652-067a-a594-395015b2043c/cover.jpg/600x600bb.jpg',
+            status: 'pending',
+            statusText: 'Extracting Exact Info...',
+          };
+
+          queue.push(item);
+          fetchAppleMusicArt(item);
+        }
+        renderQueue();
+      }
+
+      async function fetchAppleMusicArt(item) {
+        try {
+          const queryTerms = [
+            `${item.title} ${item.movieName}`,
+            `${item.title}`,
+            `${item.movieName}`,
+          ];
+
+          for (const term of queryTerms) {
+            if (!term || !term.trim()) continue;
+            const q = `${term} Tamil`.trim();
+            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&country=IN&entity=song&limit=3`, {
+              signal: AbortSignal.timeout(3500),
+            });
+            if (res.ok) {
+              const json = await res.json();
+              if (json.results && json.results.length > 0) {
+                const match = json.results[0];
+
+                if (item.status === 'uploading' || item.status === 'success') return;
+
+                if (match.trackName) {
+                  item.title = cleanTrackTitle(match.trackName);
+                  const titleEl = document.getElementById(`titleInput_${item.id}`);
+                  if (titleEl) titleEl.value = item.title;
+                }
+
+                const rawMovie = match.collectionName || item.movieName;
+                const cleanMovie = cleanMovieOrAlbumName(rawMovie);
+                item.movieName = cleanMovie;
+                item.albumName = cleanMovie;
+                const movieEl = document.getElementById(`movieInput_${item.id}`);
+                if (movieEl) movieEl.value = cleanMovie;
+                const albEl = document.getElementById(`albumInput_${item.id}`);
+                if (albEl) albEl.value = cleanMovie;
+
+                if (match.artistName) {
+                  item.artistName = cleanString(match.artistName);
+                  const artistEl = document.getElementById(`artistInput_${item.id}`);
+                  if (artistEl) artistEl.value = item.artistName;
+                }
+
+                const detectedGenre = detectSongGenreAndMood(item.title, item.movieName, item.artistName, match.primaryGenreName);
+                item.genre = detectedGenre;
+                const genreEl = document.getElementById(`genreInput_${item.id}`);
+                if (genreEl) genreEl.value = detectedGenre;
+
+                if (match.artworkUrl100) {
+                  item.artworkUrl = match.artworkUrl100
+                    .replace(/\/100x100bb\.(jpg|png)/i, '/600x600bb.jpg')
+                    .replace('100x100bb', '600x600bb');
+                  const artUrlEl = document.getElementById(`artUrlInput_${item.id}`);
+                  if (artUrlEl) artUrlEl.value = item.artworkUrl;
+                  const thumbEl = document.getElementById(`thumb_${item.id}`);
+                  if (thumbEl) thumbEl.src = item.artworkUrl;
+                  const pre = new Image();
+                  pre.src = item.artworkUrl;
+                }
+
+                item.statusText = 'Ready to Upload';
+                const stEl = document.getElementById(`status_text_${item.id}`);
+                if (stEl) stEl.innerText = item.statusText;
+                break;
+              }
+            }
+          }
+        } catch (_) {
+          item.statusText = 'Ready';
+          const stEl = document.getElementById(`status_text_${item.id}`);
+          if (stEl) stEl.innerText = item.statusText;
+        }
+      }
+
+      function renderQueue() {
+        const wrap = document.getElementById('queueWrap');
+        const list = document.getElementById('queueList') || document.getElementById('queueListContainer');
+        document.getElementById('queueTotal').innerText = queue.length;
+
+        if (!queue.length) {
+          wrap.style.display = 'none';
+          return;
+        }
+        wrap.style.display = 'block';
+
+        list.innerHTML = queue.map(item => `
+        <div class="queue-row-card">
+          <div style="display: flex; gap: 14px; align-items: flex-start;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="table-art-wrap ${currentPlayingSongId === 'queue_' + item.id ? 'is-playing' : ''}" style="width: 58px; height: 58px;" onclick="event.preventDefault(); previewQueueAudio('${item.id}')" title="Click to Play / Listen to audio">
+                <img id="thumb_${item.id}" src="${item.artworkUrl || FALLBACK_ART}" class="clean-art" style="width: 100%; height: 100%;" decoding="async" loading="eager" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+                <div class="table-play-overlay">
+                  ${currentPlayingSongId === 'queue_' + item.id && !audio.paused ? pauseIconSvg : playIconSvg}
+                </div>
+              </div>
+            </div>
+            
+            <div class="queue-grid-inputs">
+              <div>
+                <label class="input-minimal-label">Track Title</label>
+                <input type="text" id="titleInput_${item.id}" class="input-minimal-ctrl" value="${item.title}" oninput="updateQueueField('${item.id}', 'title', this.value)">
+              </div>
+              <div>
+                <label class="input-minimal-label">Movie / Film</label>
+                <input type="text" id="movieInput_${item.id}" class="input-minimal-ctrl" value="${item.movieName}" oninput="updateQueueField('${item.id}', 'movieName', this.value)">
+              </div>
+              <div>
+                <label class="input-minimal-label">Artist</label>
+                <input type="text" id="artistInput_${item.id}" class="input-minimal-ctrl" value="${item.artistName}" oninput="updateQueueField('${item.id}', 'artistName', this.value)">
+              </div>
+              <div>
+                <label class="input-minimal-label">Genre & Mood</label>
+                <input type="text" id="genreInput_${item.id}" class="input-minimal-ctrl" value="${item.genre || 'Tamil · Melody / Romantic'}" placeholder="e.g. Tamil · Melody, Dance / Kuthu" oninput="updateQueueField('${item.id}', 'genre', this.value)" list="genreMoodList">
+              </div>
+              <div style="display: none;">
+                <input type="text" id="albumInput_${item.id}" value="${item.albumName}">
+              </div>
+              <div style="grid-column: span 4; margin-top: 4px;">
+                <label class="input-minimal-label">🖼️ Artwork Image Link (Paste URL or Upload File)</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="artUrlInput_${item.id}" class="input-minimal-ctrl" value="${item.artworkUrl}" placeholder="Paste image link e.g. https://... (Apple Music / Google Drive / Web image)" oninput="updateQueueArtwork('${item.id}', this.value)">
+                  <input type="file" id="artFileInput_${item.id}" accept="image/*" style="display: none;" onchange="handleQueueArtFile('${item.id}', this.files[0])">
+                  <button type="button" class="btn-minimal-light" style="font-size: 12px; white-space: nowrap; padding: 6px 12px;" onclick="document.getElementById('artFileInput_${item.id}').click()">
+                    Upload File to Drive
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-main); font-size: 12px;">
+            <div style="color: var(--text-muted);">
+              ${item.filename} (${(item.file.size / (1024 * 1024)).toFixed(2)} MB)
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="status_text_${item.id}" style="font-weight: 500; color: ${item.status === 'error' ? '#ef4444' : item.status === 'success' ? '#10b981' : item.status === 'uploading' ? '#3b82f6' : 'var(--text-muted)'};">${item.statusText}</span>
+              <div id="action_box_${item.id}" style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="play-icon-btn ${currentPlayingSongId === 'queue_' + item.id && !audio.paused ? 'playing' : ''}" onclick="event.preventDefault(); previewQueueAudio('${item.id}')" title="Play / Pause Audio">
+                  ${currentPlayingSongId === 'queue_' + item.id && !audio.paused ? pauseIconSvg : playIconSvg}
+                </button>
+                ${item.status === 'pending' || item.status === 'error' ? `
+                  <button type="button" class="btn-minimal-dark" style="padding: 4px 10px; font-size: 12px;" onclick="event.preventDefault(); uploadSingleItem('${item.id}')">${item.status === 'error' ? 'Retry Upload' : 'Upload'}</button>
+                  <button type="button" class="btn-minimal-light" style="padding: 4px 8px; font-size: 12px;" onclick="event.preventDefault(); removeQueueItem('${item.id}')">&times;</button>
+                ` : item.status === 'uploading' ? `
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 70px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                      <div id="prog_bar_${item.id}" style="width: ${item.progress || 5}%; height: 100%; background: #3b82f6; transition: width 0.2s;"></div>
+                    </div>
+                    <span style="font-size: 11px; color: #3b82f6; font-weight: 600;">${item.progress || 0}%</span>
+                  </div>
+                ` : `
+                  <span style="font-size: 12px; color: #10b981; font-weight: 600;">✅ Uploaded</span>
+                `}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      }
+
+      function updateQueueItemUI(item) {
+        const statusEl = document.getElementById(`status_text_${item.id}`);
+        const actionEl = document.getElementById(`action_box_${item.id}`);
+        if (!statusEl || !actionEl) return;
+
+        if (item.status === 'uploading') {
+          statusEl.style.color = '#3b82f6';
+          statusEl.innerText = item.statusText || 'Uploading...';
+          actionEl.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 70px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+              <div id="prog_bar_${item.id}" style="width: ${item.progress || 5}%; height: 100%; background: #3b82f6; transition: width 0.2s;"></div>
+            </div>
+            <span id="prog_num_${item.id}" style="font-size: 11px; color: #3b82f6; font-weight: 600;">${item.progress || 0}%</span>
+          </div>
+        `;
+        } else if (item.status === 'success') {
+          statusEl.style.color = '#10b981';
+          statusEl.innerText = 'Uploaded to Drive & DB';
+          actionEl.innerHTML = `<span style="font-size: 12px; color: #10b981; font-weight: 600;">✅ Uploaded</span>`;
+        } else if (item.status === 'error') {
+          statusEl.style.color = '#ef4444';
+          statusEl.innerText = item.statusText || 'Upload error';
+          actionEl.innerHTML = `
+          <button type="button" class="btn-minimal-dark" style="padding: 4px 10px; font-size: 12px;" onclick="event.preventDefault(); uploadSingleItem('${item.id}')">Retry Upload</button>
+          <button type="button" class="btn-minimal-light" style="padding: 4px 8px; font-size: 12px;" onclick="event.preventDefault(); removeQueueItem('${item.id}')">&times;</button>
+        `;
+        } else {
+          statusEl.style.color = 'var(--text-muted)';
+          statusEl.innerText = item.statusText || 'Ready';
+          actionEl.innerHTML = `
+          <button type="button" class="btn-minimal-dark" style="padding: 4px 10px; font-size: 12px;" onclick="event.preventDefault(); uploadSingleItem('${item.id}')">Upload</button>
+          <button type="button" class="btn-minimal-light" style="padding: 4px 8px; font-size: 12px;" onclick="event.preventDefault(); removeQueueItem('${item.id}')">&times;</button>
+        `;
+        }
+      }
+
+      function updateQueueField(id, field, val) {
+        const item = queue.find(q => q.id === id);
+        if (!item) return;
+        item[field] = val;
+        if (field === 'movieName') {
+          item.albumName = val;
+          const albumInput = document.getElementById(`albumInput_${id}`);
+          if (albumInput) albumInput.value = val;
+        }
+      }
+
+      function updateQueueArtwork(id, url) {
+        const item = queue.find(q => q.id === id);
+        if (item) {
+          item.artworkUrl = url.trim();
+          const img = document.getElementById(`thumb_${id}`);
+          if (img) img.src = item.artworkUrl;
+        }
+      }
+
+      async function handleQueueArtFile(id, file) {
+        if (!file) return;
+        const item = queue.find(q => q.id === id);
+        if (!item) return;
+
+        showToast('Uploading custom artwork to Drive...');
+        const form = new FormData();
+        form.append('file', file);
+
+        try {
+          const res = await fetch('/api/v1/uploads/artwork', {
+            method: 'POST',
+            body: form,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            item.artworkUrl = data.artworkUrl;
+            renderQueue();
+            showToast('Cover uploaded and link attached!');
+          }
+        } catch (err) {
+          showToast('Artwork upload error: ' + err.message);
+        }
+      }
+
+      function removeQueueItem(id) {
+        queue = queue.filter(q => q.id !== id);
+        renderQueue();
+      }
+
+      function clearQueue() {
+        queue = [];
+        renderQueue();
+      }
+
+      function uploadSingleItem(id) {
+        return new Promise((resolve) => {
+          const item = queue.find(q => q.id === id);
+          if (!item || item.status === 'uploading') {
+            resolve(false);
+            return;
+          }
+
+          const titleEl = document.getElementById(`titleInput_${item.id}`);
+          if (titleEl) item.title = titleEl.value;
+          const movieEl = document.getElementById(`movieInput_${item.id}`);
+          if (movieEl) item.movieName = movieEl.value;
+          const artistEl = document.getElementById(`artistInput_${item.id}`);
+          if (artistEl) item.artistName = artistEl.value;
+          const albumEl = document.getElementById(`albumInput_${item.id}`);
+          if (albumEl) item.albumName = albumEl.value;
+          const genreEl = document.getElementById(`genreInput_${item.id}`);
+          if (genreEl) item.genre = genreEl.value;
+          const artUrlEl = document.getElementById(`artUrlInput_${item.id}`);
+          if (artUrlEl && artUrlEl.value) item.artworkUrl = artUrlEl.value;
+
+          item.status = 'uploading';
+          item.progress = 0;
+          item.statusText = 'Uploading 0%...';
+          updateQueueItemUI(item);
+
+          const form = new FormData();
+          form.append('file', item.file);
+          form.append('title', cleanTrackTitle(item.title || ''));
+          form.append('artistName', item.artistName || 'Unknown Artist');
+          const movieClean = cleanMovieOrAlbumName(item.movieName || item.albumName || '');
+          form.append('movieName', movieClean);
+          form.append('albumName', movieClean); // Identical Movie and Album Name
+          form.append('genre', item.genre || 'Tamil');
+          form.append('language', item.language || 'Tamil');
+          if (item.artworkUrl) form.append('artworkUrl', item.artworkUrl);
+
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/v1/uploads/song', true);
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 100);
+              item.progress = pct;
+              if (pct < 100) {
+                item.statusText = `Uploading ${pct}%...`;
+              } else {
+                item.statusText = 'Saving in Google Drive & Database...';
+              }
+              const statusEl = document.getElementById(`status_text_${item.id}`);
+              if (statusEl) statusEl.innerText = item.statusText;
+              const progBar = document.getElementById(`prog_bar_${item.id}`);
+              if (progBar) progBar.style.width = `${pct}%`;
+              const progNum = document.getElementById(`prog_num_${item.id}`);
+              if (progNum) progNum.innerText = `${pct}%`;
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              item.status = 'success';
+              item.statusText = 'Uploaded to Drive & Saved in DB';
+              updateQueueItemUI(item);
+              loadCatalog(true);
+              if (typeof renderArtistsHub === 'function') renderArtistsHub(true);
+              showToast(`"${item.title}" uploaded successfully!`);
+              resolve(true);
+            } else {
+              let msg = 'Upload error';
+              try {
+                const errObj = JSON.parse(xhr.responseText);
+                msg = errObj.message || msg;
+              } catch (_) {
+                msg = xhr.statusText || msg;
+              }
+              item.status = 'error';
+              item.statusText = `Failed: ${msg}`;
+              updateQueueItemUI(item);
+              resolve(false);
+            }
+          };
+
+          xhr.onerror = () => {
+            item.status = 'error';
+            item.statusText = 'Network error. Click Retry Upload.';
+            updateQueueItemUI(item);
+            resolve(false);
+          };
+
+          xhr.ontimeout = () => {
+            item.status = 'error';
+            item.statusText = 'Upload timed out. Click Retry Upload.';
+            updateQueueItemUI(item);
+            resolve(false);
+          };
+
+          xhr.timeout = 300000; // 5 minutes timeout
+          xhr.send(form);
+        });
+      }
+
+      async function uploadAllQueue() {
+        const itemsToUpload = queue.filter(q => q.status === 'pending' || q.status === 'error');
+        if (!itemsToUpload.length) {
+          showToast('No pending songs in queue to upload');
+          return;
+        }
+        showToast(`Starting batch upload for ${itemsToUpload.length} tracks...`);
+        for (const item of itemsToUpload) {
+          await uploadSingleItem(item.id);
+        }
+      }
+
+      function previewQueueAudio(itemId) {
+        const item = queue.find(q => q.id === itemId);
+        if (!item || !item.file) return;
+
+        const objUrl = URL.createObjectURL(item.file);
+        audio.src = objUrl;
+        currentPlayingSongId = 'queue_' + itemId;
+        audio.play().then(() => {
+          const playBtn = document.getElementById('playBtn');
+          if (playBtn) playBtn.innerHTML = pauseIconSvg;
+        }).catch((e) => {
+          console.error(e);
+        });
+
+        document.getElementById('playerBar').style.display = 'flex';
+        document.getElementById('playerArt').src = item.artworkUrl || FALLBACK_ART;
+        document.getElementById('playerTitle').innerText = `[Preview] ${item.title || item.filename}`;
+        document.getElementById('playerArtist').innerText = `${item.artistName || 'Local Audio'} · ${item.movieName || 'Ingestion Queue'}`;
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn) playBtn.innerHTML = pauseIconSvg;
+      }
+
+      // Modal Metric Inspector Logic
+      let currentInspectType = 'artists';
+      let currentInspectItems = [];
+
+      function openInspectModal(type) {
+        if (type === 'artists') {
+          switchTab('artists');
+          return;
+        }
+
+        currentInspectType = type;
+        const modal = document.getElementById('inspectModal');
+        const title = document.getElementById('inspectModalTitle');
+        const sub = document.getElementById('inspectModalSub');
+        const icon = document.getElementById('inspectModalIcon');
+        const search = document.getElementById('inspectSearchInput');
+        search.value = '';
+
+        if (type === 'albums') {
+          icon.innerText = '🎬';
+          title.innerText = 'Albums & Films Directory';
+          sub.innerText = 'All unique movie soundtracks and studio albums';
+          currentInspectItems = getUniqueAlbums();
+        } else if (type === 'tracks') {
+          icon.innerText = '🎵';
+          title.innerText = 'Active Database Tracks';
+          sub.innerText = 'All songs currently streaming and active in catalog';
+          currentInspectItems = catalog.map(s => ({
+            title: s.title,
+            subtitle: `${cleanMovieOrAlbumName(s.movieName || s.albumName)} · ${s.artistName || 'Unknown Artist'}`,
+            artwork: s.artworkUrl,
+            filterKey: s.title,
+          }));
+        } else if (type === 'drive') {
+          icon.innerText = '☁️';
+          title.innerText = 'Google Drive Storage Vault';
+          sub.innerText = 'Folder hierarchy and stream storage health';
+          currentInspectItems = [
+            { title: 'Audio Vault Folder', subtitle: 'ID: 1lggxBl5... · High bitrate MP3/M4A master audio files', artwork: '/app_logo.png' },
+            { title: 'Artwork Vault Folder', subtitle: 'ID: 1400x1400 HD Cover Artworks', artwork: '/app_logo.png' },
+            { title: 'Metadata Sync Cache', subtitle: 'Supabase PostgreSQL + JSON mirrors', artwork: '/app_logo.png' },
+          ];
+        }
+
+        renderInspectList(currentInspectItems);
+        modal.classList.add('show');
+      }
+
+      // ARTISTS DIRECTORY & DISCOGRAPHY ENGINE
+      let cachedArtistsList = [];
+      let currentSelectedArtist = null;
+      let artistViewMode = localStorage.getItem('studio_artist_view_mode') || 'grid';
+
+      function setArtistViewMode(mode) {
+        artistViewMode = mode;
+        localStorage.setItem('studio_artist_view_mode', mode);
+
+        const gridContainer = document.getElementById('artistsGridContainer');
+        const tableContainer = document.getElementById('artistsTableContainer');
+        const gridBtn = document.getElementById('artistGridBtn');
+        const tableBtn = document.getElementById('artistTableBtn');
+
+        if (mode === 'grid') {
+          if (gridContainer) gridContainer.style.display = 'grid';
+          if (tableContainer) tableContainer.style.display = 'none';
+          if (gridBtn) gridBtn.classList.add('active');
+          if (tableBtn) tableBtn.classList.remove('active');
+        } else {
+          if (gridContainer) gridContainer.style.display = 'none';
+          if (tableContainer) tableContainer.style.display = 'block';
+          if (gridBtn) gridBtn.classList.remove('active');
+          if (tableBtn) tableBtn.classList.add('active');
+        }
+      }
+
+      async function renderArtistsHub(force = false) {
+        try {
+          const res = await fetch('/api/v1/songs/artists/all');
+          if (res.ok) {
+            cachedArtistsList = await res.json();
+          } else {
+            cachedArtistsList = getUniqueArtists();
+          }
+        } catch (_) {
+          cachedArtistsList = getUniqueArtists();
+        }
+
+        const countEl = document.getElementById('artistsTotalCount');
+        if (countEl) countEl.innerText = `${cachedArtistsList.length} Artists`;
+        const topCountEl = document.getElementById('topArtistsCountText');
+        if (topCountEl) topCountEl.innerText = `${cachedArtistsList.length} Artists`;
+        const sideEl = document.getElementById('sideArtistsCount');
+        if (sideEl) sideEl.innerText = cachedArtistsList.length;
+
+        // Ensure main artists view is visible and detail is hidden
+        document.getElementById('artistsMainView').style.display = 'block';
+        document.getElementById('artistDetailView').style.display = 'none';
+
+        renderArtistsGridCards(cachedArtistsList);
+        renderArtistsTableRows(cachedArtistsList);
+        setArtistViewMode(artistViewMode);
+      }
+
+      function renderArtistsGridCards(artists) {
+        const container = document.getElementById('artistsGridContainer');
+        if (!container) return;
+
+        if (!artists || !artists.length) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 48px 16px; background: #FFFFFF; border: 1px solid var(--border-main); border-radius: 12px; color: var(--text-muted);">
+              <div style="font-size: 32px; margin-bottom: 8px;">👥</div>
+              <div style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">No Artists Found</div>
+              <div style="font-size: 13px;">Ingest songs to automatically populate artists directory</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = artists.map(artist => {
+          const art = artist.image || artist.artwork || FALLBACK_ART;
+          const escapedName = (artist.name || '').replace(/'/g, "\\'");
+          const songCount = artist.songCount !== undefined ? artist.songCount : (artist.count || (artist.songs ? artist.songs.length : 0));
+
+          let sampleSongsText = 'No sample songs';
+          if (artist.songs && artist.songs.length > 0) {
+            sampleSongsText = artist.songs.slice(0, 2).map(s => s.title).join(', ');
+            if (artist.songs.length > 2) sampleSongsText += ` +${artist.songs.length - 2} more`;
+          }
+
+          return `
+            <div class="artist-minimal-card">
+              <img src="${art}" class="artist-card-avatar" alt="${artist.name}" loading="lazy" onclick="viewArtistDiscography('${escapedName}')" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+              <div class="artist-card-name" onclick="viewArtistDiscography('${escapedName}')" title="${artist.name}">
+                ${artist.name}
+              </div>
+              <div class="artist-track-badge">
+                <span>🎵</span>
+                <span>${songCount} ${songCount === 1 ? 'Track' : 'Tracks'}</span>
+              </div>
+              <div class="artist-sample-tracks" title="${sampleSongsText}">
+                ${sampleSongsText}
+              </div>
+              <div class="artist-card-actions">
+                <button class="btn-artist-view" onclick="viewArtistDiscography('${escapedName}')" title="View Discography">
+                  <span>View Songs</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+                <button class="btn-icon-plain" title="Edit Profile & Photo" onclick="openEditArtistModal('${artist.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button class="btn-icon-plain delete-hover" title="Delete Artist" onclick="deleteArtistRecord('${artist.id}', '${escapedName}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderArtistsTableRows(artists) {
+        const tbody = document.getElementById('artistsTableBody');
+        if (!tbody) return;
+
+        if (!artists || !artists.length) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">No artists found. Ingest songs to populate artists!</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = artists.map(artist => {
+          const art = artist.image || artist.artwork || FALLBACK_ART;
+          const escapedName = (artist.name || '').replace(/'/g, "\\'");
+          const songCount = artist.songCount !== undefined ? artist.songCount : (artist.count || (artist.songs ? artist.songs.length : 0));
+
+          let sampleSongsText = '—';
+          if (artist.songs && artist.songs.length > 0) {
+            sampleSongsText = artist.songs.slice(0, 2).map(s => s.title).join(', ');
+            if (artist.songs.length > 2) sampleSongsText += ` +${artist.songs.length - 2} more`;
+          }
+
+          return `
+          <tr>
+            <td>
+              <img src="${art}" class="clean-art" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-main); cursor: pointer;" onclick="viewArtistDiscography('${escapedName}')" loading="lazy" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+            </td>
+            <td>
+              <div style="font-weight: 600; font-size: 14px; color: var(--text-main); cursor: pointer;" onclick="viewArtistDiscography('${escapedName}')">${artist.name}</div>
+            </td>
+            <td>
+              <span class="movie-neutral-tag">${songCount} ${songCount === 1 ? 'Track' : 'Tracks'}</span>
+            </td>
+            <td style="color: var(--text-muted); font-size: 13px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${sampleSongsText}
+            </td>
+            <td style="text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button class="btn-minimal-light" style="padding: 4px 10px; font-size: 12px;" onclick="viewArtistDiscography('${escapedName}')" title="View all songs by ${artist.name}">
+                  View Songs
+                </button>
+                <button class="btn-icon-plain" title="Edit Artist Profile" onclick="openEditArtistModal('${artist.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button class="btn-icon-plain delete-hover" title="Delete Artist" onclick="deleteArtistRecord('${artist.id}', '${escapedName}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+        }).join('');
+      }
+
+      function filterArtistsGrid(val) {
+        const q = (val || '').toLowerCase().trim();
+        if (!q) {
+          renderArtistsGridCards(cachedArtistsList);
+          renderArtistsTableRows(cachedArtistsList);
+          return;
+        }
+        const filtered = cachedArtistsList.filter(a => a.name.toLowerCase().includes(q));
+        renderArtistsGridCards(filtered);
+        renderArtistsTableRows(filtered);
+      }
+
+      function openEditArtistModal(id) {
+        const artist = cachedArtistsList.find(a => a.id === id);
+        if (!artist) return;
+
+        document.getElementById('editArtistId').value = artist.id;
+        document.getElementById('editArtistNameInput').value = artist.name || '';
+        document.getElementById('editArtistImageInput').value = artist.image || artist.artwork || '';
+        document.getElementById('artistModalPreview').src = artist.image || artist.artwork || FALLBACK_ART;
+
+        document.getElementById('editArtistModal').classList.add('show');
+      }
+
+      function closeEditArtistModal() {
+        document.getElementById('editArtistModal').classList.remove('show');
+      }
+
+      async function uploadCustomArtistPhoto(file) {
+        if (!file) return;
+        showToast('Uploading artist photo to Google Drive...');
+        const form = new FormData();
+        form.append('file', file);
+
+        try {
+          const res = await fetch('/api/v1/uploads/artwork', {
+            method: 'POST',
+            body: form,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById('editArtistImageInput').value = data.artworkUrl;
+            document.getElementById('artistModalPreview').src = data.artworkUrl;
+            showToast('Artist photo uploaded to Google Drive!');
+          }
+        } catch (err) {
+          showToast('Artist photo upload error: ' + err.message);
+        }
+      }
+
+      async function saveArtistProfile() {
+        const id = document.getElementById('editArtistId').value;
+        const name = document.getElementById('editArtistNameInput').value.trim();
+        const image = document.getElementById('editArtistImageInput').value.trim();
+
+        if (!id) return;
+        showToast('Saving artist profile...');
+
+        try {
+          const res = await fetch(`/api/v1/songs/artists/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, image }),
+          });
+
+          if (res.ok) {
+            closeEditArtistModal();
+            showToast('Artist profile updated & synced to app!');
+            loadCatalog(true);
+            renderArtistsHub(true);
+          } else {
+            showToast('Failed to update artist profile');
+          }
+        } catch (err) {
+          showToast('Error: ' + err.message);
+        }
+      }
+
+      async function deleteArtistRecord(id, name) {
+        if (!confirm(`Are you sure you want to delete artist "${name}" and all their songs from the database and Google Drive?`)) return;
+
+        showToast(`Deleting artist "${name}"...`);
+        try {
+          const res = await fetch(`/api/v1/songs/artists/${id}`, {
+            method: 'DELETE',
+          });
+
+          if (res.ok) {
+            showToast(`Artist "${name}" and songs deleted!`);
+            loadCatalog(true);
+            renderArtistsHub(true);
+          } else {
+            showToast('Failed to delete artist');
+          }
+        } catch (err) {
+          showToast('Error: ' + err.message);
+        }
+      }
+
+      function viewArtistDiscography(artistName) {
+        currentSelectedArtist = artistName;
+        const songsByArtist = catalog.filter(s => {
+          const name = (s.artistName || s.artist?.name || '').toLowerCase();
+          return name.includes(artistName.toLowerCase());
+        });
+
+        const artistObj = cachedArtistsList.find(a => a.name.toLowerCase() === artistName.toLowerCase()) || {
+          name: artistName,
+          image: songsByArtist[0]?.artworkUrl || FALLBACK_ART,
+          songCount: songsByArtist.length,
+        };
+
+        document.getElementById('detailArtistName').innerText = artistObj.name;
+        document.getElementById('detailArtistImg').src = artistObj.image || artistObj.artwork || FALLBACK_ART;
+        document.getElementById('detailArtistSongCount').innerText = `${songsByArtist.length} ${songsByArtist.length === 1 ? 'Track' : 'Tracks'}`;
+        document.getElementById('detailArtistSub').innerText = `Discography & all ${songsByArtist.length} catalog songs by ${artistObj.name}`;
+
+        const tbody = document.getElementById('artistSongsTableBody');
+        if (!songsByArtist.length) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No songs found for this artist.</td></tr>`;
+        } else {
+          tbody.innerHTML = songsByArtist.map(song => {
+            const art = song.artworkUrl || FALLBACK_ART;
+            const mins = Math.floor((song.duration || 180) / 60);
+            const secs = String((song.duration || 180) % 60).padStart(2, '0');
+            const dur = `${mins}:${secs}`;
+            const movie = cleanMovieOrAlbumName(song.movieName || song.albumName || 'Single');
+            const album = cleanMovieOrAlbumName(song.albumName || song.movieName || 'Single');
+            const isPlaying = currentPlayingSongId === song.id && !audio.paused;
+
+            return `
+            <tr class="${isPlaying ? 'is-active-row' : ''}">
+              <td style="text-align: center;">
+                <button class="play-icon-btn ${isPlaying ? 'playing' : ''}" onclick="toggleTrackPlay('${song.id}')" title="Play / Pause ${song.title}">
+                  ${isPlaying ? pauseIconSvg : playIconSvg}
+                </button>
+              </td>
+              <td>
+                <div class="table-art-wrap ${isPlaying ? 'is-playing' : ''}" onclick="toggleTrackPlay('${song.id}')" title="Click to play ${song.title}">
+                  <img src="${art}" class="clean-art" loading="lazy" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+                  <div class="table-play-overlay">
+                    ${isPlaying ? pauseIconSvg : playIconSvg}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-main); cursor: pointer;" onclick="toggleTrackPlay('${song.id}')">${song.title}</div>
+              </td>
+              <td>
+                <span class="movie-neutral-tag">${movie}</span>
+              </td>
+              <td>
+                <span style="font-size: 13.5px; font-weight: 500; color: #374151;">${album}</span>
+              </td>
+              <td style="color: var(--text-muted); font-size: 13px;">
+                ${song.genre || 'Tamil'}
+              </td>
+              <td class="mono-neutral">
+                ${dur}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                  <button class="btn-icon-plain" title="Edit Metadata" onclick="openEditModal('${song.id}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button class="btn-icon-plain delete-hover" title="Delete Track" onclick="deleteTrack('${song.id}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+          }).join('');
+        }
+
+        document.getElementById('artistsMainView').style.display = 'none';
+        document.getElementById('artistDetailView').style.display = 'block';
+      }
+
+      function closeArtistDetail() {
+        document.getElementById('artistDetailView').style.display = 'none';
+        document.getElementById('artistsMainView').style.display = 'block';
+      }
+
+      async function wipeAllSongsCatalog() {
+        const confirmInput = prompt('⚠️ DANGER: This will permanently delete ALL songs and albums from the database, Google Drive, and Redis cache.\n\nType DELETE to confirm:');
+        if (confirmInput !== 'DELETE') {
+          showToast('Wipe cancelled');
+          return;
+        }
+
+        showToast('Wiping all songs from database & storage...');
+        try {
+          const res = await fetch('/api/v1/songs/all/wipe', {
+            method: 'DELETE',
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            catalog = [];
+            renderTable([]);
+            if (typeof renderArtistsHub === 'function') renderArtistsHub();
+            loadMetrics();
+            showToast(data.message || 'All songs successfully wiped!');
+          } else {
+            showToast('Failed to wipe songs from database');
+          }
+        } catch (err) {
+          showToast('Wipe error: ' + err.message);
+        }
+      }
+
+      function closeInspectModal() {
+        document.getElementById('inspectModal').classList.remove('show');
+      }
+
+      const KNOWN_ARTIST_ALIASES = {
+        'gv prakash': 'G.V. Prakash Kumar',
+        'g.v. prakash': 'G.V. Prakash Kumar',
+        'g.v. prakash kumar': 'G.V. Prakash Kumar',
+        'gv prakash kumar': 'G.V. Prakash Kumar',
+        'k.s.chitra': 'K.S. Chithra',
+        'k.s. chitra': 'K.S. Chithra',
+        'k.s. chithra': 'K.S. Chithra',
+        'ks chitra': 'K.S. Chithra',
+        'ks chithra': 'K.S. Chithra',
+        'chitra': 'K.S. Chithra',
+        'chithra': 'K.S. Chithra',
+        'sai abhyankar': 'Sai Abhyankkar',
+        'sai abhyankkar': 'Sai Abhyankkar',
+        'anirudh': 'Anirudh Ravichander',
+        'anirudh ravichander': 'Anirudh Ravichander',
+        'ar rahman': 'A.R. Rahman',
+        'a.r. rahman': 'A.R. Rahman',
+        'a.r.rahman': 'A.R. Rahman',
+        'yuvan': 'Yuvan Shankar Raja',
+        'yuvan shankar raja': 'Yuvan Shankar Raja',
+        'harris jayaraj': 'Harris Jayaraj',
+        'harris jeyaraj': 'Harris Jayaraj',
+        'sid sriram': 'Sid Sriram',
+        'spb': 'S.P. Balasubrahmanyam',
+        's.p. balasubrahmanyam': 'S.P. Balasubrahmanyam',
+        's.p.b': 'S.P. Balasubrahmanyam',
+        'dhanush': 'Dhanush',
+        'paal dabba': 'Paal Dabba',
+        'karthik': 'Karthik',
+        'govind vasantha': 'Govind Vasantha',
+        'chinmayi': 'Chinmayi Sripada',
+        'chinmayi sripada': 'Chinmayi Sripada',
+        'chinmayi sripaada': 'Chinmayi Sripada',
+        'sadhika k r': 'Sadhika K R',
+        'sadhika kr': 'Sadhika K R',
+      };
+
+      function normalizeSingleArtistName(raw) {
+        if (!raw) return '';
+        let clean = raw
+          .replace(/(masstamilan|isaimini|starmusiq|tamiltunes|sensongs|kuttyweb|tamilwire)(\.(com|org|in|net|co|fun|cc|xyz))?/gi, '')
+          .replace(/\b(masstamilan|isaimini|starmusiq|tamiltunes|sensongs|kuttyweb|tamilwire)\b/gi, '')
+          .replace(/^[\s\-–—:._,]+|[\s\-–—:._,]+$/g, '')
+          .trim();
+
+        const lower = clean.toLowerCase();
+        if (KNOWN_ARTIST_ALIASES[lower]) {
+          return KNOWN_ARTIST_ALIASES[lower];
+        }
+        return clean;
+      }
+
+      function extractIndividualArtists(artistString) {
+        if (!artistString) return [];
+        const parts = artistString
+          .replace(/\s+(feat\.|ft\.|featuring|with|x|\/)\s+/gi, ', ')
+          .replace(/\s+&\s+/g, ', ')
+          .split(/[,;]/);
+
+        const list = [];
+        const seen = new Set();
+        for (const part of parts) {
+          const norm = normalizeSingleArtistName(part);
+          if (norm && norm.length >= 2) {
+            const lower = norm.toLowerCase();
+            if (!['unknown artist', 'various artists', 'masstamilan', 'unknown'].includes(lower) && !seen.has(lower)) {
+              seen.add(lower);
+              list.push(norm);
+            }
+          }
+        }
+        return list.length > 0 ? list : [normalizeSingleArtistName(artistString) || 'Unknown Artist'];
+      }
+
+      function getUniqueArtists() {
+        const map = new Map();
+        catalog.forEach(s => {
+          const rawArtist = (s.artistName || s.artist?.name || 'Unknown Artist').trim();
+          const artists = extractIndividualArtists(rawArtist);
+          artists.forEach(name => {
+            const normKey = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!normKey || normKey === 'unknownartist' || normKey === 'variousartists') return;
+
+            if (!map.has(normKey)) {
+              map.set(normKey, {
+                id: name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+                name: name,
+                title: name,
+                subtitle: `1 track in catalog`,
+                artwork: s.artworkUrl || s.artist?.image || '',
+                image: s.artworkUrl || s.artist?.image || '',
+                count: 1,
+                songCount: 1,
+                songs: [s],
+                filterKey: name,
+              });
+            } else {
+              const item = map.get(normKey);
+              if (!item.songs.some(existing => existing.id === s.id)) {
+                item.songs.push(s);
+                item.count = item.songs.length;
+                item.songCount = item.songs.length;
+                item.subtitle = `${item.count} ${item.count === 1 ? 'track' : 'tracks'} in catalog`;
+              }
+              if ((!item.artwork || item.artwork === FALLBACK_ART) && s.artworkUrl) {
+                item.artwork = s.artworkUrl;
+                item.image = s.artworkUrl;
+              }
+            }
+          });
+        });
+        return Array.from(map.values()).sort((a, b) => b.count - a.count);
+      }
+
+      function getUniqueAlbums() {
+        const map = new Map();
+        catalog.forEach(s => {
+          const name = cleanMovieOrAlbumName(s.movieName || s.albumName || 'Single');
+          if (!map.has(name)) {
+            map.set(name, {
+              title: name,
+              subtitle: `1 track · ${s.artistName || 'Various Artists'}`,
+              artwork: s.artworkUrl || s.album?.artwork || '',
+              count: 1,
+              filterKey: name,
+            });
+          } else {
+            const item = map.get(name);
+            item.count++;
+            item.subtitle = `${item.count} tracks in catalog`;
+          }
+        });
+        return Array.from(map.values()).sort((a, b) => b.count - a.count);
+      }
+
+      function renderInspectList(items) {
+        const container = document.getElementById('inspectModalBody');
+        const countEl = document.getElementById('inspectModalCount');
+        countEl.innerText = `${items.length} item${items.length === 1 ? '' : 's'}`;
+
+        if (!items || !items.length) {
+          container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px;">No items match your search.</div>`;
+          return;
+        }
+
+        container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${items.map(item => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #FAFAFA; border: 1px solid var(--border-main); border-radius: 8px; transition: background 0.1s;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="${item.artwork || FALLBACK_ART}" class="clean-art" style="width: 44px; height: 44px; border-radius: 6px;" onerror="this.onerror=null; this.src=FALLBACK_ART;">
+                <div>
+                  <div style="font-weight: 600; font-size: 13.5px; color: var(--text-main);">${item.title}</div>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${item.subtitle}</div>
+                </div>
+              </div>
+              ${item.filterKey ? `
+                <button class="btn-minimal-light" style="font-size: 12px; padding: 4px 10px;" onclick="applyInspectFilter('${item.filterKey.replace(/'/g, "\\'")}')">
+                  Filter Table
+                </button>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+      }
+
+      function filterInspectList(val) {
+        const q = (val || '').toLowerCase().trim();
+        if (!q) {
+          renderInspectList(currentInspectItems);
+          return;
+        }
+        const filtered = currentInspectItems.filter(item => {
+          return (item.title || '').toLowerCase().includes(q) ||
+            (item.subtitle || '').toLowerCase().includes(q);
+        });
+        renderInspectList(filtered);
+      }
+
+      function applyInspectFilter(key) {
+        closeInspectModal();
+        const input = document.querySelector('.search-input-field');
+        if (input) {
+          input.value = key;
+          filterCatalog(key);
+          showToast(`Filtered catalog for "${key}"`);
+        }
+      }
+
+      // Modal Edit Document
+      function openEditModal(songId) {
+        const song = catalog.find(s => s.id === songId);
+        if (!song) return;
+
+        const cleanMovie = cleanMovieOrAlbumName(song.movieName || song.albumName || '');
+        const cleanAlbum = cleanMovieOrAlbumName(song.albumName || song.movieName || '');
+        const exactMovieAlbum = cleanMovie || cleanAlbum || '';
+
+        document.getElementById('editSongId').value = song.id;
+        document.getElementById('editTitle').value = cleanTrackTitle(song.title);
+        document.getElementById('editMovie').value = exactMovieAlbum;
+        document.getElementById('editArtist').value = song.artistName || song.artist?.name || '';
+        document.getElementById('editAlbum').value = exactMovieAlbum; // Exact same
+        document.getElementById('editGenre').value = song.genre || 'Tamil';
+        document.getElementById('editArtworkUrl').value = song.artworkUrl || '';
+        document.getElementById('cleanModalArt').src = song.artworkUrl || '';
+        document.getElementById('editAudioUrl').value = song.audioUrl || '';
+
+        document.getElementById('editModal').classList.add('show');
+      }
+
+      function closeModal() {
+        document.getElementById('editModal').classList.remove('show');
+      }
+
+      async function uploadCustomArtwork(file) {
+        if (!file) return;
+        showToast('Uploading custom cover to Google Drive...');
+
+        const form = new FormData();
+        form.append('file', file);
+
+        try {
+          const res = await fetch('/api/v1/uploads/artwork', {
+            method: 'POST',
+            body: form,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById('editArtworkUrl').value = data.artworkUrl;
+            document.getElementById('cleanModalArt').src = data.artworkUrl;
+            showToast('Cover uploaded to Drive');
+          }
+        } catch (err) {
+          showToast('Cover upload failed: ' + err.message);
+        }
+      }
+
+      async function saveDocument() {
+        const songId = document.getElementById('editSongId').value;
+        if (!songId) return;
+
+        const movie = cleanMovieOrAlbumName(document.getElementById('editMovie').value.trim());
+        const album = cleanMovieOrAlbumName(document.getElementById('editAlbum').value.trim()) || movie;
+        const exactMovieAlbum = movie || album;
+
+        const payload = {
+          title: cleanTrackTitle(document.getElementById('editTitle').value.trim()),
+          movieName: exactMovieAlbum,
+          artistName: cleanString(document.getElementById('editArtist').value.trim()),
+          albumName: exactMovieAlbum, // Movie Name and Album Name are ALWAYS identical
+          genre: document.getElementById('editGenre').value.trim() || 'Tamil',
+          artworkUrl: document.getElementById('editArtworkUrl').value.trim(),
+          audioUrl: document.getElementById('editAudioUrl').value.trim(),
+        };
+
+        // 1. Immediately close modal with zero delay
+        closeModal();
+
+        // 2. Optimistic UI update: instantly update table
+        const idx = catalog.findIndex(s => s.id === songId);
+        if (idx !== -1) {
+          catalog[idx] = { ...catalog[idx], ...payload };
+          renderTable(catalog);
+        }
+        showToast(`Syncing "${payload.title}" to App...`);
+
+        // 3. Persist to PostgreSQL database and invalidate Redis cache
+        try {
+          const res = await fetch(`/api/v1/songs/${songId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (res.ok) {
+            const updated = await res.json();
+            if (idx !== -1) catalog[idx] = updated;
+            renderTable(catalog);
+            showToast(`"${updated.title}" synced & live on App!`);
+            loadMetrics();
+          } else {
+            showToast('Failed to update metadata on server');
+            loadCatalog(true);
+          }
+        } catch (err) {
+          showToast('Sync error: ' + err.message);
+          loadCatalog(true);
+        }
+      }
+
+      async function deleteTrack(songId) {
+        const song = catalog.find(s => s.id === songId);
+        const title = song?.title || 'this track';
+        if (!confirm(`Delete "${title}" from database, Redis cache, and Google Drive?`)) return;
+
+        try {
+          const res = await fetch(`/api/v1/songs/${songId}`, {
+            method: 'DELETE',
+          });
+
+          if (res.ok) {
+            showToast(`"${title}" deleted`);
+            catalog = catalog.filter(s => s.id !== songId);
+            renderTable(catalog);
+            loadMetrics();
+          } else {
+            showToast('Failed to delete track');
+          }
+        } catch (err) {
+          showToast('Error: ' + err.message);
+        }
+      }
+
+      let serverActive = true;
+      let quickAddAudioFile = null;
+      let quickAddArtFile = null;
+
+      // --- Server Power & Status Controls ---
+      function updateServerUI(isActive) {
+        serverActive = isActive;
+
+        // Sidebar widgets
+        const sideDot = document.getElementById('sidebarPulseDot');
+        const sideStatus = document.getElementById('sidebarStatusText');
+        const sideBtn = document.getElementById('sidebarPowerBtn');
+        const sideBtnLabel = document.getElementById('sidebarPowerBtnLabel');
+        const sideSub = document.getElementById('sidebarSubStatus');
+
+        if (sideDot) {
+          sideDot.className = isActive ? 'live-pulse-dot' : 'live-pulse-dot offline';
+        }
+        if (sideStatus) {
+          sideStatus.innerText = isActive ? 'LIVE' : 'STOPPED';
+          sideStatus.style.color = isActive ? '#059669' : '#DC2626';
+        }
+        if (sideBtn) {
+          sideBtn.className = isActive ? 'server-toggle-btn online' : 'server-toggle-btn offline';
+        }
+        if (sideBtnLabel) {
+          sideBtnLabel.innerText = isActive ? 'Server ON' : 'Server OFF';
+        }
+        if (sideSub) {
+          sideSub.innerText = isActive ? 'Broadcasting catalog live to App' : 'Server Inactive (App in Shimmer mode)';
+        }
+
+        // Top Bar widgets
+        const topDot = document.getElementById('topPulseDot');
+        const topBtn = document.getElementById('topPowerSwitchBtn');
+        const topBtnText = document.getElementById('topPowerSwitchText');
+
+        if (topDot) {
+          topDot.className = isActive ? 'live-pulse-dot' : 'live-pulse-dot offline';
+        }
+        if (topBtn) {
+          topBtn.className = isActive ? 'top-server-power-btn online' : 'top-server-power-btn offline';
+        }
+        if (topBtnText) {
+          topBtnText.innerText = isActive ? 'Server: ON (Live)' : 'Server: OFF (Stopped)';
+        }
+      }
+
+      async function fetchServerStatus() {
+        try {
+          const res = await fetch('/api/v1/server/status');
+          if (res.ok) {
+            const data = await res.json();
+            updateServerUI(data.active);
+          }
+        } catch (_) {}
+      }
+
+      async function toggleServerPower() {
+        const nextState = !serverActive;
+        // Optimistic UI update
+        updateServerUI(nextState);
+        showToast(nextState ? '🟢 Starting Studio Server...' : '🔴 Stopping Studio Server...');
+
+        try {
+          const res = await fetch('/api/v1/server/toggle', { method: 'POST' });
+          if (res.ok) {
+            const data = await res.json();
+            updateServerUI(data.active);
+            showToast(data.active
+              ? '🟢 Studio Server is LIVE! Connected to Mobile App'
+              : '🔴 Studio Server STOPPED. Mobile App now in Shimmer & Skeleton mode');
+          } else {
+            showToast('Failed to toggle server state');
+            fetchServerStatus();
+          }
+        } catch (err) {
+          showToast('Toggle error: ' + err.message);
+          fetchServerStatus();
+        }
+      }
+
+      // --- Real-time SSE Push Connection ---
+      function initSSE() {
+        if (!window.EventSource) return;
+        try {
+          const es = new EventSource('/api/v1/server/events');
+          es.addEventListener('server_status', (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              if (typeof data.active === 'boolean') {
+                updateServerUI(data.active);
+              }
+            } catch (_) {}
+          });
+
+          es.addEventListener('catalog_update', () => {
+            loadCatalog(false);
+          });
+
+          es.onerror = () => {
+            es.close();
+            setTimeout(initSSE, 5000);
+          };
+        } catch (_) {}
+      }
+
+      // --- Quick Add Song Modal Handlers ---
+      function openAddSongModal() {
+        quickAddAudioFile = null;
+        quickAddArtFile = null;
+        document.getElementById('addSongAudioFile').value = '';
+        document.getElementById('addSongAudioLabel').innerText = '📁 Select Local Audio File (MP3, M4A, WAV, FLAC)';
+        document.getElementById('addSongTitle').value = '';
+        document.getElementById('addSongArtist').value = '';
+        document.getElementById('addSongMovie').value = '';
+        document.getElementById('addSongAlbum').value = '';
+        document.getElementById('addSongGenre').value = 'Tamil · Melody / Romantic';
+        document.getElementById('addSongArtworkUrl').value = '';
+        document.getElementById('addSongArtPreview').src = FALLBACK_ART;
+        document.getElementById('addSongAudioUrl').value = '';
+        document.getElementById('btnSubmitAddSong').disabled = false;
+        document.getElementById('btnSubmitAddSong').innerHTML = '<span>Upload & Ingest Song</span>';
+
+        document.getElementById('addSongModal').classList.add('show');
+      }
+
+      function closeAddSongModal() {
+        document.getElementById('addSongModal').classList.remove('show');
+      }
+
+      function handleQuickAddAudioSelected(file) {
+        if (!file) return;
+        quickAddAudioFile = file;
+        document.getElementById('addSongAudioLabel').innerText = `🎵 Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+
+        // Autocomplete title, artist, movie from clean filename
+        const rawName = file.name.replace(/\.[^/.]+$/, '');
+        const cleanName = cleanString(rawName);
+
+        const titleInput = document.getElementById('addSongTitle');
+        if (!titleInput.value) {
+          titleInput.value = cleanName;
+        }
+
+        // Try searching Apple Music / iTunes for high-res cover art
+        searchAppleMusicArtwork(cleanName);
+      }
+
+      async function searchAppleMusicArtwork(term) {
+        if (!term) return;
+        try {
+          const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+              const item = data.results[0];
+              const hdArt = (item.artworkUrl100 || '').replace('100x100bb.jpg', '1400x1400bb.jpg');
+              if (hdArt) {
+                document.getElementById('addSongArtworkUrl').value = hdArt;
+                document.getElementById('addSongArtPreview').src = hdArt;
+                if (!document.getElementById('addSongArtist').value && item.artistName) {
+                  document.getElementById('addSongArtist').value = cleanString(item.artistName);
+                }
+                if (!document.getElementById('addSongMovie').value && (item.collectionName || item.trackName)) {
+                  const m = cleanMovieOrAlbumName(item.collectionName || item.trackName);
+                  document.getElementById('addSongMovie').value = m;
+                  document.getElementById('addSongAlbum').value = m;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      function handleQuickAddArtSelected(file) {
+        if (!file) return;
+        quickAddArtFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById('addSongArtPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async function submitQuickAddSong() {
+        const title = document.getElementById('addSongTitle').value.trim();
+        const artist = document.getElementById('addSongArtist').value.trim();
+        const movie = document.getElementById('addSongMovie').value.trim();
+        const album = document.getElementById('addSongAlbum').value.trim() || movie;
+        const genre = document.getElementById('addSongGenre').value.trim() || 'Tamil · Melody / Romantic';
+        let artworkUrl = document.getElementById('addSongArtworkUrl').value.trim();
+        const audioUrl = document.getElementById('addSongAudioUrl').value.trim();
+
+        if (!title) {
+          alert('Please enter a track title.');
+          return;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitAddSong');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Uploading to Drive & DB...</span>';
+
+        try {
+          // If a custom image was chosen, upload it first to Google Drive
+          if (quickAddArtFile) {
+            const artForm = new FormData();
+            artForm.append('file', quickAddArtFile);
+            const artRes = await fetch('/api/v1/uploads/artwork', { method: 'POST', body: artForm });
+            if (artRes.ok) {
+              const artData = await artRes.json();
+              artworkUrl = artData.artworkUrl;
+            }
+          }
+
+          if (quickAddAudioFile) {
+            // Upload audio file via multipart form
+            const form = new FormData();
+            form.append('file', quickAddAudioFile);
+            form.append('title', title);
+            form.append('artistName', artist || 'Unknown Artist');
+            form.append('movieName', movie || 'Single');
+            form.append('albumName', album || 'Single');
+            form.append('genre', genre);
+            form.append('language', 'Tamil');
+            if (artworkUrl) form.append('artworkUrl', artworkUrl);
+
+            const res = await fetch('/api/v1/uploads/song', {
+              method: 'POST',
+              body: form,
+            });
+
+            if (res.ok) {
+              const saved = await res.json();
+              closeAddSongModal();
+              showToast(`🎉 "${title}" ingested & live!`);
+              loadCatalog(true);
+            } else {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.message || 'Upload failed');
+            }
+          } else if (audioUrl) {
+            // Add with direct stream URL
+            const res = await fetch('/api/v1/songs', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title,
+                artistName: artist || 'Unknown Artist',
+                movieName: movie || 'Single',
+                albumName: album || 'Single',
+                genre,
+                language: 'Tamil',
+                artworkUrl,
+                audioUrl,
+              }),
+            });
+
+            if (res.ok) {
+              closeAddSongModal();
+              showToast(`🎉 "${title}" saved & synced!`);
+              loadCatalog(true);
+            } else {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.message || 'Save failed');
+            }
+          } else {
+            alert('Please select an audio file or provide a direct audio stream URL.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Upload & Ingest Song</span>';
+            return;
+          }
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Upload & Ingest Song</span>';
+        }
+      }
+
+      async function checkBackendHealth() {
+        try {
+          const res = await fetch('/api/health');
+          if (res.ok) {
+            const data = await res.json();
+            const badge = document.getElementById('backendConnBadge');
+            const text = document.getElementById('backendConnText');
+            if (badge && text) {
+              badge.classList.remove('disconnected');
+              text.innerText = 'Connected';
+              text.style.color = '#059669';
+            }
+            if (typeof data.serverActive === 'boolean') {
+              updateServerUI(data.serverActive);
+            }
+          } else {
+            throw new Error('Unhealthy');
+          }
+        } catch (err) {
+          const badge = document.getElementById('backendConnBadge');
+          const text = document.getElementById('backendConnText');
+          if (badge && text) {
+            badge.classList.add('disconnected');
+            text.innerText = 'Disconnected';
+            text.style.color = '#DC2626';
+          }
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        // Fast concurrent parallel bootloader for 0ms immediate render
+        Promise.allSettled([
+          loadCatalog(),
+          loadUsers(),
+          fetchServerStatus(),
+          checkBackendHealth(),
+        ]);
+        initSSE();
+        setInterval(fetchServerStatus, 5000);
+      });
+  </script>
+</body>
+
+</html>
