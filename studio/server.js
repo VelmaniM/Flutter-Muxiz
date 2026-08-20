@@ -678,9 +678,44 @@ app.get('/api/v1/songs/artists/all', async (req, res) => {
   }
 });
 
-// Clear Cache
-app.post('/api/v1/songs/cache/clear', (req, res) => {
-  res.json({ success: true, message: 'Studio cache flushed successfully!' });
+// --- Remote App Cache & LocalStorage Purge Signal ---
+let globalAppCacheEpoch = Date.now();
+
+app.post(['/api/v1/cache/wipe-app-storage', '/api/v1/cache/flush', '/api/v1/songs/cache/clear'], (req, res) => {
+  const target = req.body?.target || 'all';
+  globalAppCacheEpoch = Date.now();
+
+  // Broadcast immediate real-time SSE signal to all connected mobile & desktop apps
+  broadcastServerEvent('app_cache_wipe', {
+    action: 'WIPE_ALL',
+    target,
+    epoch: globalAppCacheEpoch,
+    timestamp: Date.now(),
+  });
+
+  // Also broadcast fresh catalog update signal
+  broadcastServerEvent('catalog_update', {
+    timestamp: Date.now(),
+  });
+
+  return res.json({
+    success: true,
+    message: 'Instant Remote App Cache & Local Storage Wipe broadcasted to all connected apps!',
+    target,
+    epoch: globalAppCacheEpoch,
+    connectedApps: sseClients.size,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get(['/api/v1/cache/epoch', '/api/v1/cache/status'], (req, res) => {
+  return res.json({
+    success: true,
+    epoch: globalAppCacheEpoch,
+    connectedApps: sseClients.size,
+    serverActive,
+    timestamp: Date.now(),
+  });
 });
 
 // --- SQL User Authentication Engine (JWT + PostgreSQL + Google OAuth) ---
@@ -1001,12 +1036,95 @@ app.get(['/api/v1/users', '/api/users'], async (req, res) => {
         displayName: true,
         avatar: true,
         authProvider: true,
+        isPremium: true,
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: {
+            playlists: true,
+            favorites: true,
+            listeningHistory: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     });
     return res.json({ success: true, count: users.length, users });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get(['/api/v1/users/:id', '/api/users/:id'], async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        playlists: {
+          select: {
+            id: true,
+            title: true,
+            cover: true,
+            createdAt: true,
+            _count: { select: { songs: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        favorites: {
+          include: {
+            song: {
+              select: {
+                id: true,
+                title: true,
+                artistName: true,
+                movieName: true,
+                artworkUrl: true,
+                duration: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+        recentlyPlayed: {
+          include: {
+            song: {
+              select: {
+                id: true,
+                title: true,
+                artistName: true,
+                movieName: true,
+                artworkUrl: true,
+              },
+            },
+          },
+          orderBy: { playedAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found in database' });
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatar: user.avatar,
+        authProvider: user.authProvider,
+        isPremium: user.isPremium,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        playlists: user.playlists,
+        favorites: user.favorites.map(f => f.song).filter(Boolean),
+        recentlyPlayed: user.recentlyPlayed.map(r => r.song).filter(Boolean),
+      },
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

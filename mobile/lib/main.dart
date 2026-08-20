@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'app/theme.dart';
 import 'core/audio/audio_manager.dart';
 import 'core/data/mock_catalog.dart';
+import 'core/services/remote_sync_service.dart';
 import 'core/storage/local_storage.dart';
 import 'features/main_layout.dart';
 import 'features/auth/presentation/login_screen.dart';
@@ -106,10 +107,13 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Start continuous background auto-sync
     MockMusicCatalog.startAutoSync();
+    // Start real-time remote sync & cache wipe listener
+    RemoteSyncService.instance.start();
   }
 
   @override
   void dispose() {
+    RemoteSyncService.instance.stop();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -119,6 +123,8 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       // Re-sync catalog as soon as user switches back to the app
       MockMusicCatalog.initializeCatalog(background: true);
+      // Check for any remote cache wipe triggered while app was in background
+      RemoteSyncService.instance.checkEpochAndWipeIfNeeded();
     }
   }
 
