@@ -217,6 +217,8 @@ class MockMusicCatalog {
             connectTimeout: const Duration(milliseconds: 2000),
             receiveTimeout: const Duration(milliseconds: 3000),
           ));
+
+          // 1. Fetch Songs from Studio
           final res = await dio.get('$base/songs?limit=1000&t=$timestamp');
           if (res.statusCode == 200 && res.data != null) {
             final data = res.data;
@@ -246,6 +248,29 @@ class MockMusicCatalog {
 
               if (remoteSongs.isNotEmpty) {
                 allSongs = remoteSongs;
+
+                // 2. Fetch Artists Directly from Studio Backend (/artists or /songs/artists/all)
+                try {
+                  final artistEndpoint = base.endsWith('/v1')
+                      ? '$base/songs/artists/all?t=$timestamp'
+                      : '$base/artists?t=$timestamp';
+                  final aRes = await dio.get(artistEndpoint);
+                  if (aRes.statusCode == 200 && aRes.data != null) {
+                    final aData = aRes.data;
+                    final aList = (aData is Map ? (aData['data'] ?? aData['artists']) : aData) as List<dynamic>?;
+                    if (aList != null && aList.isNotEmpty) {
+                      for (final a in aList) {
+                        final aName = (a['name'] ?? '').toString().trim();
+                        final aImg = (a['image'] ?? a['imageUrl'] ?? a['artwork'] ?? '').toString();
+                        if (aName.isNotEmpty && aImg.isNotEmpty) {
+                          artistPortraits[aName.toLowerCase()] = aImg;
+                          artistPortraits[aName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')] = aImg;
+                        }
+                      }
+                    }
+                  }
+                } catch (_) {}
+
                 _buildArtistsAndAlbums();
                 _buildPlaylists();
                 LocalStorageService.saveCatalogSongsLocally(allSongs);
