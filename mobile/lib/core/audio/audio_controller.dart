@@ -23,11 +23,33 @@ class AudioController extends StateNotifier<PlayerStateModel> {
   final MuxizAudioHandler _handler;
   DateTime _lastSaveTime = DateTime.now();
 
-  AudioController(this._handler) : super(const PlayerStateModel()) {
+  AudioController(this._handler) : super(_getInitialState()) {
     _handler.onSkipToNext = skipToNext;
     _handler.onSkipToPrevious = skipToPrevious;
     _initListeners();
     _restoreLastPlaybackState();
+  }
+
+  static PlayerStateModel _getInitialState() {
+    try {
+      final last = LocalStorageService.getLastPlaybackState();
+      if (last.song != null && last.song!.audioUrl.isNotEmpty) {
+        final song = last.song!;
+        final queue = last.queue.isNotEmpty ? last.queue : [song];
+        final queueIdx = (last.queueIndex >= 0 && last.queueIndex < queue.length)
+            ? last.queueIndex
+            : 0;
+        return PlayerStateModel(
+          currentSong: song,
+          queue: queue,
+          queueIndex: queueIdx,
+          position: last.position,
+          duration: Duration(seconds: song.duration > 0 ? song.duration : 180),
+          isPlaying: false,
+        );
+      }
+    } catch (_) {}
+    return const PlayerStateModel();
   }
 
   void _initListeners() {
@@ -124,22 +146,31 @@ class AudioController extends StateNotifier<PlayerStateModel> {
   /// Automatically restore the last played song and position on app restart
   Future<void> _restoreLastPlaybackState() async {
     try {
-      if (MockMusicCatalog.allSongs.isEmpty) return;
       final last = LocalStorageService.getLastPlaybackState();
       if (last.song != null && last.song!.audioUrl.isNotEmpty) {
         final song = last.song!;
-        if (!MockMusicCatalog.allSongs.any((s) => s.id == song.id)) return;
         final queue = last.queue.isNotEmpty ? last.queue : [song];
+        final queueIdx = (last.queueIndex >= 0 && last.queueIndex < queue.length)
+            ? last.queueIndex
+            : 0;
+
         state = state.copyWith(
           currentSong: song,
           queue: queue,
-          queueIndex: last.queueIndex,
+          queueIndex: queueIdx,
           position: last.position,
-          duration: Duration(seconds: song.duration),
+          duration: Duration(seconds: song.duration > 0 ? song.duration : 180),
           isPlaying: false,
         );
 
         _extractPaletteColor(song.artworkUrl);
+
+        await _handler.setQueue(
+          queue,
+          initialIndex: queueIdx,
+          initialPosition: last.position,
+          autoPlay: false,
+        );
       }
     } catch (_) {}
   }
@@ -216,6 +247,9 @@ class AudioController extends StateNotifier<PlayerStateModel> {
           autoPlay: true,
         );
       } else {
+        if (state.position > Duration.zero && (_handler.player.position - state.position).abs() > const Duration(seconds: 2)) {
+          await _handler.seek(state.position);
+        }
         await _handler.play();
       }
     }

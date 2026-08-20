@@ -92,14 +92,21 @@ class HomeFeedNotifier extends StateNotifier<AsyncValue<HomeFeedData>> {
   HomeFeedNotifier(this._service, this._ref) : super(const AsyncValue.loading()) {
     refreshFeed();
 
-    // 1. Network reconnection trigger: When internet comes back ON, refresh daily data
+    // 1. Reactive trigger: Adapt feed and recent listens only when a genuinely different song is played
+    _ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
+      if (next != null && next != previous) {
+        refreshFeed();
+      }
+    });
+
+    // 2. Network reconnection trigger: When internet comes back ON, refresh daily data
     _ref.listen(networkStatusProvider, (previous, next) {
       if (next == NetworkStatus.online && previous != NetworkStatus.online) {
         refreshFeed();
       }
     });
 
-    // 2. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
+    // 3. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
     _dailyCycleTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       final mostRecent530Am = _getMostRecent530AmIst();
       if (_lastGeneratedTime != null && _lastGeneratedTime!.isBefore(mostRecent530Am)) {
@@ -246,8 +253,33 @@ class RecommendationService {
       );
     }
 
-    // 1. Stable Quick-Play 6 Cards (Fixed catalog order, never shifts upon playback)
-    final List<Song> quickPlay = allSongs.take(6).toList();
+    // 1. Dynamic Quick-Play 6 Cards (Strictly reflects user's actual listening history & persists on reopen)
+    final Set<String> quickPlayIds = {};
+    final List<Song> quickPlay = [];
+
+    // A. Priority 1: User's Actual Recently Played Tracks (Persistent across app restarts)
+    for (final s in recentlyPlayed) {
+      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
+        quickPlay.add(s);
+        quickPlayIds.add(s.id);
+      }
+    }
+
+    // B. Priority 2: User's Liked / Favorited Tracks
+    for (final s in likedSongs) {
+      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
+        quickPlay.add(s);
+        quickPlayIds.add(s.id);
+      }
+    }
+
+    // C. Priority 3: Fill remaining slots from Database Catalog
+    for (final s in allSongs) {
+      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
+        quickPlay.add(s);
+        quickPlayIds.add(s.id);
+      }
+    }
 
     // 2. Curated Dynamic Playlists built strictly from real DB songs
     final trendingSongs = List<Song>.from(allSongs);
