@@ -320,8 +320,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ]
                     // VIEW 2: ALL TAB ACTIVE -> 100% Dynamic Spotify Algorithmic Feed
                     else ...[
-                      // Dynamic Quick-play 6 Cards (Responsive to recent plays & likes)
-                      if (feed.quickPlaySongs.isNotEmpty) ...[
+                      // Dynamic Quick-play 6 Cards (Responsive to recent plays, albums, playlists)
+                      if (feed.quickPlayCards.isNotEmpty) ...[
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           sliver: SliverGrid(
@@ -333,10 +333,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                final song = feed.quickPlaySongs[index];
-                                return _buildQuickPlayCard(song, index, feed.quickPlaySongs);
+                                final card = feed.quickPlayCards[index];
+                                return _buildQuickPlayCard(card, index);
                               },
-                              childCount: feed.quickPlaySongs.length > 6 ? 6 : feed.quickPlaySongs.length,
+                              childCount: feed.quickPlayCards.length > 6 ? 6 : feed.quickPlayCards.length,
                             ),
                           ),
                         ),
@@ -603,9 +603,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildQuickPlayCard(Song song, int index, List<Song> songList) {
+  Widget _buildQuickPlayCard(QuickPlayCardItem item, int index) {
     final playerState = ref.watch(playerStateProvider);
-    final isCurrent = playerState.currentSong?.id == song.id;
+    final isCurrent = item.song != null && playerState.currentSong?.id == item.song!.id;
 
     return Material(
       color: const Color(0xFF282828),
@@ -613,27 +613,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          if (isCurrent) {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              useSafeArea: false,
-              enableDrag: true,
-              builder: (ctx) => const PlayerScreen(),
+          if (item.song != null) {
+            if (isCurrent) {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                useSafeArea: false,
+                enableDrag: true,
+                builder: (ctx) => const PlayerScreen(),
+              );
+            } else {
+              ref.read(playerStateProvider.notifier).playSong(
+                    item.song!,
+                  );
+            }
+          } else if (item.album != null) {
+            final playlistEquivalent = Playlist(
+              id: item.album!.id,
+              title: item.album!.title,
+              description: 'Album • ${item.album!.artist}',
+              coverUrl: item.album!.artworkUrl,
+              creator: item.album!.artist,
+              songs: item.album!.songs,
             );
-          } else {
-            ref.read(playerStateProvider.notifier).playSong(
-                  song,
-                  queue: songList,
-                  index: index,
-                );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => PlaylistDetailScreen(playlist: playlistEquivalent),
+              ),
+            );
+          } else if (item.playlist != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => PlaylistDetailScreen(playlist: item.playlist!),
+              ),
+            );
           }
         },
         child: Row(
           children: [
             MuxizImage(
-              imageUrl: song.artworkUrl,
+              imageUrl: item.imageUrl,
               width: 56,
               height: 56,
               borderRadius: 0,
@@ -641,7 +663,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                song.title,
+                item.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

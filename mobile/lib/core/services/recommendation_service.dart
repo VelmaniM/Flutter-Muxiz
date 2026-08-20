@@ -59,16 +59,37 @@ class HomeSection {
   });
 }
 
+/// A dynamic card item specifically for the top 6-grid on Home page
+class QuickPlayCardItem {
+  final String id;
+  final String title;
+  final String imageUrl;
+  final Song? song;
+  final Album? album;
+  final Playlist? playlist;
+
+  QuickPlayCardItem({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+    this.song,
+    this.album,
+    this.playlist,
+  });
+}
+
 /// Fully Dynamic Home Feed computed from user behavior & Gemini AI trend analysis
 class HomeFeedData {
   final String greeting;
   final List<Song> quickPlaySongs;
+  final List<QuickPlayCardItem> quickPlayCards;
   final AiSpotlightData? aiSpotlight;
   final List<HomeSection> sections;
 
   HomeFeedData({
     required this.greeting,
     required this.quickPlaySongs,
+    required this.quickPlayCards,
     this.aiSpotlight,
     required this.sections,
   });
@@ -209,6 +230,7 @@ class RecommendationService {
           return HomeFeedData(
             greeting: localFeed.greeting,
             quickPlaySongs: localFeed.quickPlaySongs,
+            quickPlayCards: localFeed.quickPlayCards,
             aiSpotlight: updatedSpotlight,
             sections: localFeed.sections,
           );
@@ -241,38 +263,125 @@ class RecommendationService {
       return HomeFeedData(
         greeting: greeting,
         quickPlaySongs: [],
+        quickPlayCards: [],
         aiSpotlight: null,
         sections: [],
       );
     }
 
-    // 1. Dynamic Quick-Play 6 Cards (Strictly reflects user's actual listening history & persists on reopen)
-    final Set<String> quickPlayIds = {};
-    final List<Song> quickPlay = [];
+    // --- 6-GRID ALGORITHM: 100% DYNAMIC BEHAVIOR AS REQUESTED ---
+    final List<QuickPlayCardItem> quickPlayCards = [];
+    final Set<String> usedSongIds = {};
 
-    // A. Priority 1: User's Actual Recently Played Tracks (Persistent across app restarts)
-    for (final s in recentlyPlayed) {
-      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-        quickPlay.add(s);
-        quickPlayIds.add(s.id);
-      }
+    // 1. Card 1: User's latest / currently listened song
+    final Song? card1Song = (recentlyPlayed.isNotEmpty ? recentlyPlayed.first : null) ??
+        (currentSong) ??
+        (allSongs.isNotEmpty ? allSongs.first : null);
+    if (card1Song != null) {
+      usedSongIds.add(card1Song.id);
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot1_${card1Song.id}',
+        title: card1Song.title,
+        imageUrl: card1Song.artworkUrl,
+        song: card1Song,
+      ));
     }
 
-    // B. Priority 2: User's Liked / Favorited Tracks
-    for (final s in likedSongs) {
-      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-        quickPlay.add(s);
-        quickPlayIds.add(s.id);
-      }
+    // 2. Card 2: Previous song from a DIFFERENT movie/album (1st moves to 2nd on new album play)
+    final card1Movie = (card1Song?.movieName ?? card1Song?.album ?? '').toLowerCase();
+    Song? card2Song = recentlyPlayed.where((s) {
+      if (usedSongIds.contains(s.id)) return false;
+      final m = (s.movieName ?? s.album).toLowerCase();
+      return m.isNotEmpty && m != card1Movie;
+    }).firstOrNull;
+    card2Song ??= recentlyPlayed.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    card2Song ??= allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    if (card2Song != null) {
+      usedSongIds.add(card2Song.id);
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot2_${card2Song.id}',
+        title: card2Song.title,
+        imageUrl: card2Song.artworkUrl,
+        song: card2Song,
+      ));
     }
 
-    // C. Priority 3: Fill remaining slots from Database Catalog
-    for (final s in allSongs) {
-      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-        quickPlay.add(s);
-        quickPlayIds.add(s.id);
-      }
+    // 3. Card 3: Highly listened song (Most repeated / favorite track)
+    Song? card3Song = likedSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    card3Song ??= recentlyPlayed.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    card3Song ??= allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    if (card3Song != null) {
+      usedSongIds.add(card3Song.id);
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot3_${card3Song.id}',
+        title: card3Song.title,
+        imageUrl: card3Song.artworkUrl,
+        song: card3Song,
+      ));
     }
+
+    // 4. Card 4: Highly listened Album / Movie
+    Album? card4Album = MockMusicCatalog.topAlbums.firstOrNull;
+    if (card4Album != null) {
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot4_album_${card4Album.id}',
+        title: card4Album.title,
+        imageUrl: card4Album.artworkUrl,
+        album: card4Album,
+      ));
+    } else if (allSongs.length > 3) {
+      final s = allSongs[2];
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot4_song_${s.id}',
+        title: s.movieName ?? s.album,
+        imageUrl: s.artworkUrl,
+        song: s,
+      ));
+    }
+
+    // 5. Card 5: Trending song (User heavily played or trending in catalog)
+    Song? card5Trending = allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    card5Trending ??= allSongs.firstOrNull;
+    if (card5Trending != null) {
+      usedSongIds.add(card5Trending.id);
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot5_${card5Trending.id}',
+        title: card5Trending.title,
+        imageUrl: card5Trending.artworkUrl,
+        song: card5Trending,
+      ));
+    }
+
+    // 6. Card 6: Playlist (Custom playlist, Liked Songs playlist, or Top Hits Mix / Top Album)
+    final customPlaylists = LocalStorageService.getCustomPlaylists();
+    final Playlist? card6Playlist = (customPlaylists.isNotEmpty ? customPlaylists.first : null) ??
+        (MockMusicCatalog.featuredPlaylists.isNotEmpty ? MockMusicCatalog.featuredPlaylists.first : null);
+    if (card6Playlist != null) {
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot6_playlist_${card6Playlist.id}',
+        title: card6Playlist.title,
+        imageUrl: card6Playlist.coverUrl,
+        playlist: card6Playlist,
+      ));
+    } else if (MockMusicCatalog.topAlbums.length > 1) {
+      final alb = MockMusicCatalog.topAlbums[1];
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot6_album_${alb.id}',
+        title: alb.title,
+        imageUrl: alb.artworkUrl,
+        album: alb,
+      ));
+    } else if (allSongs.isNotEmpty) {
+      final s = allSongs.last;
+      quickPlayCards.add(QuickPlayCardItem(
+        id: 'slot6_song_${s.id}',
+        title: s.title,
+        imageUrl: s.artworkUrl,
+        song: s,
+      ));
+    }
+
+    final List<Song> quickPlay = quickPlayCards.map((c) => c.song).whereType<Song>().toList();
 
     // 2. Curated Dynamic Playlists built strictly from real DB songs
     final trendingSongs = List<Song>.from(allSongs);
@@ -559,6 +668,7 @@ class RecommendationService {
     return HomeFeedData(
       greeting: greeting,
       quickPlaySongs: quickPlay,
+      quickPlayCards: quickPlayCards,
       aiSpotlight: null,
       sections: dynamicSections,
     );
