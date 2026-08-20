@@ -284,16 +284,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     children: [
                       const UserAvatarButton(size: 36),
                       const SizedBox(width: 10),
-                      const Text(
-                        'Search',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
+                      const Expanded(
+                        child: Text(
+                          'Search',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
-                      const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24),
                         onPressed: () {},

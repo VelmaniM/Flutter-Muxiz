@@ -22,8 +22,6 @@ class MiniPlayer extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final dominantColor = playerState.dominantColor;
-
     return Padding(
       padding: const EdgeInsets.only(left: 6.0, right: 6.0, top: 2.0, bottom: 0.0),
       child: GestureDetector(
@@ -52,29 +50,17 @@ class MiniPlayer extends ConsumerWidget {
           curve: Curves.easeInOut,
           height: 58,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.lerp(dominantColor, const Color(0xFF242424), 0.25)!,
-                Color.lerp(dominantColor, const Color(0xFF101010), 0.70)!,
-              ],
-            ),
+            color: const Color(0xFF222222),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: dominantColor.withValues(alpha: 0.35),
-              width: 1.0,
+              color: const Color(0xFF333333),
+              width: 0.8,
             ),
             boxShadow: [
               BoxShadow(
-                color: dominantColor.withValues(alpha: 0.28),
+                color: Colors.black.withValues(alpha: 0.6),
                 blurRadius: 16,
-                offset: const Offset(0, 3),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 4),
               ),
             ],
           ),

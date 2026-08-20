@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Exact Spotify Color Palette
+  // Pure Pitch Black Palette (Clean & Solid)
   static const Color black = Color(0xFF000000);
-  static const Color background = Color(0xFF121212);
-  static const Color surface = Color(0xFF181818);
-  static const Color card = Color(0xFF242424);
-  static const Color cardLight = Color(0xFF282828);
-  static const Color divider = Color(0xFF2A2A2A);
+  static const Color background = Color(0xFF000000);
+  static const Color surface = Color(0xFF121212);
+  static const Color card = Color(0xFF1A1A1A);
+  static const Color cardLight = Color(0xFF222222);
+  static const Color divider = Color(0xFF1F1F1F);
 
   static const Color primaryGreen = Color(0xFF1DB954);
   static const Color vibrantGreen = Color(0xFF1ED760);
@@ -26,9 +26,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: black,
       primaryColor: primaryGreen,
-      canvasColor: background,
+      canvasColor: black,
       cardColor: surface,
       dividerColor: divider,
       colorScheme: const ColorScheme.dark(

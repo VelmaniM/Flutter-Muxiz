@@ -202,6 +202,14 @@ class AudioController extends StateNotifier<PlayerStateModel> {
       targetIndex = 0;
     }
 
+    LocalStorageService.addRecentlyPlayed(resolvedSong);
+    LocalStorageService.savePlaybackState(
+      song: resolvedSong,
+      position: Duration.zero,
+      queue: effectiveQueue,
+      queueIndex: targetIndex,
+    );
+
     state = state.copyWith(
       currentSong: resolvedSong,
       queue: effectiveQueue,
@@ -210,14 +218,6 @@ class AudioController extends StateNotifier<PlayerStateModel> {
       duration: Duration(seconds: resolvedSong.duration),
       isPlaying: true,
       clearError: true,
-    );
-
-    LocalStorageService.addRecentlyPlayed(resolvedSong);
-    LocalStorageService.savePlaybackState(
-      song: resolvedSong,
-      position: Duration.zero,
-      queue: effectiveQueue,
-      queueIndex: targetIndex,
     );
 
     _extractPaletteColor(resolvedSong.artworkUrl);

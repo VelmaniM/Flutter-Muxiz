@@ -8,6 +8,7 @@ import 'core/audio/audio_manager.dart';
 import 'core/data/mock_catalog.dart';
 import 'core/storage/local_storage.dart';
 import 'features/main_layout.dart';
+import 'features/auth/presentation/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,7 +128,7 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
       title: 'Muxiz',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainLayout(),
+      home: LocalStorageService.isLoggedIn() ? const MainLayout() : const LoginScreen(),
     );
   }
 }

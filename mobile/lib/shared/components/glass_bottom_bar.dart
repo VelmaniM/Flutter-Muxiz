@@ -16,7 +16,7 @@ class GlassBottomBar extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      height: 56 + bottomPadding,
+      height: 60 + bottomPadding,
       padding: EdgeInsets.only(bottom: bottomPadding),
       decoration: const BoxDecoration(
         color: Colors.black,

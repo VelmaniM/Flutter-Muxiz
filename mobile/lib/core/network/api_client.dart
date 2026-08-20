@@ -37,6 +37,144 @@ class ApiClient {
   }
 
   // --- Authentication ---
+  Future<({Map<String, dynamic>? user, String? token, String? error, bool isNewUser})> googleAuth({
+    required String email,
+    String? displayName,
+    String? avatar,
+    String? googleId,
+  }) async {
+    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
+      try {
+        final res = await Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 6),
+        )).post(
+          '$baseUrl/auth/google',
+          data: {
+            'email': email.trim().toLowerCase(),
+            'displayName': displayName,
+            'avatar': avatar,
+            'googleId': googleId,
+          },
+        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final data = res.data as Map<String, dynamic>;
+          final token = data['token']?.toString();
+          final user = data['user'] as Map<String, dynamic>?;
+          final isNewUser = data['isNewUser'] == true;
+          if (token != null) {
+            await LocalStorageService.setAuthToken(token);
+          }
+          if (user != null) {
+            await LocalStorageService.setUserData(user);
+            if (user['displayName'] != null) {
+              await LocalStorageService.saveUserName(user['displayName'].toString());
+            }
+            if (user['avatar'] != null) {
+              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            }
+          }
+          return (user: user, token: token, error: null, isNewUser: isNewUser);
+        }
+      } on DioException catch (dioErr) {
+        final errMsg = dioErr.response?.data?['error']?.toString();
+        if (errMsg != null) {
+          return (user: null, token: null, error: errMsg, isNewUser: false);
+        }
+      } catch (_) {}
+    }
+    return (user: null, token: null, error: 'Could not connect to SQL authentication server.', isNewUser: false);
+  }
+
+  Future<({Map<String, dynamic>? user, String? token, String? error})> login({
+    required String email,
+    required String password,
+  }) async {
+    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
+      try {
+        final res = await Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 6),
+        )).post(
+          '$baseUrl/auth/login',
+          data: {'email': email.trim().toLowerCase(), 'password': password},
+        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final data = res.data as Map<String, dynamic>;
+          final token = data['token']?.toString();
+          final user = data['user'] as Map<String, dynamic>?;
+          if (token != null) {
+            await LocalStorageService.setAuthToken(token);
+          }
+          if (user != null) {
+            await LocalStorageService.setUserData(user);
+            if (user['displayName'] != null) {
+              await LocalStorageService.saveUserName(user['displayName'].toString());
+            }
+            if (user['avatar'] != null) {
+              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            }
+          }
+          return (user: user, token: token, error: null);
+        }
+      } on DioException catch (dioErr) {
+        final errMsg = dioErr.response?.data?['error']?.toString();
+        if (errMsg != null) {
+          return (user: null, token: null, error: errMsg);
+        }
+      } catch (_) {}
+    }
+    return (user: null, token: null, error: 'Could not connect to SQL authentication server.');
+  }
+
+  Future<({Map<String, dynamic>? user, String? token, String? error})> register({
+    required String email,
+    required String password,
+    String? displayName,
+    String? avatar,
+  }) async {
+    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
+      try {
+        final res = await Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 6),
+        )).post(
+          '$baseUrl/auth/register',
+          data: {
+            'email': email.trim().toLowerCase(),
+            'password': password,
+            'displayName': displayName,
+            'avatar': avatar,
+          },
+        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final data = res.data as Map<String, dynamic>;
+          final token = data['token']?.toString();
+          final user = data['user'] as Map<String, dynamic>?;
+          if (token != null) {
+            await LocalStorageService.setAuthToken(token);
+          }
+          if (user != null) {
+            await LocalStorageService.setUserData(user);
+            if (user['displayName'] != null) {
+              await LocalStorageService.saveUserName(user['displayName'].toString());
+            }
+            if (user['avatar'] != null) {
+              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            }
+          }
+          return (user: user, token: token, error: null);
+        }
+      } on DioException catch (dioErr) {
+        final errMsg = dioErr.response?.data?['error']?.toString();
+        if (errMsg != null) {
+          return (user: null, token: null, error: errMsg);
+        }
+      } catch (_) {}
+    }
+    return (user: null, token: null, error: 'Could not connect to SQL authentication server.');
+  }
+
   Future<({Map<String, dynamic>? user, String? token})?> guestLogin({String? deviceId}) async {
     for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
       try {
@@ -46,60 +184,6 @@ class ApiClient {
         )).post(
           '$baseUrl/auth/guest',
           data: {'deviceId': deviceId ?? 'mobile_device'},
-        );
-        if (res.statusCode == 200 || res.statusCode == 201) {
-          final data = res.data as Map<String, dynamic>;
-          final token = data['token']?.toString();
-          final user = data['user'] as Map<String, dynamic>?;
-          if (token != null) {
-            await LocalStorageService.setAuthToken(token);
-          }
-          if (user != null) {
-            await LocalStorageService.setUserData(user);
-          }
-          return (user: user, token: token);
-        }
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  Future<({Map<String, dynamic>? user, String? token})?> login({required String email, required String password}) async {
-    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
-      try {
-        final res = await Dio(BaseOptions(
-          connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        )).post(
-          '$baseUrl/auth/login',
-          data: {'email': email.trim(), 'password': password},
-        );
-        if (res.statusCode == 200 || res.statusCode == 201) {
-          final data = res.data as Map<String, dynamic>;
-          final token = data['token']?.toString();
-          final user = data['user'] as Map<String, dynamic>?;
-          if (token != null) {
-            await LocalStorageService.setAuthToken(token);
-          }
-          if (user != null) {
-            await LocalStorageService.setUserData(user);
-          }
-          return (user: user, token: token);
-        }
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  Future<({Map<String, dynamic>? user, String? token})?> register({required String email, required String password, String? displayName}) async {
-    for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
-      try {
-        final res = await Dio(BaseOptions(
-          connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-        )).post(
-          '$baseUrl/auth/register',
-          data: {'email': email.trim(), 'password': password, 'displayName': displayName},
         );
         if (res.statusCode == 200 || res.statusCode == 201) {
           final data = res.data as Map<String, dynamic>;

@@ -277,17 +277,34 @@ class LocalStorageService {
   }
 
   // --- User Authentication & Session Token ---
+  static const String _keyIsLoggedIn = 'muxiz_is_logged_in';
+
+  static bool isLoggedIn() {
+    return _prefs?.getBool(_keyIsLoggedIn) ?? (getAuthToken() != null && getAuthToken()!.isNotEmpty);
+  }
+
+  static Future<void> setLoggedIn(bool value) async {
+    await _prefs?.setBool(_keyIsLoggedIn, value);
+  }
+
+  static Future<void> logout() async {
+    await clearAuthToken();
+    await _prefs?.remove(_keyIsLoggedIn);
+  }
+
   static String? getAuthToken() {
     return _prefs?.getString(AppConstants.keyAuthToken);
   }
 
   static Future<void> setAuthToken(String token) async {
     await _prefs?.setString(AppConstants.keyAuthToken, token);
+    await setLoggedIn(true);
   }
 
   static Future<void> clearAuthToken() async {
     await _prefs?.remove(AppConstants.keyAuthToken);
     await _prefs?.remove(AppConstants.keyUserData);
+    await _prefs?.remove(_keyIsLoggedIn);
   }
 
   static Map<String, dynamic>? getUserData() {
@@ -469,6 +486,16 @@ class LocalStorageService {
     // Sync recently played and listening history to PostgreSQL DB
     _syncRecentlyPlayedWithBackend(song.id);
     _syncListeningHistoryWithBackend(song.id, durationSec: song.duration);
+  }
+
+  static const String _keyHasCompletedFirstPlay = 'has_completed_first_play';
+
+  static bool hasCompletedFirstPlay() {
+    return _prefs?.getBool(_keyHasCompletedFirstPlay) ?? (getRecentlyPlayed().isNotEmpty);
+  }
+
+  static Future<void> markFirstPlayCompleted() async {
+    await _prefs?.setBool(_keyHasCompletedFirstPlay, true);
   }
 
   static void _syncRecentlyPlayedWithBackend(String songId) {
@@ -873,5 +900,15 @@ class LocalStorageService {
 
   static Future<void> saveMusicSortOption(String sortOptionName) async {
     await _prefs?.setString(keyMusicSortOption, sortOptionName);
+  }
+
+  /// Completely clears playback cache, persistent memory, and temporary states
+  static Future<void> clearAllPlaybackAndCache() async {
+    await _prefs?.remove('last_played_song');
+    await _prefs?.remove('last_playback_position_ms');
+    await _prefs?.remove('last_playback_queue');
+    await _prefs?.remove('last_playback_queue_index');
+    await _prefs?.remove(AppConstants.keyRecentlyPlayed);
+    await _prefs?.remove(keyPersistentCatalog);
   }
 }

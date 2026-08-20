@@ -17,6 +17,7 @@ import '../../details/presentation/artist_detail_screen.dart';
 import '../../details/presentation/see_all_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../player/presentation/player_screen.dart';
+import '../../main_layout.dart';
 
 import '../../../core/storage/local_storage.dart';
 
@@ -155,7 +156,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final feedAsync = ref.watch(homeFeedProvider);
 
     final isMusicOnly = _selectedFilterIndex == 1;
-    final feed = feedAsync.valueOrNull ?? ref.read(recommendationServiceProvider).generateLocalAlgorithmicFeed();
+    final feed = feedAsync.valueOrNull ??
+        ref.read(recommendationServiceProvider).generateLocalAlgorithmicFeed(
+              currentSong: ref.read(playerStateProvider).currentSong,
+            );
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -325,9 +329,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                           sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 3.1,
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 380,
+                              mainAxisExtent: 56,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                             ),
@@ -337,6 +341,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 return _buildQuickPlayCard(card, index);
                               },
                               childCount: feed.quickPlayCards.length > 6 ? 6 : feed.quickPlayCards.length,
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        // Clean minimalist centered text prompt for new users
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+                            child: Center(
+                              child: InkWell(
+                                onTap: () {
+                                  ref.read(selectedTabProvider.notifier).state = 1;
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Search your favorite song and listen',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 16.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Tap here to find songs and personalize your home feed',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

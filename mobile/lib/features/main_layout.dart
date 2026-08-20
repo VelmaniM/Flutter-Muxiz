@@ -6,6 +6,9 @@ import 'home/presentation/home_screen.dart';
 import 'search/presentation/search_screen.dart';
 import 'library/presentation/library_screen.dart';
 
+import '../core/audio/audio_manager.dart';
+import '../core/storage/local_storage.dart';
+
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 class MainLayout extends ConsumerWidget {
@@ -20,6 +23,16 @@ class MainLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(selectedTabProvider);
+
+    // ⚡ FIRST-TIME ONLY: Auto redirect to Home screen when user plays their first song
+    ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
+      if (next != null && next != previous) {
+        if (!LocalStorageService.hasCompletedFirstPlay()) {
+          LocalStorageService.markFirstPlayCompleted();
+          ref.read(selectedTabProvider.notifier).state = 0;
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,

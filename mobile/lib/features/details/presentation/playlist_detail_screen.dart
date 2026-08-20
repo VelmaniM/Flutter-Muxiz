@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/actions/song_action_models.dart';
 import '../../../core/audio/audio_manager.dart';
-import '../../../core/data/mock_catalog.dart';
-import '../../../core/services/recommendation_service.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/glass_bottom_bar.dart';
 import '../../../shared/components/mini_player.dart';
@@ -27,21 +25,15 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final List<Song> songs = playlist.songs;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: RefreshIndicator(
-        color: AppTheme.primaryGreen,
-        onRefresh: () async {
-          await MockMusicCatalog.initializeCatalog(forceRefresh: true);
-          await ref.read(homeFeedProvider.notifier).refreshFeed();
-        },
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          slivers: [
-          // Collapsible Ambient Header
+      backgroundColor: Colors.black,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Collapsible Ambient Header with Smooth Bottom Gradient Fade
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
-            backgroundColor: const Color(0xFF181818),
+            backgroundColor: Colors.black,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
@@ -49,28 +41,86 @@ class PlaylistDetailScreen extends ConsumerWidget {
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
+                fit: StackFit.expand,
                 alignment: Alignment.center,
                 children: [
+                  // 1. Ambient Background Layer
+                  Container(
+                    color: Colors.black,
+                  ),
+                  if (playlist.coverUrl.isNotEmpty) ...[
+                    Opacity(
+                      opacity: 0.20,
+                      child: MuxizImage(
+                        imageUrl: playlist.coverUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        borderRadius: 0,
+                      ),
+                    ),
+                  ],
+                  // 2. Full-bleed Multi-Stop Black Gradient Mask (Ultra Smooth)
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF3E3E3E), Color(0xFF121212)],
+                        colors: [
+                          Color(0x30000000),
+                          Color(0x70000000),
+                          Color(0xC0000000),
+                          Color(0xFF000000),
+                        ],
+                        stops: [0.0, 0.40, 0.75, 1.0],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
                     ),
                   ),
+                  // 3. Centered Artwork with Soft Glow Shadow
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 36),
-                      MuxizImage(
-                        imageUrl: playlist.coverUrl,
-                        width: 150,
-                        height: 150,
-                        borderRadius: 6,
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: MuxizImage(
+                          imageUrl: playlist.coverUrl,
+                          width: 152,
+                          height: 152,
+                          borderRadius: 8,
+                        ),
                       ),
                     ],
+                  ),
+                  // 4. Bottom Edge Dissolve Overlay (Completely eliminates any hard boundary)
+                  Positioned(
+                    bottom: -1,
+                    left: 0,
+                    right: 0,
+                    height: 70,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Color(0x80000000),
+                            Color(0xFF000000),
+                          ],
+                          stops: [0.0, 0.45, 1.0],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -220,7 +270,6 @@ class PlaylistDetailScreen extends ConsumerWidget {
             child: SizedBox(height: 100),
           ),
         ],
-      ),
       ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,

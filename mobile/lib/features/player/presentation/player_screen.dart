@@ -31,7 +31,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       return const SizedBox.shrink();
     }
 
-    final dominantColor = playerState.dominantColor;
     final routeState = ref.watch(audioRouteProvider);
     final currentRoute = routeState.currentRoute;
 
@@ -65,10 +64,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            dominantColor.withValues(alpha: 0.95),
-            Color.lerp(dominantColor, const Color(0xFF181818), 0.50)!,
-            Color.lerp(dominantColor, const Color(0xFF0F0F0F), 0.82)!,
-            const Color(0xFF080808),
+            const Color(0xFF1E1E1E),
+            const Color(0xFF141414),
+            const Color(0xFF0A0A0A),
+            Colors.black,
           ],
           stops: const [0.0, 0.35, 0.70, 1.0],
         ),

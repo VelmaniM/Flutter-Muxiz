@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/user_avatar_button.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../auth/presentation/login_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -138,16 +139,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 side: const BorderSide(color: Colors.white30),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Cache cleared successfully!'),
-                    backgroundColor: AppTheme.card,
-                  ),
-                );
+              onPressed: () async {
+                await LocalStorageService.clearAllPlaybackAndCache();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cache & playback memory cleared successfully!'),
+                      backgroundColor: AppTheme.card,
+                    ),
+                  );
+                }
               },
               child: const Text('Clear Cache', style: TextStyle(color: Colors.white, fontSize: 12)),
             ),
+          ),
+
+          const SizedBox(height: 12),
+          // Account / Session Section
+          _buildSectionHeader('Account & Session'),
+          ListTile(
+            leading: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
+            title: const Text('Log out', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+            subtitle: const Text('Sign out and return to Google Login screen', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            onTap: () async {
+              await LocalStorageService.logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (ctx) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
           ),
 
           const SizedBox(height: 100),

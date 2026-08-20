@@ -8,7 +8,6 @@ import '../../shared/models/album.dart';
 import '../../shared/models/artist.dart';
 import '../audio/audio_manager.dart';
 import '../data/mock_catalog.dart';
-import '../network/network_state.dart';
 import '../storage/local_storage.dart';
 
 enum HomeSectionType {
@@ -107,56 +106,34 @@ final homeFeedProvider = StateNotifierProvider<HomeFeedNotifier, AsyncValue<Home
 class HomeFeedNotifier extends StateNotifier<AsyncValue<HomeFeedData>> {
   final RecommendationService _service;
   final Ref _ref;
-  DateTime? _lastGeneratedTime;
-  Timer? _dailyCycleTimer;
 
-  HomeFeedNotifier(this._service, this._ref) : super(const AsyncValue.loading()) {
-    refreshFeed();
-
-    // 1. Network reconnection trigger: When internet comes back ON, refresh daily data
-    _ref.listen(networkStatusProvider, (previous, next) {
-      if (next == NetworkStatus.online && previous != NetworkStatus.online) {
-        refreshFeed();
-      }
-    });
-
-    // 2. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
-    _dailyCycleTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      final mostRecent530Am = _getMostRecent530AmIst();
-      if (_lastGeneratedTime != null && _lastGeneratedTime!.isBefore(mostRecent530Am)) {
-        refreshFeed();
+  HomeFeedNotifier(this._service, this._ref)
+      : super(AsyncValue.data(_service.generateLocalAlgorithmicFeed(
+          currentSong: _ref.read(playerStateProvider).currentSong ??
+              (LocalStorageService.getRecentlyPlayed().isNotEmpty
+                  ? LocalStorageService.getRecentlyPlayed().first
+                  : null) ??
+              LocalStorageService.getLastPlaybackState().song,
+        ))) {
+    // ⚡ REAL-TIME REACTIVE 6-GRID LISTENER:
+    // Whenever user plays or changes a song, immediately update the 6-grid live in 0ms!
+    _ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
+      if (next != null && next != previous) {
+        _updateFeedImmediate();
       }
     });
   }
 
-  /// Calculates the most recent 5:30 AM IST timestamp (UTC 00:00)
-  static DateTime _getMostRecent530AmIst() {
-    final nowUtc = DateTime.now().toUtc();
-    final today530AmIst = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day, 0, 0, 0);
-    if (nowUtc.isBefore(today530AmIst)) {
-      return today530AmIst.subtract(const Duration(days: 1));
-    }
-    return today530AmIst;
+  void _updateFeedImmediate() {
+    final currentSong = _ref.read(playerStateProvider).currentSong ??
+        (LocalStorageService.getRecentlyPlayed().isNotEmpty ? LocalStorageService.getRecentlyPlayed().first : null) ??
+        LocalStorageService.getLastPlaybackState().song;
+    final feed = _service.generateLocalAlgorithmicFeed(currentSong: currentSong);
+    state = AsyncValue.data(feed);
   }
 
   Future<void> refreshFeed() async {
-    try {
-      final currentSong = _ref.read(playerStateProvider).currentSong;
-      final feed = await _service.generateHomeFeed(currentSong: currentSong);
-      _lastGeneratedTime = DateTime.now().toUtc();
-      state = AsyncValue.data(feed);
-    } catch (e) {
-      final currentSong = _ref.read(playerStateProvider).currentSong;
-      final fallback = _service.generateLocalAlgorithmicFeed(currentSong: currentSong);
-      _lastGeneratedTime = DateTime.now().toUtc();
-      state = AsyncValue.data(fallback);
-    }
-  }
-
-  @override
-  void dispose() {
-    _dailyCycleTimer?.cancel();
-    super.dispose();
+    _updateFeedImmediate();
   }
 }
 
@@ -269,14 +246,19 @@ class RecommendationService {
       );
     }
 
+    final lastPlayback = LocalStorageService.getLastPlaybackState();
+    final bool isBrandNewUser = recentlyPlayed.isEmpty && likedSongs.isEmpty && currentSong == null && lastPlayback.song == null;
+
     // --- 6-GRID ALGORITHM: 100% DYNAMIC BEHAVIOR AS REQUESTED ---
     final List<QuickPlayCardItem> quickPlayCards = [];
     final Set<String> usedSongIds = {};
 
-    // 1. Card 1: User's latest / currently listened song
-    final Song? card1Song = (recentlyPlayed.isNotEmpty ? recentlyPlayed.first : null) ??
-        (currentSong) ??
-        (allSongs.isNotEmpty ? allSongs.first : null);
+    if (!isBrandNewUser) {
+      // 1. Card 1: User's latest / currently listened song
+      final Song? card1Song = (currentSong) ??
+          (recentlyPlayed.isNotEmpty ? recentlyPlayed.first : null) ??
+          (lastPlayback.song) ??
+          (allSongs.isNotEmpty ? allSongs.first : null);
     if (card1Song != null) {
       usedSongIds.add(card1Song.id);
       quickPlayCards.add(QuickPlayCardItem(
@@ -287,15 +269,26 @@ class RecommendationService {
       ));
     }
 
-    // 2. Card 2: Previous song from a DIFFERENT movie/album (1st moves to 2nd on new album play)
-    final card1Movie = (card1Song?.movieName ?? card1Song?.album ?? '').toLowerCase();
+    // 2. Card 2: Previous song from a DIFFERENT movie/album (1st moves to 2nd on new movie play)
+    final card1Movie = (card1Song?.movieName ?? card1Song?.album ?? '').trim().toLowerCase();
+    
+    // First try from recentlyPlayed (a different movie played recently)
     Song? card2Song = recentlyPlayed.where((s) {
       if (usedSongIds.contains(s.id)) return false;
-      final m = (s.movieName ?? s.album).toLowerCase();
+      final m = (s.movieName ?? s.album).trim().toLowerCase();
       return m.isNotEmpty && m != card1Movie;
     }).firstOrNull;
-    card2Song ??= recentlyPlayed.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+
+    // Next try from allSongs with a strictly DIFFERENT movie
+    card2Song ??= allSongs.where((s) {
+      if (usedSongIds.contains(s.id)) return false;
+      final m = (s.movieName ?? s.album).trim().toLowerCase();
+      return m.isNotEmpty && m != card1Movie;
+    }).firstOrNull;
+
+    // Fallback only if entire library has only 1 movie
     card2Song ??= allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+
     if (card2Song != null) {
       usedSongIds.add(card2Song.id);
       quickPlayCards.add(QuickPlayCardItem(
@@ -306,10 +299,18 @@ class RecommendationService {
       ));
     }
 
-    // 3. Card 3: Highly listened song (Most repeated / favorite track)
-    Song? card3Song = likedSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
-    card3Song ??= recentlyPlayed.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
-    card3Song ??= allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
+    // 3. Card 3: Highly listened song (Most repeated song by user, or top liked song)
+    final Map<String, int> songFrequency = {};
+    for (final s in recentlyPlayed) {
+      songFrequency[s.id] = (songFrequency[s.id] ?? 0) + 1;
+    }
+    for (final s in likedSongs) {
+      songFrequency[s.id] = (songFrequency[s.id] ?? 0) + 3;
+    }
+    final candidateCard3Songs = allSongs.where((s) => !usedSongIds.contains(s.id)).toList()
+      ..sort((a, b) => (songFrequency[b.id] ?? 0).compareTo(songFrequency[a.id] ?? 0));
+    
+    Song? card3Song = candidateCard3Songs.firstOrNull;
     if (card3Song != null) {
       usedSongIds.add(card3Song.id);
       quickPlayCards.add(QuickPlayCardItem(
@@ -321,7 +322,23 @@ class RecommendationService {
     }
 
     // 4. Card 4: Highly listened Album / Movie
-    Album? card4Album = MockMusicCatalog.topAlbums.firstOrNull;
+    final Map<String, int> albumFrequency = {};
+    for (final s in [...recentlyPlayed, ...likedSongs]) {
+      final m = (s.movieName ?? s.album).trim();
+      if (m.isNotEmpty) {
+        albumFrequency[m] = (albumFrequency[m] ?? 0) + 1;
+      }
+    }
+    final sortedUserAlbums = albumFrequency.keys.toList()
+      ..sort((a, b) => (albumFrequency[b] ?? 0).compareTo(albumFrequency[a] ?? 0));
+
+    Album? card4Album;
+    if (sortedUserAlbums.isNotEmpty) {
+      final topName = sortedUserAlbums.first.toLowerCase();
+      card4Album = MockMusicCatalog.topAlbums.where((a) => a.title.toLowerCase() == topName).firstOrNull;
+    }
+    card4Album ??= MockMusicCatalog.topAlbums.firstOrNull;
+
     if (card4Album != null) {
       quickPlayCards.add(QuickPlayCardItem(
         id: 'slot4_album_${card4Album.id}',
@@ -329,19 +346,24 @@ class RecommendationService {
         imageUrl: card4Album.artworkUrl,
         album: card4Album,
       ));
-    } else if (allSongs.length > 3) {
-      final s = allSongs[2];
-      quickPlayCards.add(QuickPlayCardItem(
-        id: 'slot4_song_${s.id}',
-        title: s.movieName ?? s.album,
-        imageUrl: s.artworkUrl,
-        song: s,
-      ));
+    } else {
+      final s = allSongs.where((x) => !usedSongIds.contains(x.id)).firstOrNull ?? (allSongs.isNotEmpty ? allSongs.first : null);
+      if (s != null) {
+        usedSongIds.add(s.id);
+        quickPlayCards.add(QuickPlayCardItem(
+          id: 'slot4_song_${s.id}',
+          title: s.movieName ?? s.album,
+          imageUrl: s.artworkUrl,
+          song: s,
+        ));
+      }
     }
 
-    // 5. Card 5: Trending song (User heavily played or trending in catalog)
-    Song? card5Trending = allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull;
-    card5Trending ??= allSongs.firstOrNull;
+    // 5. Card 5: Trending song (What users listen to heavily)
+    final candidateCard5 = allSongs.where((s) => !usedSongIds.contains(s.id)).toList()
+      ..sort((a, b) => _getSongTrendWeight(b, recentlyPlayed, likedSongs).compareTo(_getSongTrendWeight(a, recentlyPlayed, likedSongs)));
+    
+    Song? card5Trending = candidateCard5.firstOrNull;
     if (card5Trending != null) {
       usedSongIds.add(card5Trending.id);
       quickPlayCards.add(QuickPlayCardItem(
@@ -356,6 +378,7 @@ class RecommendationService {
     final customPlaylists = LocalStorageService.getCustomPlaylists();
     final Playlist? card6Playlist = (customPlaylists.isNotEmpty ? customPlaylists.first : null) ??
         (MockMusicCatalog.featuredPlaylists.isNotEmpty ? MockMusicCatalog.featuredPlaylists.first : null);
+    
     if (card6Playlist != null) {
       quickPlayCards.add(QuickPlayCardItem(
         id: 'slot6_playlist_${card6Playlist.id}',
@@ -363,7 +386,7 @@ class RecommendationService {
         imageUrl: card6Playlist.coverUrl,
         playlist: card6Playlist,
       ));
-    } else if (MockMusicCatalog.topAlbums.length > 1) {
+    } else if (MockMusicCatalog.topAlbums.length > 1 && MockMusicCatalog.topAlbums[1].id != card4Album?.id) {
       final alb = MockMusicCatalog.topAlbums[1];
       quickPlayCards.add(QuickPlayCardItem(
         id: 'slot6_album_${alb.id}',
@@ -371,27 +394,56 @@ class RecommendationService {
         imageUrl: alb.artworkUrl,
         album: alb,
       ));
-    } else if (allSongs.isNotEmpty) {
-      final s = allSongs.last;
+    } else {
+      final distinctTrack = allSongs.where((s) => !usedSongIds.contains(s.id)).firstOrNull ?? (allSongs.isNotEmpty ? allSongs.last : null);
       quickPlayCards.add(QuickPlayCardItem(
-        id: 'slot6_song_${s.id}',
-        title: s.title,
-        imageUrl: s.artworkUrl,
-        song: s,
+        id: 'slot6_top_hits',
+        title: 'Top Hits',
+        imageUrl: distinctTrack?.artworkUrl ?? (allSongs.isNotEmpty ? allSongs.first.artworkUrl : ''),
       ));
+    }
     }
 
     final List<Song> quickPlay = quickPlayCards.map((c) => c.song).whereType<Song>().toList();
 
-    // 2. Curated Dynamic Playlists built strictly from real DB songs
+    // --- 100% DYNAMIC USER AFFINITY & TASTE PROFILE (ZERO HARDCODED NAMES) ---
+    final Map<String, int> artistFrequency = {};
+    for (final s in recentlyPlayed) {
+      final names = MockMusicCatalog.extractArtistsList(s.artist);
+      for (final a in names) {
+        if (a.isNotEmpty && a.toLowerCase() != 'unknown artist') {
+          artistFrequency[a] = (artistFrequency[a] ?? 0) + 3;
+        }
+      }
+    }
+    for (final s in likedSongs) {
+      final names = MockMusicCatalog.extractArtistsList(s.artist);
+      for (final a in names) {
+        if (a.isNotEmpty && a.toLowerCase() != 'unknown artist') {
+          artistFrequency[a] = (artistFrequency[a] ?? 0) + 2;
+        }
+      }
+    }
+
+    final sortedUserArtists = artistFrequency.keys.toList()
+      ..sort((a, b) => (artistFrequency[b] ?? 0).compareTo(artistFrequency[a] ?? 0));
+
+    final dynamicTopArtists = sortedUserArtists.isNotEmpty
+        ? sortedUserArtists
+        : MockMusicCatalog.popularArtists.map((a) => a.name).toList();
+
+    final top1 = dynamicTopArtists.isNotEmpty ? dynamicTopArtists[0] : '';
+    final top2 = dynamicTopArtists.length > 1 ? dynamicTopArtists[1] : '';
+    final top3 = dynamicTopArtists.length > 2 ? dynamicTopArtists[2] : '';
+
+    // 2. Curated Dynamic Playlists built strictly from real DB songs & user taste
     final trendingSongs = List<Song>.from(allSongs);
     trendingSongs.sort((a, b) {
-      final aTrendWeight = _getSongTrendWeight(a);
-      final bTrendWeight = _getSongTrendWeight(b);
+      final aTrendWeight = _getSongTrendWeight(a, recentlyPlayed, likedSongs);
+      final bTrendWeight = _getSongTrendWeight(b, recentlyPlayed, likedSongs);
       return bTrendWeight.compareTo(aTrendWeight);
     });
 
-    // Curated Dynamic Playlists built strictly from real DB songs
     final List<Playlist> trendingTamilPlaylists = [];
     if (trendingSongs.isNotEmpty) {
       trendingTamilPlaylists.add(Playlist(
@@ -413,25 +465,21 @@ class RecommendationService {
         songs: trendingSongs.skip(2).take(15).toList(),
       ));
     }
-    for (final artist in MockMusicCatalog.popularArtists.take(3)) {
-      if (artist.topTracks.isNotEmpty) {
+    for (final artistName in dynamicTopArtists.take(3)) {
+      final artistTracks = _getArtistMixTracks(allSongs, artistName);
+      if (artistTracks.isNotEmpty) {
         trendingTamilPlaylists.add(Playlist(
-          id: 'artist_mix_${artist.id}',
-          title: '${artist.name} Radio',
-          description: 'Tracks strictly by ${artist.name}.',
-          coverUrl: artist.imageUrl,
+          id: 'artist_mix_${artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
+          title: '$artistName Radio',
+          description: 'Tracks strictly by $artistName.',
+          coverUrl: artistTracks.first.artworkUrl,
           creator: 'Muxiz AI',
-          songs: artist.topTracks,
+          songs: artistTracks,
         ));
       }
     }
 
-    final topArtists = MockMusicCatalog.popularArtists.map((a) => a.name).toList();
-    final top1 = topArtists.isNotEmpty ? topArtists[0] : '';
-    final top2 = topArtists.length > 1 ? topArtists[1] : '';
-    final top3 = topArtists.length > 2 ? topArtists[2] : '';
-
-    // 4. Dynamic Section: "Made For You" (Strictly ONLY songs by each specific artist)
+    // 4. Dynamic Section: "Made For You" (Strictly tailored to user's listened artists)
     final mix1Songs = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : <Song>[];
     final mix2Songs = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : <Song>[];
     final mix3Songs = top3.isNotEmpty ? _getArtistMixTracks(allSongs, top3) : <Song>[];
@@ -439,9 +487,9 @@ class RecommendationService {
     final heardIds = {...recentlyPlayed.map((s) => s.id), ...likedSongs.map((s) => s.id)};
     final discoverSongs = allSongs.where((s) {
       if (heardIds.contains(s.id)) return false;
-      return MockMusicCatalog.isSongByArtist(s, top1) ||
-          MockMusicCatalog.isSongByArtist(s, top2) ||
-          MockMusicCatalog.isSongByArtist(s, top3);
+      return (top1.isNotEmpty && MockMusicCatalog.isSongByArtist(s, top1)) ||
+          (top2.isNotEmpty && MockMusicCatalog.isSongByArtist(s, top2)) ||
+          (top3.isNotEmpty && MockMusicCatalog.isSongByArtist(s, top3));
     }).take(20).toList();
 
     final madeForYouPlaylists = [
@@ -449,162 +497,141 @@ class RecommendationService {
         Playlist(
           id: 'mix_${top1.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
           title: '$top1 Mix',
-          description: 'The best of $top1, all in one place.',
+          description: 'The best of $top1, personalized for you.',
           coverUrl: mix1Songs.first.artworkUrl,
-          creator: 'Spotify',
+          creator: 'Muxiz AI',
           songs: mix1Songs,
         ),
       if (mix2Songs.isNotEmpty)
         Playlist(
           id: 'mix_${top2.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
           title: '$top2 Mix',
-          description: 'The best of $top2, all in one place.',
+          description: 'The best of $top2, personalized for you.',
           coverUrl: mix2Songs.first.artworkUrl,
-          creator: 'Spotify',
+          creator: 'Muxiz AI',
           songs: mix2Songs,
         ),
       if (mix3Songs.isNotEmpty)
         Playlist(
           id: 'mix_${top3.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
           title: '$top3 Mix',
-          description: 'The best of $top3, all in one place.',
+          description: 'The best of $top3, personalized for you.',
           coverUrl: mix3Songs.first.artworkUrl,
-          creator: 'Spotify',
+          creator: 'Muxiz AI',
           songs: mix3Songs,
         ),
       if (discoverSongs.isNotEmpty)
         Playlist(
           id: 'discover_weekly',
-          title: 'Discover Weekly',
-          description: 'Your weekly mixtape of fresh tracks picked for you.',
+          title: 'Discover Mix',
+          description: 'Fresh tracks picked from your listening preferences.',
           coverUrl: discoverSongs.first.artworkUrl,
-          creator: 'Spotify',
+          creator: 'Muxiz AI',
           songs: discoverSongs,
         ),
     ];
 
-    // 5. Dynamic Section: Time & Mood Shift Shelf (Strict thematic songs only)
+    // 5. Dynamic Section: Time & Mood Shift Shelf (Derived from user taste & time of day)
     final String timeSectionTitle;
     final List<Playlist> timePlaylists;
     if (hour >= 5 && hour < 12) {
       timeSectionTitle = 'Morning Motivation';
-      final morningMotivation = allSongs.where((s) {
-        final t = s.title.toLowerCase();
-        final a = s.artist.toLowerCase();
-        return a.contains('anirudh') ||
-            a.contains('santhosh') ||
-            a.contains('hiphop') ||
-            t.contains('arambam') ||
-            t.contains('rise') ||
-            t.contains('power') ||
-            t.contains('badass') ||
-            t.contains('energy');
-      }).take(15).toList();
-
-      final acousticMorning = allSongs.where((s) {
-        final t = s.title.toLowerCase();
-        final a = s.artist.toLowerCase();
-        return t.contains('kadhal') ||
-            t.contains('melody') ||
-            t.contains('kanave') ||
-            t.contains('poo') ||
-            a.contains('sid sriram') ||
-            a.contains('pradeep kumar');
-      }).take(15).toList();
+      final morningTracks = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : allSongs.take(15).toList();
+      final acousticTracks = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : allSongs.skip(2).take(15).toList();
 
       timePlaylists = [
-        if (morningMotivation.isNotEmpty)
+        if (morningTracks.isNotEmpty)
           Playlist(
             id: 'morning_energy',
-            title: 'Morning Motivation',
-            description: 'Uplifting tracks to start your day with power.',
-            coverUrl: morningMotivation.first.artworkUrl,
-            creator: 'Spotify',
-            songs: morningMotivation,
+            title: top1.isNotEmpty ? '$top1 Morning' : 'Morning Energy',
+            description: 'Uplifting tracks to start your day.',
+            coverUrl: morningTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: morningTracks,
           ),
-        if (acousticMorning.isNotEmpty)
+        if (acousticTracks.isNotEmpty)
           Playlist(
             id: 'acoustic_morning',
-            title: 'Tamil Acoustic Starts',
-            description: 'Soothing morning acoustic guitar and vocals.',
-            coverUrl: acousticMorning.first.artworkUrl,
-            creator: 'Spotify',
-            songs: acousticMorning,
+            title: top2.isNotEmpty ? '$top2 Essentials' : 'Morning Melodies',
+            description: 'Soothing tunes for a fresh morning.',
+            coverUrl: acousticTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: acousticTracks,
           ),
       ];
     } else if (hour >= 12 && hour < 17) {
       timeSectionTitle = 'Afternoon Beats';
-      final partyHits = allSongs.take(15).toList();
-      final driveHits = allSongs.skip(2).take(15).toList();
+      final afternoonTracks = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : allSongs.take(15).toList();
+      final driveTracks = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : allSongs.skip(2).take(15).toList();
 
       timePlaylists = [
-        if (partyHits.isNotEmpty)
+        if (afternoonTracks.isNotEmpty)
           Playlist(
             id: 'afternoon_flow',
-            title: 'Afternoon Flow',
+            title: top1.isNotEmpty ? '$top1 Flow' : 'Afternoon Flow',
             description: 'High energy tracks from your database.',
-            coverUrl: partyHits.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: partyHits,
+            coverUrl: afternoonTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: afternoonTracks,
           ),
-        if (driveHits.isNotEmpty)
+        if (driveTracks.isNotEmpty)
           Playlist(
-            id: 'kollywood_drive',
-            title: 'Drive Beats',
+            id: 'drive_beats',
+            title: top2.isNotEmpty ? '$top2 Drive' : 'Drive Beats',
             description: 'The ultimate driving soundtrack for your afternoon.',
-            coverUrl: driveHits.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: driveHits,
+            coverUrl: driveTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: driveTracks,
           ),
       ];
     } else if (hour >= 17 && hour < 22) {
       timeSectionTitle = 'Evening Melodies';
-      final eveningUnwind = allSongs.take(15).toList();
-      final sunsetMelodies = allSongs.skip(3).take(15).toList();
+      final eveningTracks = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : allSongs.take(15).toList();
+      final sunsetTracks = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : allSongs.skip(3).take(15).toList();
 
       timePlaylists = [
-        if (eveningUnwind.isNotEmpty)
+        if (eveningTracks.isNotEmpty)
           Playlist(
             id: 'evening_unwind',
-            title: 'Evening Unwind',
-            description: 'Relax and groove with iconic melodies from your vault.',
-            coverUrl: eveningUnwind.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: eveningUnwind,
+            title: top1.isNotEmpty ? '$top1 Evening' : 'Evening Unwind',
+            description: 'Relax and groove with iconic melodies.',
+            coverUrl: eveningTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: eveningTracks,
           ),
-        if (sunsetMelodies.isNotEmpty)
+        if (sunsetTracks.isNotEmpty)
           Playlist(
             id: 'sunset_melodies',
-            title: 'Sunset Melodies',
+            title: top2.isNotEmpty ? '$top2 Sunset' : 'Sunset Melodies',
             description: 'Golden hour melodies and acoustic harmonies.',
-            coverUrl: sunsetMelodies.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: sunsetMelodies,
+            coverUrl: sunsetTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: sunsetTracks,
           ),
       ];
     } else {
       timeSectionTitle = 'Late Night Chill';
-      final lateNightMelodies = allSongs.take(15).toList();
-      final midnightNostalgia = allSongs.skip(2).take(15).toList();
+      final nightTracks = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : allSongs.take(15).toList();
+      final midnightTracks = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : allSongs.skip(2).take(15).toList();
 
       timePlaylists = [
-        if (lateNightMelodies.isNotEmpty)
+        if (nightTracks.isNotEmpty)
           Playlist(
             id: 'late_night_chill',
-            title: 'Late Night Chill',
-            description: 'Soft soul vocals & soothing midnight vibes from your vault.',
-            coverUrl: lateNightMelodies.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: lateNightMelodies,
+            title: top1.isNotEmpty ? '$top1 Midnight' : 'Late Night Chill',
+            description: 'Soft soul vocals & soothing midnight vibes.',
+            coverUrl: nightTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: nightTracks,
           ),
-        if (midnightNostalgia.isNotEmpty)
+        if (midnightTracks.isNotEmpty)
           Playlist(
             id: 'midnight_nostalgia',
-            title: 'Midnight Nostalgia',
+            title: top2.isNotEmpty ? '$top2 Night' : 'Midnight Nostalgia',
             description: 'Evergreen night tracks from your library.',
-            coverUrl: midnightNostalgia.first.artworkUrl,
-            creator: 'Muxiz',
-            songs: midnightNostalgia,
+            coverUrl: midnightTracks.first.artworkUrl,
+            creator: 'Muxiz AI',
+            songs: midnightTracks,
           ),
       ];
     }
@@ -615,7 +642,7 @@ class RecommendationService {
     // 7. Dynamic Artist Ranking
     final rankedArtists = List<Artist>.from(MockMusicCatalog.popularArtists);
 
-    // 8. Assemble 100% Authentic Spotify Dynamic Shelves
+    // 8. Assemble Dynamic Shelves
     final deletedPlaylists = LocalStorageService.getDeletedPlaylistIds();
     final cleanTrendingPlaylists = trendingTamilPlaylists.where((p) => !deletedPlaylists.contains(p.id)).toList();
     final cleanMadeForYou = madeForYouPlaylists.where((p) => !deletedPlaylists.contains(p.id)).toList();
@@ -674,24 +701,28 @@ class RecommendationService {
     );
   }
 
-  int _getSongTrendWeight(Song song) {
+  /// 100% Dynamic User Affinity Scoring (Zero Hardcoded Strings)
+  int _getSongTrendWeight(Song song, List<Song> recentlyPlayed, List<Song> likedSongs) {
     int weight = 50;
-    final title = song.title.toLowerCase();
-    final movie = (song.movieName ?? song.album).toLowerCase();
-    final artist = song.artist.toLowerCase();
 
-    // Top viral songs in current Tamil trend
-    if (movie.contains('goat') || movie.contains('greatest')) weight += 100;
-    if (movie.contains('amaran')) weight += 95;
-    if (movie.contains('vettaiyan')) weight += 90;
-    if (movie.contains('leo')) weight += 85;
-    if (movie.contains('jailer')) weight += 80;
-    if (title.contains('matta') || title.contains('spark') || title.contains('minnale')) weight += 60;
-    if (title.contains('hukum') || title.contains('badass') || title.contains('katchi')) weight += 55;
-    if (artist.contains('anirudh')) weight += 40;
-    if (artist.contains('rahman')) weight += 35;
-    if (artist.contains('sai abhyankkar')) weight += 35;
-    if (artist.contains('yuvan')) weight += 30;
+    // 1. User Liked Song Boost
+    final isLiked = likedSongs.any((s) => s.id == song.id);
+    if (isLiked) weight += 60;
+
+    // 2. User Play Frequency Boost (tracks listened more often rank higher)
+    final playCount = recentlyPlayed.where((s) => s.id == song.id).length;
+    weight += playCount * 30;
+
+    // 3. User Favorite Artist Boost (dynamically matches artists the user actually listens to)
+    final isUserArtist = recentlyPlayed.any((s) => MockMusicCatalog.isSongByArtist(song, s.artist));
+    if (isUserArtist) weight += 35;
+
+    // 4. User Favorite Movie/Album Boost
+    final songMovie = (song.movieName ?? song.album).trim().toLowerCase();
+    if (songMovie.isNotEmpty) {
+      final isUserMovie = recentlyPlayed.any((s) => (s.movieName ?? s.album).trim().toLowerCase() == songMovie);
+      if (isUserMovie) weight += 25;
+    }
 
     return weight;
   }

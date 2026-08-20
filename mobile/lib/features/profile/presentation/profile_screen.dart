@@ -11,6 +11,7 @@ import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/album_card.dart';
 import '../../../shared/components/artist_avatar.dart';
 import '../../details/presentation/playlist_detail_screen.dart';
+import '../../auth/presentation/login_screen.dart';
 import 'profile_image_cropper.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -56,7 +57,83 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // SAMPLE AVATAR EMOJIS PICKER
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Choose Avatar Emoji',
+                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 52,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: const [
+                      '🎧', '🎸', '🎵', '⚡', '👑', '🔥', 
+                      '🕶️', '💎', '🦁', '🐯', '🚀', '💿', 
+                      '🎙️', '🐺', '🦊', '🐉', '👾', '🪐', 
+                      '🌊', '☕', '✨', '⭐', '💫', '🎉',
+                    ].length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (ctx, idx) {
+                      const sampleEmojis = [
+                        '🎧', '🎸', '🎵', '⚡', '👑', '🔥', 
+                        '🕶️', '💎', '🦁', '🐯', '🚀', '💿', 
+                        '🎙️', '🐺', '🦊', '🐉', '👾', '🪐', 
+                        '🌊', '☕', '✨', '⭐', '💫', '🎉',
+                      ];
+                      final em = sampleEmojis[idx];
+                      final isSelected = avatarUrl == 'emoji:$em';
+                      return InkWell(
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await ref.read(userAvatarProvider.notifier).setAvatar('emoji:$em');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Text(em, style: const TextStyle(fontSize: 20)),
+                                    const SizedBox(width: 10),
+                                    Text('Avatar updated to $em! ✨', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(26),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.25) : const Color(0xFF242424),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.primaryGreen : Colors.white12,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(em, style: const TextStyle(fontSize: 22)),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Divider(color: Colors.white10, height: 1),
+                const SizedBox(height: 10),
+
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
@@ -67,11 +144,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryGreen, size: 22),
                   ),
                   title: Text(
-                    avatarUrl != null && avatarUrl.isNotEmpty ? 'Change Photo' : 'Upload New Photo',
+                    avatarUrl != null && avatarUrl.isNotEmpty ? 'Upload Custom Photo' : 'Upload Photo from Device',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: const Text(
-                    'Resize & crop photo with Instagram/WhatsApp style circular zoom',
+                    'Pick any photo from your device gallery or files',
                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
                   ),
                   onTap: () {
@@ -184,10 +261,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       if (image == null) return;
 
-      // WhatsApp / Instagram style Circular Cropper & Resizer Dialog
-      if (!mounted) return;
-      final croppedFile = await ProfileImageCropperDialog.show(context, File(image.path));
-      if (croppedFile == null) return;
+      File finalFile = File(image.path);
+      try {
+        if (mounted) {
+          final cropped = await ProfileImageCropperDialog.show(context, finalFile);
+          if (cropped != null) {
+            finalFile = cropped;
+          }
+        }
+      } catch (_) {}
 
       setState(() {
         _isUploadingAvatar = true;
@@ -195,44 +277,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       // 1. Permanently copy to Application Documents Directory so it survives app restarts
       final docsDir = await getApplicationDocumentsDirectory();
-      final permanentFile = File('${docsDir.path}/user_profile_avatar.png');
-      await croppedFile.copy(permanentFile.path);
-
-      final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 25),
-      ));
-
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          permanentFile.path,
-          filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.png',
-        ),
-        'userId': LocalStorageService.getUserId(),
-        'displayName': displayName,
-      });
-
-      const endpoints = [
-        'http://192.168.1.94:5001/api/v1/uploads/avatar',
-        'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
-        'http://localhost:5001/api/v1/uploads/avatar',
-      ];
-
-      String? uploadedUrl;
-      for (final ep in endpoints) {
-        try {
-          final res = await dio.post(ep, data: formData);
-          if (res.statusCode == 200 || res.statusCode == 201) {
-            uploadedUrl = res.data['avatarUrl'] as String?;
-            break;
+      try {
+        final existingFiles = docsDir.listSync();
+        for (final f in existingFiles) {
+          if (f.path.contains('user_profile_avatar')) {
+            try {
+              f.deleteSync();
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
 
-      // If cloud upload returned URL, save URL; otherwise save permanent local path
-      uploadedUrl ??= permanentFile.path;
+      final permanentFile = File('${docsDir.path}/user_profile_avatar_${DateTime.now().millisecondsSinceEpoch}.png');
+      await finalFile.copy(permanentFile.path);
 
-      await ref.read(userAvatarProvider.notifier).setAvatar(uploadedUrl);
+      // Instant local persistence & global reactive update across all pages
+      await ref.read(userAvatarProvider.notifier).setAvatar(permanentFile.path);
 
       if (mounted) {
         setState(() {
@@ -245,7 +305,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
                 SizedBox(width: 10),
-                Text('Profile photo updated & saved to Drive! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Profile photo updated successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               ],
             ),
             backgroundColor: const Color(0xFF1E1E1E),
@@ -255,6 +315,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         );
       }
+
+      // Background cloud sync (safe, non-blocking)
+      try {
+        final dio = Dio(BaseOptions(
+          connectTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ));
+
+        final formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(
+            permanentFile.path,
+            filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.png',
+          ),
+          'userId': LocalStorageService.getUserId(),
+          'displayName': displayName,
+        });
+
+        const endpoints = [
+          'http://192.168.1.94:5001/api/v1/uploads/avatar',
+          'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
+          'http://localhost:5001/api/v1/uploads/avatar',
+        ];
+
+        for (final ep in endpoints) {
+          try {
+            final res = await dio.post(ep, data: formData);
+            if (res.statusCode == 200 || res.statusCode == 201) {
+              final uploadedUrl = res.data['avatarUrl'] as String?;
+              if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+                await ref.read(userAvatarProvider.notifier).setAvatar(uploadedUrl);
+              }
+              break;
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -407,9 +503,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     Widget imageContent;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      if (avatarUrl.startsWith('http')) {
+      if (avatarUrl.startsWith('emoji:')) {
+        final emoji = avatarUrl.replaceFirst('emoji:', '');
+        imageContent = Container(
+          color: const Color(0xFF1E1E1E),
+          child: Center(
+            child: Text(
+              emoji,
+              style: const TextStyle(fontSize: 56),
+            ),
+          ),
+        );
+      } else if (avatarUrl.startsWith('http')) {
         imageContent = CachedNetworkImage(
           imageUrl: avatarUrl,
+          key: ValueKey(avatarUrl),
           fit: BoxFit.cover,
           width: 112,
           height: 112,
@@ -432,6 +540,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       } else {
         imageContent = Image.file(
           File(avatarUrl),
+          key: ValueKey(avatarUrl),
           fit: BoxFit.cover,
           width: 112,
           height: 112,
@@ -463,30 +572,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            width: 116,
-            height: 116,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
+          ClipOval(
+            child: Container(
+              width: 116,
+              height: 116,
               color: Colors.black,
-              border: Border.all(color: Colors.white24, width: 2.0),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black54,
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
+              child: _isUploadingAvatar
+                  ? Container(
+                      color: Colors.black87,
+                      child: const Center(
+                        child: CircularProgressIndicator(color: AppTheme.primaryGreen, strokeWidth: 3),
+                      ),
+                    )
+                  : imageContent,
             ),
-            clipBehavior: Clip.antiAlias,
-            child: _isUploadingAvatar
-                ? Container(
-                    color: Colors.black87,
-                    child: const Center(
-                      child: CircularProgressIndicator(color: AppTheme.primaryGreen, strokeWidth: 3),
-                    ),
-                  )
-                : imageContent,
           ),
           Positioned(
             bottom: 0,
@@ -713,8 +812,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 32),
                     ],
+
+                    // Log Out Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          minimumSize: const Size(double.infinity, 46),
+                        ),
+                        onPressed: () async {
+                          await LocalStorageService.logout();
+                          if (context.mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (ctx) => const LoginScreen()),
+                              (route) => false,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                        label: const Text(
+                          'Log out of Muxiz',
+                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 60),
                   ],
                 ),
               ),

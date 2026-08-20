@@ -43,14 +43,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Colors.black,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // Parallax Hero Banner
+          // Parallax Hero Banner with Seamless Fade
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
-            backgroundColor: const Color(0xFF121212),
+            backgroundColor: Colors.black,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
@@ -76,10 +77,35 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.transparent, Color(0xFF121212)],
+                        colors: [
+                          Colors.transparent,
+                          Color(0x40000000),
+                          Color(0xAA000000),
+                          Color(0xFF000000),
+                        ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        stops: [0.4, 1.0],
+                        stops: [0.0, 0.35, 0.70, 1.0],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 80,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Color(0x90000000),
+                            Color(0xFF000000),
+                          ],
+                          stops: [0.0, 0.40, 1.0],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
                       ),
                     ),
                   ),

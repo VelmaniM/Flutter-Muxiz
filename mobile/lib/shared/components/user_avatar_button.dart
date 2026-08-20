@@ -14,16 +14,13 @@ class UserAvatarButton extends ConsumerWidget {
   });
 
   Widget _buildInitialFallback(String initial) {
-    return Container(
-      color: const Color(0xFF1E1E1E),
-      child: Center(
-        child: Text(
-          initial,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size * 0.44,
-            fontWeight: FontWeight.bold,
-          ),
+    return Center(
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: size * 0.44,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -37,9 +34,18 @@ class UserAvatarButton extends ConsumerWidget {
 
     Widget imageContent;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      if (avatarUrl.startsWith('http')) {
+      if (avatarUrl.startsWith('emoji:')) {
+        final emoji = avatarUrl.replaceFirst('emoji:', '');
+        imageContent = Center(
+          child: Text(
+            emoji,
+            style: TextStyle(fontSize: size * 0.52),
+          ),
+        );
+      } else if (avatarUrl.startsWith('http')) {
         imageContent = CachedNetworkImage(
           imageUrl: avatarUrl,
+          key: ValueKey(avatarUrl),
           fit: BoxFit.cover,
           width: size,
           height: size,
@@ -53,6 +59,7 @@ class UserAvatarButton extends ConsumerWidget {
       } else {
         imageContent = Image.file(
           File(avatarUrl),
+          key: ValueKey(avatarUrl),
           fit: BoxFit.cover,
           width: size,
           height: size,
@@ -70,16 +77,13 @@ class UserAvatarButton extends ConsumerWidget {
           MaterialPageRoute(builder: (ctx) => const ProfileScreen()),
         );
       },
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
+      child: ClipOval(
+        child: Container(
+          width: size,
+          height: size,
           color: const Color(0xFF1E1E1E),
-          border: Border.all(color: Colors.white24, width: 1.5),
+          child: imageContent,
         ),
-        clipBehavior: Clip.antiAlias,
-        child: imageContent,
       ),
     );
   }
