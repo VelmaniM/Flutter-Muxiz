@@ -182,14 +182,12 @@ class MockMusicCatalog {
     }
   }
 
-  /// Initializes the catalog with rich default UI mock data instantly
+  /// Initializes the catalog from local cache and triggers live Studio background sync
   static Future<void> initializeCatalog({bool forceRefresh = false, bool background = false}) async {
     if (allSongs.isEmpty) {
       final local = LocalStorageService.getCatalogSongsLocally();
       if (local.isNotEmpty) {
         allSongs = local;
-      } else {
-        allSongs = _getDefaultMockSongs();
       }
     }
 
@@ -201,7 +199,7 @@ class MockMusicCatalog {
     serverStatus = 'ONLINE';
     catalogNotifier.notify();
 
-    // Try background fetch if available
+    // Trigger live background fetch from Studio backend
     if (!_isSyncing) {
       _fetchRemoteCatalogInBackground();
     }
@@ -289,7 +287,9 @@ class MockMusicCatalog {
 
   static void _buildArtistsAndAlbums() {
     if (allSongs.isEmpty) {
-      allSongs = _getDefaultMockSongs();
+      popularArtists = [];
+      topAlbums = [];
+      return;
     }
 
     final Map<String, List<Song>> artistMap = {};
@@ -336,7 +336,7 @@ class MockMusicCatalog {
         name: e.key,
         imageUrl: realPortrait,
         monthlyListeners: '${(e.value.length * 1.5).toStringAsFixed(1)}M',
-        bio: 'Celebrated music composer & singer with ${e.value.length}+ chart-topping Tamil tracks.',
+        bio: 'Artist with ${e.value.length}+ tracks in catalog.',
         topTracks: e.value,
       );
     }).toList();
@@ -433,205 +433,5 @@ class MockMusicCatalog {
       LocalStorageService.saveCatalogSongsLocally(allSongs);
       catalogNotifier.notify();
     }
-  }
-
-  static List<Song> _getDefaultMockSongs() {
-    return [
-      const Song(
-        id: 'leo_badass',
-        title: 'Badass',
-        artist: 'Anirudh Ravichander',
-        album: 'Leo',
-        movieName: 'Leo',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        duration: 229,
-        genre: 'Mass / Energetic',
-        language: 'Tamil',
-        lyrics: ['Badass Mr Leo Das is a badass', 'He is a freakin Badass', 'Mass action sequence loaded'],
-      ),
-      const Song(
-        id: 'leo_naa_ready',
-        title: 'Naa Ready',
-        artist: 'Anirudh Ravichander, Thalapathy Vijay, Asal Kolaar',
-        album: 'Leo',
-        movieName: 'Leo',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        duration: 248,
-        genre: 'Dance / Kuthu',
-        language: 'Tamil',
-        lyrics: ['Naa Ready thaan varava', 'Annan erangi adikaattuma', 'Kottu mela kottu vechu kondaduvom'],
-      ),
-      const Song(
-        id: 'jailer_hukum',
-        title: 'Hukum - Thalaivar Alappara',
-        artist: 'Anirudh Ravichander, Super Subu',
-        album: 'Jailer',
-        movieName: 'Jailer',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/05/2f/5e/052f5ee6-d716-17b5-2ea6-b99f8d554a93/8903431950261_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        duration: 207,
-        genre: 'Mass / Energetic',
-        language: 'Tamil',
-        lyrics: ['Hukum Tiger Ka Hukum', 'Alappara kelappurom', 'Thalaivar nirantharam'],
-      ),
-      const Song(
-        id: 'jailer_kaavaalaa',
-        title: 'Kaavaalaa',
-        artist: 'Anirudh Ravichander, Shilpa Rao',
-        album: 'Jailer',
-        movieName: 'Jailer',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/05/2f/5e/052f5ee6-d716-17b5-2ea6-b99f8d554a93/8903431950261_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-        duration: 191,
-        genre: 'Dance / Kuthu',
-        language: 'Tamil',
-        lyrics: ['Kaavaalaa nu sollu baby', 'Enakku nee venum', 'Aatam paatam kondattam'],
-      ),
-      const Song(
-        id: 'vikram_pathala',
-        title: 'Pathala Pathala',
-        artist: 'Anirudh Ravichander, Kamal Haasan',
-        album: 'Vikram',
-        movieName: 'Vikram',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/4b/32/7f/4b327f12-c7f8-3e4b-9721-a4773c3f9122/8902894360341.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-        duration: 211,
-        genre: 'Folk / Gaana',
-        language: 'Tamil',
-        lyrics: ['Gajhanaa la kaasa illa', 'Pathala Pathala', 'Kalaignanin kuthu paatu'],
-      ),
-      const Song(
-        id: 'vikram_nayagan',
-        title: 'Vikram Title Track',
-        artist: 'Anirudh Ravichander',
-        album: 'Vikram',
-        movieName: 'Vikram',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/4b/32/7f/4b327f12-c7f8-3e4b-9721-a4773c3f9122/8902894360341.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
-        duration: 218,
-        genre: 'Mass / Energetic',
-        language: 'Tamil',
-        lyrics: ['Eagle is coming', 'Once upon a time there lived a ghost', 'Adhiradi thiruppam'],
-      ),
-      const Song(
-        id: 'ps1_ponni_nadhi',
-        title: 'Ponni Nadhi',
-        artist: 'A.R. Rahman, AR Raihanah, Bamba Bakya',
-        album: 'Ponniyin Selvan Part-1',
-        movieName: 'Ponniyin Selvan Part-1',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/00/c7/2f/00c72f3d-82d2-8b40-fa9d-6490333246f6/8902894362147_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
-        duration: 287,
-        genre: 'Classical / Devotional',
-        language: 'Tamil',
-        lyrics: ['Ponni nadhi paanchanadi', 'Vandhiyathevanin payanam', 'Kaveri aaru kadanthu poga'],
-      ),
-      const Song(
-        id: 'ps1_chola_chola',
-        title: 'Chola Chola',
-        artist: 'A.R. Rahman, Mano, Anurag Kulkarni',
-        album: 'Ponniyin Selvan Part-1',
-        movieName: 'Ponniyin Selvan Part-1',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/00/c7/2f/00c72f3d-82d2-8b40-fa9d-6490333246f6/8902894362147_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
-        duration: 226,
-        genre: 'Mass / Energetic',
-        language: 'Tamil',
-        lyrics: ['Chola Chola veriyan Chola', 'Aditha Karikalan veera vanakkam', 'Por kalathil vetri namathe'],
-      ),
-      const Song(
-        id: 'three_why_this_kolaveri',
-        title: 'Why This Kolaveri Di',
-        artist: 'Anirudh Ravichander, Dhanush',
-        album: '3',
-        movieName: '3',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e5/22/35/e5223594-e3c3-d731-bf36-c00627d727b1/8903431945113_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
-        duration: 245,
-        genre: 'Folk / Gaana',
-        language: 'Tamil',
-        lyrics: ['Yo boys I am singing song', 'Soup song flop song', 'Why this kolaveri kolaveri di'],
-      ),
-      const Song(
-        id: 'three_kannaazhaga',
-        title: 'Kannazhaga',
-        artist: 'Anirudh Ravichander, Dhanush, Shruti Haasan',
-        album: '3',
-        movieName: '3',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e5/22/35/e5223594-e3c3-d731-bf36-c00627d727b1/8903431945113_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
-        duration: 205,
-        genre: 'Melody / Romantic',
-        language: 'Tamil',
-        lyrics: ['Kannazhaga kaalazhaga', 'En nenjil un mugam thaane', 'Un vizhiyil vizhunthean penne'],
-      ),
-      const Song(
-        id: 'vip_amma_amma',
-        title: 'Amma Amma',
-        artist: 'Anirudh Ravichander, Dhanush, S. Janaki',
-        album: 'Velaiyilla Pattathari',
-        movieName: 'Velaiyilla Pattathari',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/66/eb/ca/66ebcae3-f09b-6d63-5484-90a6ea573215/8903431950278_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        duration: 284,
-        genre: 'Soulful / Sad',
-        language: 'Tamil',
-        lyrics: ['Amma amma nee enga pona', 'Ennai thaniya vittutu enga pona', 'Thaimaiyin perumai'],
-      ),
-      const Song(
-        id: 'master_vaathi_coming',
-        title: 'Vaathi Coming',
-        artist: 'Anirudh Ravichander, Gana Balachandar',
-        album: 'Master',
-        movieName: 'Master',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/44/ae/2e/44ae2ef5-b82b-c8ff-3c87-8f51dfa3a918/8903431950285_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        duration: 230,
-        genre: 'Dance / Kuthu',
-        language: 'Tamil',
-        lyrics: ['Vaathi coming ottu', 'Kottu mela kottu', 'Master JD aattam'],
-      ),
-      const Song(
-        id: 'enjoy_enjaami',
-        title: 'Enjoy Enjaami',
-        artist: 'Santhosh Narayanan, Dhee, Arivu',
-        album: 'Single',
-        movieName: 'Single',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/db/4c/bb/db4cbbdf-1473-b6d3-96b6-39ee65476a08/195999908129.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        duration: 273,
-        genre: 'Folk / Gaana',
-        language: 'Tamil',
-        lyrics: ['Cuckoo cuckoo', 'Kaatula eruma maadu', 'Kanne enjaami enjoy enjaami'],
-      ),
-      const Song(
-        id: 'katchi_sera',
-        title: 'Katchi Sera',
-        artist: 'Sai Abhyankkar',
-        album: 'Single',
-        movieName: 'Single',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/58/b6/c6/58b6c68a-2c0b-fae0-a7d0-10115e581297/8903431950308_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-        duration: 184,
-        genre: 'Pop',
-        language: 'Tamil',
-        lyrics: ['Katchi sera serkaathe', 'Un vizhi paathathum thadumaruthey', 'Trendsetter single track'],
-      ),
-      const Song(
-        id: 'aasa_kooda',
-        title: 'Aasa Kooda',
-        artist: 'Sai Abhyankkar, Sai Smriti',
-        album: 'Single',
-        movieName: 'Single',
-        artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/07/9a/c3/079ac300-36e2-2a21-fae9-6f17d3d2ca9b/8903431950315_cover.jpg/600x600bb.jpg',
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-        duration: 215,
-        genre: 'Pop',
-        language: 'Tamil',
-        lyrics: ['Aasa kooda pogaathe', 'Un viral thedi vanthaen', 'Viral hit love track'],
-      ),
-    ];
   }
 }
