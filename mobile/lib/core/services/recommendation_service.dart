@@ -92,23 +92,14 @@ class HomeFeedNotifier extends StateNotifier<AsyncValue<HomeFeedData>> {
   HomeFeedNotifier(this._service, this._ref) : super(const AsyncValue.loading()) {
     refreshFeed();
 
-    // 1. Reactive trigger: Automatically re-generate algorithm when user plays any song
-    _ref.listen(playerStateProvider.select((s) => s.currentSong?.id), (previous, next) {
-      if (next != null && next != previous) {
-        refreshFeed();
-      }
-    });
-
-
-
-    // 3. Network reconnection trigger: When internet comes back ON, immediately refresh daily trend data
+    // 1. Network reconnection trigger: When internet comes back ON, refresh daily data
     _ref.listen(networkStatusProvider, (previous, next) {
       if (next == NetworkStatus.online && previous != NetworkStatus.online) {
         refreshFeed();
       }
     });
 
-    // 4. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
+    // 2. Daily 5:30 AM IST timer check (runs every minute to catch 5:30 AM IST boundary while app is open)
     _dailyCycleTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       final mostRecent530Am = _getMostRecent530AmIst();
       if (_lastGeneratedTime != null && _lastGeneratedTime!.isBefore(mostRecent530Am)) {
@@ -255,77 +246,10 @@ class RecommendationService {
       );
     }
 
-    // 1. Live User Affinity Scoring Matrix
-    final Map<String, int> artistAffinity = {};
+    // 1. Stable Quick-Play 6 Cards (Fixed catalog order, never shifts upon playback)
+    final List<Song> quickPlay = allSongs.take(6).toList();
 
-    // A. Currently Playing Song (+12 immediate focus)
-    if (currentSong != null) {
-      final currentArtist = MockMusicCatalog.normalizeArtistName(currentSong.artist);
-      artistAffinity[currentArtist] = (artistAffinity[currentArtist] ?? 0) + 12;
-    }
-
-    // B. Recently Played Songs (+5 for first 10, +2 for older)
-    for (int i = 0; i < recentlyPlayed.length; i++) {
-      final s = recentlyPlayed[i];
-      final a = MockMusicCatalog.normalizeArtistName(s.artist);
-      final weight = i < 10 ? 5 : 2;
-      artistAffinity[a] = (artistAffinity[a] ?? 0) + weight;
-    }
-
-    // C. Liked Songs (+6 for each liked song)
-    for (final s in likedSongs) {
-      final a = MockMusicCatalog.normalizeArtistName(s.artist);
-      artistAffinity[a] = (artistAffinity[a] ?? 0) + 6;
-    }
-
-    // Sort all artists by live user affinity
-    final sortedAffinity = artistAffinity.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    // Dynamic Top Artists
-    final top1 = sortedAffinity.isNotEmpty ? sortedAffinity[0].key : 'Anirudh Ravichander';
-    final top2 = sortedAffinity.length > 1 ? sortedAffinity[1].key : 'A.R. Rahman';
-    final top3 = sortedAffinity.length > 2 ? sortedAffinity[2].key : 'Yuvan Shankar Raja';
-
-    // 2. Dynamic Quick-Play 6-Pack (Instantly updates on every track played/liked)
-    final Set<String> quickPlayIds = {};
-    final List<Song> quickPlay = [];
-
-    if (currentSong != null) {
-      quickPlay.add(currentSong);
-      quickPlayIds.add(currentSong.id);
-    }
-    for (final s in recentlyPlayed) {
-      if (quickPlay.length < 4 && !quickPlayIds.contains(s.id)) {
-        quickPlay.add(s);
-        quickPlayIds.add(s.id);
-      }
-    }
-    for (final s in likedSongs) {
-      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-        quickPlay.add(s);
-        quickPlayIds.add(s.id);
-      }
-    }
-    for (final s in allSongs) {
-      if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-        final a = MockMusicCatalog.normalizeArtistName(s.artist);
-        if (a == top1 || a == top2) {
-          quickPlay.add(s);
-          quickPlayIds.add(s.id);
-        }
-      }
-    }
-    if (quickPlay.length < 6) {
-      for (final s in allSongs) {
-        if (quickPlay.length < 6 && !quickPlayIds.contains(s.id)) {
-          quickPlay.add(s);
-          quickPlayIds.add(s.id);
-        }
-      }
-    }
-
-    // 3. Gemini AI Live Tamil Trending Songs & Playlists Analysis
+    // 2. Curated Dynamic Playlists built strictly from real DB songs
     final trendingSongs = List<Song>.from(allSongs);
     trendingSongs.sort((a, b) {
       final aTrendWeight = _getSongTrendWeight(a);
@@ -368,10 +292,15 @@ class RecommendationService {
       }
     }
 
+    final topArtists = MockMusicCatalog.popularArtists.map((a) => a.name).toList();
+    final top1 = topArtists.isNotEmpty ? topArtists[0] : '';
+    final top2 = topArtists.length > 1 ? topArtists[1] : '';
+    final top3 = topArtists.length > 2 ? topArtists[2] : '';
+
     // 4. Dynamic Section: "Made For You" (Strictly ONLY songs by each specific artist)
-    final mix1Songs = _getArtistMixTracks(allSongs, top1);
-    final mix2Songs = _getArtistMixTracks(allSongs, top2);
-    final mix3Songs = _getArtistMixTracks(allSongs, top3);
+    final mix1Songs = top1.isNotEmpty ? _getArtistMixTracks(allSongs, top1) : <Song>[];
+    final mix2Songs = top2.isNotEmpty ? _getArtistMixTracks(allSongs, top2) : <Song>[];
+    final mix3Songs = top3.isNotEmpty ? _getArtistMixTracks(allSongs, top3) : <Song>[];
 
     final heardIds = {...recentlyPlayed.map((s) => s.id), ...likedSongs.map((s) => s.id)};
     final discoverSongs = allSongs.where((s) {
@@ -546,23 +475,11 @@ class RecommendationService {
       ];
     }
 
-    // 6. Dynamic Album Ranking (Albums matching user's top affinity rank first!)
+    // 6. Dynamic Album Ranking
     final rankedAlbums = List<Album>.from(MockMusicCatalog.topAlbums);
-    rankedAlbums.sort((a, b) {
-      final aArtist = MockMusicCatalog.normalizeArtistName(a.artist);
-      final bArtist = MockMusicCatalog.normalizeArtistName(b.artist);
-      final scoreA = (artistAffinity[aArtist] ?? 0) * 10 + a.songs.length;
-      final scoreB = (artistAffinity[bArtist] ?? 0) * 10 + b.songs.length;
-      return scoreB.compareTo(scoreA);
-    });
 
     // 7. Dynamic Artist Ranking
     final rankedArtists = List<Artist>.from(MockMusicCatalog.popularArtists);
-    rankedArtists.sort((a, b) {
-      final scoreA = (artistAffinity[a.name] ?? 0) * 10 + a.topTracks.length;
-      final scoreB = (artistAffinity[b.name] ?? 0) * 10 + b.topTracks.length;
-      return scoreB.compareTo(scoreA);
-    });
 
     // 8. Assemble 100% Authentic Spotify Dynamic Shelves
     final deletedPlaylists = LocalStorageService.getDeletedPlaylistIds();
