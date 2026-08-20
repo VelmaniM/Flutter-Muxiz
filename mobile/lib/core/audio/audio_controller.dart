@@ -197,7 +197,7 @@ class AudioController extends StateNotifier<PlayerStateModel> {
       effectiveQueue = [resolvedSong];
       final otherSongs = MockMusicCatalog.allSongs.where((s) => s.id != resolvedSong.id).toList();
       if (otherSongs.isNotEmpty) {
-        effectiveQueue.addAll(otherSongs.take(30));
+        effectiveQueue.addAll(otherSongs);
       }
       targetIndex = 0;
     }

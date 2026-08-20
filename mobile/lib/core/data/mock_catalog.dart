@@ -219,8 +219,8 @@ class MockMusicCatalog {
             receiveTimeout: const Duration(milliseconds: 3000),
           ));
 
-          // 1. Fetch Songs from Studio
-          final res = await dio.get('$base/songs?limit=1000&t=$timestamp');
+          // 1. Fetch ALL Songs from Studio (Zero truncation)
+          final res = await dio.get('$base/songs?limit=100000&t=$timestamp');
           if (res.statusCode == 200 && res.data != null) {
             final data = res.data;
             final list = (data is Map ? (data['data'] ?? data['songs']) : data) as List<dynamic>?;
@@ -379,18 +379,28 @@ class MockMusicCatalog {
 
     final List<Playlist> list = [];
 
-    // 1. Top Trending Hits Playlist
+    // 1. Complete Music Vault Playlist (ALL Songs)
+    list.add(Playlist(
+      id: 'all_songs_vault',
+      title: 'Complete Library (${allSongs.length} Tracks)',
+      creator: 'Muxiz Vault',
+      description: 'Access all songs available in your music database.',
+      coverUrl: allSongs.first.artworkUrl,
+      songs: allSongs,
+    ));
+
+    // 2. Top Trending Hits Playlist
     list.add(Playlist(
       id: 'top_trending_hits',
       title: 'Top Trending Hits',
       creator: 'Muxiz Editorial',
       description: 'The most streamed tracks right now.',
       coverUrl: allSongs.first.artworkUrl,
-      songs: allSongs.take(20).toList(),
+      songs: allSongs,
     ));
 
-    // 2. Dynamic Playlists from Top Artists (Extracted dynamically)
-    for (int i = 0; i < popularArtists.length && i < 2; i++) {
+    // 3. Dynamic Playlists from Top Artists (Extracted dynamically)
+    for (int i = 0; i < popularArtists.length; i++) {
       final a = popularArtists[i];
       if (a.topTracks.isNotEmpty) {
         list.add(Playlist(
@@ -404,14 +414,14 @@ class MockMusicCatalog {
       }
     }
 
-    // 3. Dynamic Playlists by Genres
+    // 4. Dynamic Playlists by Genres
     final Map<String, List<Song>> genreMap = {};
     for (final s in allSongs) {
       if (s.genre.isNotEmpty && s.genre != 'Music') {
         genreMap.putIfAbsent(s.genre, () => []).add(s);
       }
     }
-    for (final entry in genreMap.entries.take(2)) {
+    for (final entry in genreMap.entries) {
       if (entry.value.isNotEmpty) {
         list.add(Playlist(
           id: 'genre_mix_${entry.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',

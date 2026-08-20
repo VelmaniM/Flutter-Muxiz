@@ -590,7 +590,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             description: 'The best of ${category.title} • ${filteredSongs.length} Songs',
             coverUrl: category.imageUrl,
             creator: 'Spotify',
-            songs: filteredSongs.isNotEmpty ? filteredSongs : MockMusicCatalog.allSongs.take(20).toList(),
+            songs: filteredSongs.isNotEmpty ? filteredSongs : MockMusicCatalog.allSongs,
           );
           Navigator.push(
             context,

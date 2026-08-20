@@ -254,11 +254,19 @@ class RecommendationService {
     final lastPlayback = LocalStorageService.getLastPlaybackState();
     final bool isBrandNewUser = recentlyPlayed.isEmpty && likedSongs.isEmpty && currentSong == null && lastPlayback.song == null;
 
+    if (isBrandNewUser) {
+      return HomeFeedData(
+        greeting: greeting,
+        quickPlaySongs: [],
+        quickPlayCards: [],
+        aiSpotlight: null,
+        sections: [],
+      );
+    }
+
     // --- 6-GRID ALGORITHM: 100% DYNAMIC BEHAVIOR AS REQUESTED ---
     final List<QuickPlayCardItem> quickPlayCards = [];
     final Set<String> usedSongIds = {};
-
-    if (!isBrandNewUser) {
       // 1. Card 1: User's latest / currently listened song
       final Song? card1Song = (currentSong) ??
           (recentlyPlayed.isNotEmpty ? recentlyPlayed.first : null) ??
@@ -407,7 +415,6 @@ class RecommendationService {
         imageUrl: distinctTrack?.artworkUrl ?? (allSongs.isNotEmpty ? allSongs.first.artworkUrl : ''),
       ));
     }
-    }
 
     final List<Song> quickPlay = quickPlayCards.map((c) => c.song).whereType<Song>().toList();
 
@@ -450,6 +457,16 @@ class RecommendationService {
     });
 
     final List<Playlist> trendingTamilPlaylists = [];
+    if (allSongs.isNotEmpty) {
+      trendingTamilPlaylists.add(Playlist(
+        id: 'all_songs_vault',
+        title: 'All Songs Library (${allSongs.length} Tracks)',
+        description: 'Complete collection of all tracks from your cloud database.',
+        coverUrl: allSongs.first.artworkUrl,
+        creator: 'Muxiz Vault',
+        songs: allSongs,
+      ));
+    }
     if (trendingSongs.isNotEmpty) {
       trendingTamilPlaylists.add(Playlist(
         id: 'muxiz_top_hits',
@@ -457,7 +474,7 @@ class RecommendationService {
         description: 'Most popular tracks from your cloud database.',
         coverUrl: trendingSongs.first.artworkUrl,
         creator: 'Muxiz Editorial',
-        songs: trendingSongs.take(20).toList(),
+        songs: trendingSongs,
       ));
     }
     if (trendingSongs.length > 3) {
@@ -467,7 +484,7 @@ class RecommendationService {
         description: 'Latest additions in your music database.',
         coverUrl: trendingSongs[1].artworkUrl,
         creator: 'Muxiz Database',
-        songs: trendingSongs.skip(2).take(15).toList(),
+        songs: trendingSongs.skip(2).toList(),
       ));
     }
     for (final artistName in dynamicTopArtists.take(3)) {
@@ -654,6 +671,13 @@ class RecommendationService {
     final cleanTimePlaylists = timePlaylists.where((p) => !deletedPlaylists.contains(p.id)).toList();
 
     final List<HomeSection> dynamicSections = [
+      if (allSongs.isNotEmpty)
+        HomeSection(
+          id: 'all_songs_library',
+          title: 'All Songs (${allSongs.length})',
+          type: HomeSectionType.songs,
+          songs: allSongs,
+        ),
       if (cleanTrendingPlaylists.isNotEmpty)
         HomeSection(
           id: 'trending_playlists',
@@ -665,7 +689,7 @@ class RecommendationService {
         id: 'trending_tracks',
         title: 'Today’s Top Hits',
         type: HomeSectionType.songs,
-        songs: trendingSongs.take(15).toList(),
+        songs: trendingSongs,
       ),
       if (cleanMadeForYou.isNotEmpty)
         HomeSection(
@@ -734,6 +758,6 @@ class RecommendationService {
 
   /// STRICT ARTIST MIX FILTER: Only returns songs strictly by this artist! Zero unrelated songs.
   List<Song> _getArtistMixTracks(List<Song> allSongs, String artist) {
-    return allSongs.where((s) => MockMusicCatalog.isSongByArtist(s, artist)).take(25).toList();
+    return allSongs.where((s) => MockMusicCatalog.isSongByArtist(s, artist)).toList();
   }
 }

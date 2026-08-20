@@ -674,7 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(left: 16.0),
-            itemCount: songList.length > 15 ? 15 : songList.length,
+            itemCount: songList.length,
             itemBuilder: (ctx, i) {
               final song = songList[i];
               final playerState = ref.watch(playerStateProvider);

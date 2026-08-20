@@ -271,7 +271,10 @@ app.get('/api/v1/songs', async (req, res) => {
       where.artistName = { contains: String(artist), mode: 'insensitive' };
     }
 
-    const take = parseInt(limit, 10) || 500;
+    let take = parseInt(limit, 10);
+    if (!take || isNaN(take) || take <= 0) {
+      take = 100000;
+    }
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * take;
 
     const [songs, total] = await Promise.all([
