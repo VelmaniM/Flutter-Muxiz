@@ -34,7 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
