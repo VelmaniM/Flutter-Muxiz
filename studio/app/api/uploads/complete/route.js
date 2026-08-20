@@ -15,6 +15,7 @@ export async function POST(request) {
     const body = await request.json();
     const {
       fileId,
+      audioUrl,
       title,
       artistName,
       movieName,
@@ -25,9 +26,24 @@ export async function POST(request) {
       duration,
     } = body;
 
-    if (!fileId) {
+    let finalAudioUrl = audioUrl;
+    if (fileId) {
+      // Make file publicly readable on Google Drive
+      try {
+        const drive = getDriveClient();
+        await drive.permissions.create({
+          fileId,
+          requestBody: { role: 'reader', type: 'anyone' },
+        });
+      } catch (permErr) {
+        console.warn('[Drive Permission Warning]', permErr.message);
+      }
+      finalAudioUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    }
+
+    if (!finalAudioUrl) {
       return NextResponse.json(
-        { success: false, message: 'Google Drive fileId is required.' },
+        { success: false, message: 'Audio URL or Google Drive fileId is required.' },
         { status: 400 }
       );
     }
@@ -39,19 +55,6 @@ export async function POST(request) {
       ? genre.trim()
       : detectGenreAndMood(cleanTitle, cleanMovie, cleanArtist, '');
     const cleanLanguage = String(language || 'Tamil');
-
-    // Make file publicly readable on Google Drive
-    try {
-      const drive = getDriveClient();
-      await drive.permissions.create({
-        fileId,
-        requestBody: { role: 'reader', type: 'anyone' },
-      });
-    } catch (permErr) {
-      console.warn('[Drive Permission Warning]', permErr.message);
-    }
-
-    const audioUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
 
     // Dynamic Artist tokenization & profile creation
     let artistRecord = await prisma.artist.findFirst({
@@ -90,7 +93,7 @@ export async function POST(request) {
         title: cleanTitle,
         artistName: cleanArtist,
         movieName: cleanMovie,
-        audioUrl,
+        audioUrl: finalAudioUrl,
         artwork: artworkUrl || null,
         duration: duration || 240,
         genre: cleanGenre,

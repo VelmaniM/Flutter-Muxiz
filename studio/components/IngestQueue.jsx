@@ -250,43 +250,54 @@ export default function IngestQueue({ onUploadSuccess, showToast }) {
 
       if (uploadSuccess) return;
 
-      // 2. Fallback to standard Multipart Ingestion route
-      const formData = new FormData();
-      formData.append('file', item.file);
-      formData.append('title', item.title || item.file.name);
-      formData.append('artistName', item.artistName || 'Unknown Artist');
-      formData.append('movieName', item.movieName || item.albumName || 'Single');
-      formData.append('albumName', item.albumName || item.movieName || 'Single');
-      formData.append('genre', item.genre || 'Tamil · Melody / Romantic');
-      formData.append('language', item.language || 'Tamil');
-      if (item.artworkUrl) {
-        formData.append('artworkUrl', item.artworkUrl);
-      }
-
-      const res = await fetch('/api/uploads/song', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const text = await res.text();
-      let json;
+      // 2. Secondary Direct Fallback: Cloudinary Direct CDN Upload (Bypasses Vercel 4.5MB limit)
       try {
-        json = JSON.parse(text);
-      } catch (parseErr) {
-        throw new Error(text.length < 120 ? text : 'Server returned an invalid response (payload too large).');
+        const cldFormData = new FormData();
+        cldFormData.append('file', item.file);
+        cldFormData.append('upload_preset', 'muxiz_preset');
+        cldFormData.append('cloud_name', 'dbsqhu7v5');
+
+        const cldRes = await fetch('https://api.cloudinary.com/v1_1/dbsqhu7v5/auto/upload', {
+          method: 'POST',
+          body: cldFormData,
+        });
+
+        if (cldRes.ok) {
+          const cldJson = await cldRes.json();
+          if (cldJson.secure_url) {
+            // Save to PostgreSQL Database
+            const completeRes = await fetch('/api/uploads/complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                audioUrl: cldJson.secure_url,
+                title: item.title || item.file.name,
+                artistName: item.artistName || 'Unknown Artist',
+                movieName: item.movieName || item.albumName || 'Single',
+                albumName: item.albumName || item.movieName || 'Single',
+                genre: item.genre || 'Tamil · Melody / Romantic',
+                language: item.language || 'Tamil',
+                artworkUrl: item.artworkUrl || '',
+                duration: Math.round(cldJson.duration || 240),
+              }),
+            });
+
+            const completeJson = await completeRes.json();
+            if (completeJson.success) {
+              updateQueueItem(item.id, 'uploadStatus', 'success');
+              updateQueueItem(item.id, 'uploadProgress', 100);
+              showToast(`"${item.title}" uploaded & saved successfully!`);
+              if (onUploadSuccess) onUploadSuccess();
+              setTimeout(() => removeQueueItem(item.id), 1200);
+              return;
+            }
+          }
+        }
+      } catch (cldErr) {
+        console.warn('[Cloudinary Direct Fallback]', cldErr.message);
       }
 
-      if (json.success) {
-        updateQueueItem(item.id, 'uploadStatus', 'success');
-        updateQueueItem(item.id, 'uploadProgress', 100);
-        showToast(`Uploaded "${item.title}" successfully!`);
-        if (onUploadSuccess) onUploadSuccess();
-        setTimeout(() => removeQueueItem(item.id), 1200);
-      } else {
-        updateQueueItem(item.id, 'uploadStatus', 'error');
-        updateQueueItem(item.id, 'errorMessage', json.message || 'Upload failed');
-        showToast(`Error uploading "${item.title}": ${json.message}`);
-      }
+      throw new Error('Upload streaming failed. Please verify network connection or use Local Studio at http://localhost:5001/studio');
     } catch (err) {
       updateQueueItem(item.id, 'uploadStatus', 'error');
       updateQueueItem(item.id, 'errorMessage', err.message);
