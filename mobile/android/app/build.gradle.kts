@@ -32,6 +32,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            if (variant.buildType.name == "release") {
+                output?.outputFileName = "Muxiz-v${variant.versionName}.apk"
+            }
+        }
+    }
 }
 
 kotlin {
