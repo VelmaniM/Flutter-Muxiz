@@ -155,10 +155,13 @@ class AudioController extends StateNotifier<PlayerStateModel> {
     if (queue != null && queue.isNotEmpty) {
       effectiveQueue = List<Song>.from(queue);
       final foundIdx = effectiveQueue.indexWhere((s) => s.id == song.id);
-      targetIndex = (index != null && index >= 0 && index < effectiveQueue.length)
-          ? index
-          : (foundIdx >= 0 ? foundIdx : 0);
-      effectiveQueue[targetIndex] = resolvedSong;
+      if (foundIdx != -1) {
+        effectiveQueue[foundIdx] = resolvedSong;
+        targetIndex = foundIdx;
+      } else {
+        effectiveQueue.insert(0, resolvedSong);
+        targetIndex = 0;
+      }
     } else {
       effectiveQueue = [resolvedSong];
       final otherSongs = MockMusicCatalog.allSongs.where((s) => s.id != resolvedSong.id).toList();
@@ -188,8 +191,8 @@ class AudioController extends StateNotifier<PlayerStateModel> {
 
     _extractPaletteColor(resolvedSong.artworkUrl);
 
-    // Instant playback triggering
-    _handler.setQueue(effectiveQueue, initialIndex: targetIndex, autoPlay: true);
+    // Instant playback triggering for the exact targetIndex
+    await _handler.setQueue(effectiveQueue, initialIndex: targetIndex, autoPlay: true);
   }
 
   Future<void> togglePlayPause() async {
