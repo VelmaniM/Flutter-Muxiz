@@ -235,7 +235,7 @@ class MockMusicCatalog {
                   artist: (item['artistName'] ?? item['artist']?['name'] ?? item['artist'] ?? 'Unknown Artist').toString(),
                   album: (item['albumName'] ?? item['album']?['title'] ?? item['album'] ?? 'Single').toString(),
                   movieName: item['movieName']?.toString(),
-                  artworkUrl: cleanArt.isNotEmpty ? cleanArt : 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/64/00/f5/6400f57c-2b63-fa91-d8ec-8f43c3d526e0/8903431940989_cover.jpg/600x600bb.jpg',
+                  artworkUrl: cleanArt,
                   audioUrl: (item['audioUrl'] ?? '').toString(),
                   duration: (item['duration'] as num?)?.toInt() ?? 210,
                   genre: (item['genre'] ?? 'Melody').toString(),

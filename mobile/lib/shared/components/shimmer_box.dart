@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../app/theme.dart';
 
 /// Synchronized Animated Shimmer Wave Effect Provider
 class ShimmerLoading extends StatefulWidget {
@@ -240,26 +239,21 @@ class MuxizImage extends StatelessWidget {
   Widget _buildFallback() {
     final double? safeWidth = (width != null && width!.isFinite) ? width : null;
     final double? safeHeight = (height != null && height!.isFinite) ? height : null;
+    final bool isCircle = shape == BoxShape.circle;
 
     return Container(
       width: safeWidth,
       height: safeHeight,
       decoration: BoxDecoration(
         shape: shape,
-        borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(borderRadius) : null,
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF282828),
-            AppTheme.primaryGreen.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        borderRadius: isCircle ? null : BorderRadius.circular(borderRadius),
+        color: const Color(0xFF141414),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Center(
         child: Icon(
-          Icons.music_note_rounded,
-          color: AppTheme.primaryGreen.withValues(alpha: 0.8),
+          isCircle ? Icons.person_rounded : Icons.music_note_rounded,
+          color: Colors.white38,
           size: (safeWidth != null && safeWidth > 0) ? (safeWidth * 0.45).clamp(16.0, 48.0) : 24.0,
         ),
       ),
