@@ -4,6 +4,9 @@ import 'package:mobile/core/data/mock_catalog.dart';
 import 'package:mobile/shared/models/song.dart';
 import 'package:mobile/shared/models/album.dart';
 import 'package:mobile/shared/models/playlist.dart';
+import 'package:mobile/shared/models/artist.dart';
+import 'package:mobile/shared/models/listening_activity.dart';
+import 'package:mobile/core/services/listening_tracker_service.dart';
 import 'package:mobile/core/services/recommendation_service.dart';
 import 'package:mobile/core/storage/local_storage.dart';
 
@@ -13,9 +16,10 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await LocalStorageService.init();
+    ListeningTrackerService.instance.resetSession();
 
     MockMusicCatalog.allSongs = [
-      Song(
+      const Song(
         id: 'song_1',
         title: 'Song From Movie Alpha',
         artist: 'Artist A',
@@ -25,7 +29,7 @@ void main() {
         audioUrl: 'https://example.com/1.mp3',
         artworkUrl: 'https://example.com/1.jpg',
       ),
-      Song(
+      const Song(
         id: 'song_2',
         title: 'Song From Movie Beta',
         artist: 'Artist B',
@@ -35,7 +39,7 @@ void main() {
         audioUrl: 'https://example.com/2.mp3',
         artworkUrl: 'https://example.com/2.jpg',
       ),
-      Song(
+      const Song(
         id: 'song_3',
         title: 'Song From Movie Gamma',
         artist: 'Artist C',
@@ -45,7 +49,7 @@ void main() {
         audioUrl: 'https://example.com/3.mp3',
         artworkUrl: 'https://example.com/3.jpg',
       ),
-      Song(
+      const Song(
         id: 'song_4',
         title: 'Trending Hit',
         artist: 'Artist D',
@@ -78,78 +82,167 @@ void main() {
         songs: MockMusicCatalog.allSongs,
       ),
     ];
+
+    MockMusicCatalog.popularArtists = [
+      Artist(
+        id: 'art_1',
+        name: 'Artist A',
+        imageUrl: 'https://example.com/art_a.jpg',
+        monthlyListeners: '500K',
+        topTracks: [MockMusicCatalog.allSongs[0]],
+      ),
+    ];
   });
 
-  group('Dynamic 6-Grid Allocation Tests', () {
-    test('Brand new user has clean starter state with 0 quickplay cards until they listen to a song', () {
+  group('Home Feed & Recommendation System Tests', () {
+    test('1. Clean Initial State: No fake default grid on 0 plays, dynamic 6-grid on play', () {
+      final service = RecommendationService();
+      final feedEmpty = service.generateLocalAlgorithmicFeed();
+
+      // Zero fake default cards on brand new install with 0 history
+      expect(feedEmpty.quickPlayCards.isEmpty, isTrue);
+
+      // As soon as a song is played, dynamic 6-grid is generated and persisted
+      final feedWithSong = service.generateLocalAlgorithmicFeed(currentSong: MockMusicCatalog.allSongs[0]);
+      expect(feedWithSong.quickPlayCards.length, equals(6));
+      expect(feedWithSong.quickPlayCards[0].title, isNotEmpty);
+      expect(feedWithSong.quickPlayCards[0].imageUrl, isNotEmpty);
+    });
+
+    test('2. Meaningful Listen Tracking: Threshold >= 30s or >= 25% duration', () async {
+      final tracker = ListeningTrackerService.instance;
+      final song = MockMusicCatalog.allSongs[0];
+
+      // Play 10s -> Not meaningful yet
+      tracker.onSongStarted(song);
+      tracker.onPositionUpdated(song, const Duration(seconds: 10), Duration(seconds: song.duration));
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(LocalStorageService.getAllListeningActivities().isEmpty, isTrue);
+
+      // Play 35s -> Meaningful listen recorded (>= 30s threshold)
+      tracker.onPositionUpdated(song, const Duration(seconds: 35), Duration(seconds: song.duration));
+      await Future.delayed(const Duration(milliseconds: 10));
+      final activities = LocalStorageService.getAllListeningActivities();
+      expect(activities.isNotEmpty, isTrue);
+      expect(activities.any((a) => a.contentId == song.id), isTrue);
+    });
+
+    test('3. Recency Time-Decay Ranking: Recent plays rank higher than older plays', () async {
+      final now = DateTime.now();
+
+      // Recent listen (today)
+      await LocalStorageService.saveListeningActivity(ListeningActivityRecord(
+        contentId: 'song_2',
+        contentType: QuickAccessContentType.song,
+        title: 'Song 2',
+        subtitle: 'Artist B',
+        imageUrl: 'https://example.com/2.jpg',
+        lastPlayedAt: now.subtract(const Duration(hours: 2)),
+        playCount: 1,
+      ));
+
+      // Old listen (20 days ago)
+      await LocalStorageService.saveListeningActivity(ListeningActivityRecord(
+        contentId: 'song_3',
+        contentType: QuickAccessContentType.song,
+        title: 'Song 3',
+        subtitle: 'Artist C',
+        imageUrl: 'https://example.com/3.jpg',
+        lastPlayedAt: now.subtract(const Duration(days: 20)),
+        playCount: 1,
+      ));
+
       final service = RecommendationService();
       final feed = service.generateLocalAlgorithmicFeed();
 
-      // Brand new user has 0 cards so onboarding banner is shown
-      expect(feed.quickPlayCards.isEmpty, isTrue);
+      final song2Index = feed.quickPlayCards.indexWhere((c) => c.song?.id == 'song_2');
+      final song3Index = feed.quickPlayCards.indexWhere((c) => c.song?.id == 'song_3');
 
-      // Once user plays a song, all dynamic slots populate
-      final activeFeed = service.generateLocalAlgorithmicFeed(currentSong: MockMusicCatalog.allSongs[0]);
-      expect(activeFeed.quickPlayCards.length, greaterThanOrEqualTo(4));
-      expect(activeFeed.quickPlayCards[0].song?.id, equals('song_1'));
+      expect(song2Index, isNot(-1));
+      expect(song2Index, lessThan(song3Index != -1 ? song3Index : 999));
     });
 
-    test('When user plays Song 1 then Song 2 (different movie), Slot 1 becomes Song 2 and Slot 2 becomes Song 1', () async {
+    test('4. Grid Stability: Rebuilding feed repeatedly maintains identical 6-grid order', () {
       final service = RecommendationService();
+      final feed1 = service.generateLocalAlgorithmicFeed();
+      final feed2 = service.generateLocalAlgorithmicFeed();
 
-      // 1. User listens to Song 1 (Movie Alpha)
-      await LocalStorageService.addRecentlyPlayed(MockMusicCatalog.allSongs[0]);
-
-      var feed = service.generateLocalAlgorithmicFeed(currentSong: MockMusicCatalog.allSongs[0]);
-      expect(feed.quickPlayCards[0].song?.id, equals('song_1'));
-
-      // 2. User then listens to Song 2 (Movie Beta)
-      await LocalStorageService.addRecentlyPlayed(MockMusicCatalog.allSongs[1]);
-
-      feed = service.generateLocalAlgorithmicFeed(currentSong: MockMusicCatalog.allSongs[1]);
-
-      // Slot 1 MUST be Song 2 (currently playing from Movie Beta)
-      expect(feed.quickPlayCards[0].song?.id, equals('song_2'));
-
-      // Slot 2 MUST be Song 1 (previous song from Movie Alpha)
-      expect(feed.quickPlayCards[1].song?.id, equals('song_1'));
+      expect(feed1.quickPlayCards.length, equals(feed2.quickPlayCards.length));
+      for (int i = 0; i < feed1.quickPlayCards.length; i++) {
+        expect(feed1.quickPlayCards[i].id, equals(feed2.quickPlayCards[i].id));
+      }
     });
 
-    test('Slot 3, Slot 4, Slot 5, Slot 6 populate correctly with liked, album, trending, playlist', () async {
-      final service = RecommendationService();
+    test('5. Multi-User Storage Scoping: Switching user IDs isolates listening history', () async {
+      // User 1 activity
+      await LocalStorageService.saveUserId('user_1');
+      await LocalStorageService.saveListeningActivity(ListeningActivityRecord(
+        contentId: 'song_1',
+        contentType: QuickAccessContentType.song,
+        title: 'Song 1',
+        subtitle: 'Artist A',
+        imageUrl: 'https://example.com/1.jpg',
+        lastPlayedAt: DateTime.now(),
+      ));
+      expect(LocalStorageService.getAllListeningActivities().length, equals(1));
 
-      // Mark Song 3 as liked
-      await LocalStorageService.toggleFavoriteSong(MockMusicCatalog.allSongs[2]);
-      await LocalStorageService.addRecentlyPlayed(MockMusicCatalog.allSongs[1]);
+      // Switch to User 2
+      await LocalStorageService.saveUserId('user_2');
+      expect(LocalStorageService.getAllListeningActivities().isEmpty, isTrue);
+    });
+
+    test('6. Continue Listening Home Section Removed: Feed MUST NOT contain continueListening shelf', () {
+      final service = RecommendationService();
+      final feed = service.generateLocalAlgorithmicFeed();
+
+      // Verify that NO continue listening section exists in Home feed
+      final continueSection = feed.sections.where((s) => s.id == 'continue_listening').firstOrNull;
+      expect(continueSection, isNull);
+      final anyContinueSection = feed.sections.where((s) => s.title.toLowerCase().contains('continue')).firstOrNull;
+      expect(anyContinueSection, isNull);
+    });
+
+    test('7. Fast Path: Current playing song immediately becomes valid top signal without waiting', () {
+      final service = RecommendationService();
+      final currentSong = MockMusicCatalog.allSongs[3]; // Trending Hit
+
+      // Generate feed immediately with currentSong as fast local signal
+      final feed = service.generateLocalAlgorithmicFeed(currentSong: currentSong);
+
+      final hasSong4 = feed.quickPlayCards.any((c) => c.song?.id == 'song_4');
+      expect(hasSong4, isTrue);
+    });
+
+    test('8. Dynamic Shelf Adaptation: Generates "Because you listened to Artist A"', () async {
+      // User listens to Song 1 by Artist A
       await LocalStorageService.addRecentlyPlayed(MockMusicCatalog.allSongs[0]);
 
+      final service = RecommendationService();
+      final feed = service.generateLocalAlgorithmicFeed();
+
+      final becauseSection = feed.sections.where((s) => s.title.startsWith('Because you listened to')).firstOrNull;
+      expect(becauseSection, isNotNull);
+      expect(becauseSection!.title, contains('Artist A'));
+      expect(becauseSection.songs?.isNotEmpty, isTrue);
+    });
+
+    test('9. Artwork & Content Diversity: MMR penalties prevent duplicate artwork from dominating', () {
+      final service = RecommendationService();
       final feed = service.generateLocalAlgorithmicFeed(currentSong: MockMusicCatalog.allSongs[0]);
 
-      // Slot 1: Current song (Song 1)
-      expect(feed.quickPlayCards[0].song?.id, equals('song_1'));
+      final artworks = feed.quickPlayCards.map((c) => c.imageUrl).where((url) => url.isNotEmpty).toList();
+      final uniqueArtworks = artworks.toSet();
 
-      // Slot 2: Previous song (Song 2)
-      expect(feed.quickPlayCards[1].song?.id, equals('song_2'));
-
-      // Slot 3: Liked song (Song 3)
-      expect(feed.quickPlayCards[2].song?.id, equals('song_3'));
-
-      // Slot 4: Top album
-      expect(feed.quickPlayCards[3].album?.id, equals('album_alpha'));
-
-      // Slot 5: Trending / other catalog song
-      expect(feed.quickPlayCards[4].song?.id, equals('song_4'));
-
-      // Slot 6: Playlist
-      expect(feed.quickPlayCards[5].playlist?.id, equals('top_hits_playlist'));
+      // Diversity check: Artwork must be diverse and unique across Quick Access slots
+      expect(uniqueArtworks.length, equals(artworks.length));
     });
 
-    test('Clear Cache wipes history and resets slots cleanly', () async {
-      await LocalStorageService.addRecentlyPlayed(MockMusicCatalog.allSongs[0]);
-      expect(LocalStorageService.getRecentlyPlayed().isNotEmpty, isTrue);
+    test('10. Background Scoring Async Execution: Runs non-blocking and yields valid feed', () async {
+      final service = RecommendationService();
+      final feed = await service.computeBackgroundScoringAsync(currentSong: MockMusicCatalog.allSongs[0]);
 
-      await LocalStorageService.clearAllPlaybackAndCache();
-      expect(LocalStorageService.getRecentlyPlayed().isEmpty, isTrue);
+      expect(feed.quickPlayCards.length, equals(6));
+      expect(feed.sections.isNotEmpty, isTrue);
     });
   });
 }

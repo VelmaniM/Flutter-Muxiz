@@ -91,9 +91,10 @@ class SongActionModal extends ConsumerWidget {
                             song.artist,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -264,25 +265,6 @@ class SongActionModal extends ConsumerWidget {
                 onTap: () {
                   Navigator.pop(context);
                   actionCtrl.showSongDetails(context, song);
-                },
-              ),
-
-              const Divider(color: Color(0xFF2E2E2E), height: 16),
-
-              // 10. Delete Song from Drive & Database
-              ListTile(
-                leading: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent, size: 24),
-                title: const Text(
-                  'Delete Song (Drive & DB)',
-                  style: TextStyle(color: Colors.redAccent, fontSize: 14.5, fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'Permanently removes this track everywhere',
-                  style: TextStyle(color: Colors.white38, fontSize: 11.5),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  actionCtrl.deleteSongPermanently(context, song);
                 },
               ),
             ],
@@ -474,9 +456,9 @@ class _AddToPlaylistSheetState extends ConsumerState<_AddToPlaylistSheet> {
                         playlist.title,
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
                       ),
-                      subtitle: Text(
-                        '${playlist.songs.length} songs',
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      subtitle: const Text(
+                        'Playlist',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                       ),
                       trailing: Icon(
                         containsSong ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,

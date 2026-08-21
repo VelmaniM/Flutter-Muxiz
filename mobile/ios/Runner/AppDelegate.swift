@@ -14,13 +14,11 @@ import MediaPlayer
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
 
-    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
-
     if let controller = window?.rootViewController as? FlutterViewController {
       setupAudioRouteChannel(binaryMessenger: controller.binaryMessenger)
     }
 
-    return result
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   private func setupAudioRouteChannel(binaryMessenger: FlutterBinaryMessenger) {
@@ -28,7 +26,10 @@ import MediaPlayer
     audioRouteChannel = FlutterMethodChannel(name: "com.muxiz.app/audio_route", binaryMessenger: binaryMessenger)
 
     audioRouteChannel?.setMethodCallHandler({ [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
-      guard let self = self else { return }
+      guard let self = self else { 
+        result(FlutterMethodNotImplemented)
+        return 
+      }
 
       switch call.method {
       case "getAvailableRoutes":
@@ -95,14 +96,16 @@ import MediaPlayer
       activeRouteType = routeType
       activeRouteName = output.portName
 
-      let item: [String: Any] = [
+      var item: [String: Any] = [
         "id": output.uid,
         "name": output.portName,
         "type": routeType,
         "isSelected": true,
-        "isAvailable": true,
-        "batteryLevel": routeType == "airpods" ? 100 : nil as Any? as Any
+        "isAvailable": true
       ]
+      if routeType == "airpods" {
+        item["batteryLevel"] = 100
+      }
       routesMap[output.uid] = item
     }
 
@@ -113,14 +116,17 @@ import MediaPlayer
         let isCurrent = (input.uid == activeRouteId)
 
         if routesMap[input.uid] == nil {
-          routesMap[input.uid] = [
+          var item: [String: Any] = [
             "id": input.uid,
             "name": input.portName,
             "type": routeType,
             "isSelected": isCurrent,
-            "isAvailable": true,
-            "batteryLevel": routeType == "airpods" ? 100 : nil as Any? as Any
+            "isAvailable": true
           ]
+          if routeType == "airpods" {
+            item["batteryLevel"] = 100
+          }
+          routesMap[input.uid] = item
         }
       }
     }
@@ -148,8 +154,17 @@ import MediaPlayer
 
   private func mapPortType(_ port: AVAudioSession.Port, name: String) -> String {
     let lowerName = name.lowercased()
+    if lowerName.contains("carplay") || lowerName.contains("car audio") || lowerName.contains("mb bluetooth") || lowerName.contains("uconnect") || lowerName.contains("sync") || port == .carAudio {
+      return "car"
+    }
     if lowerName.contains("airpod") {
       return "airpods"
+    }
+    if lowerName.contains("speaker") || port == .builtInSpeaker || port == .builtInReceiver {
+      return "speaker"
+    }
+    if port == .airPlay || lowerName.contains("airplay") || lowerName.contains("apple tv") || lowerName.contains("homepod") {
+      return "airplay"
     }
 
     switch port {
@@ -166,6 +181,9 @@ import MediaPlayer
     case .usbAudio:
       return "usb"
     default:
+      if lowerName.contains("phone") {
+        return "speaker"
+      }
       return "bluetooth"
     }
   }

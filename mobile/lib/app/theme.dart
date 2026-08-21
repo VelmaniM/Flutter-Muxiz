@@ -15,8 +15,8 @@ class AppTheme {
   static const Color pressedGreen = Color(0xFF1AA34A);
 
   static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB3B3B3);
-  static const Color textMuted = Color(0xFF6A6A6A);
+  static const Color textSecondary = Color(0xFFFFFFFF);
+  static const Color textMuted = Color(0xFFFFFFFF);
 
   static const Color heartActive = Color(0xFF1DB954);
   static const Color likedSongsGradientStart = Color(0xFF450AF5);
@@ -70,18 +70,18 @@ class AppTheme {
         ),
         bodyLarge: GoogleFonts.inter(
           fontSize: 15,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           color: textPrimary,
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: textSecondary,
+          fontWeight: FontWeight.w500,
+          color: textPrimary,
         ),
         bodySmall: GoogleFonts.inter(
           fontSize: 11,
-          fontWeight: FontWeight.w400,
-          color: textMuted,
+          fontWeight: FontWeight.w500,
+          color: textSecondary,
         ),
       ),
       appBarTheme: const AppBarTheme(

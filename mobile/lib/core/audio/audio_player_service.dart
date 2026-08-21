@@ -79,7 +79,7 @@ class AudioPlayerService {
         _playlistSource!,
         initialIndex: safeIndex,
         initialPosition: initialPosition,
-        preload: false,
+        preload: true,
       );
     } catch (e) {
       debugPrint('AudioPlayerService loadPlaylist error: $e');

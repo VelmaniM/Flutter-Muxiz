@@ -15,7 +15,7 @@ import 'features/main_layout.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase safely
+  // Initialize Firebase safely with error catch
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -52,23 +52,18 @@ void main() async {
     );
   } catch (_) {}
 
-  // Initialize local storage safely and load cached catalog in 0ms
+  // Initialize local storage safely and load full catalog instantly
   try {
     await LocalStorageService.init();
-    final cached = LocalStorageService.getCatalogSongsLocally();
-    if (cached.isNotEmpty) {
-      MockMusicCatalog.allSongs = cached;
-      MockMusicCatalog.isInitialized = true;
-    }
-    // Fast pre-fetch with live studio database before Home UI renders
-    await MockMusicCatalog.initializeCatalog().timeout(const Duration(milliseconds: 4000), onTimeout: () {});
+    await MockMusicCatalog.initializeCatalog();
   } catch (_) {}
 
-  // Check if this is the 1st time or 2nd time onwards
-  final bool isFirstTime = !LocalStorageService.hasSeenSplash();
-  if (isFirstTime) {
-    LocalStorageService.markSplashSeen();
-  }
+  // Check if splash has been marked
+  try {
+    if (!LocalStorageService.hasSeenSplash()) {
+      LocalStorageService.markSplashSeen();
+    }
+  } catch (_) {}
 
   // Initialize background AudioService safely with proper native registration
   MuxizAudioHandler audioHandler;
@@ -113,6 +108,8 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Background async catalog fetch (non-blocking)
+    MockMusicCatalog.initializeCatalog(background: true);
     // Start continuous background auto-sync
     MockMusicCatalog.startAutoSync();
     // Start real-time remote sync & cache wipe listener
@@ -129,10 +126,13 @@ class _MuxizAppState extends State<MuxizApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Re-sync catalog as soon as user switches back to the app
+      debugPrint('[LIFECYCLE] App resumed');
+      // Re-sync catalog as soon as user switches back to the app without resetting Home grid
       MockMusicCatalog.initializeCatalog(background: true);
       // Check for any remote cache wipe triggered while app was in background
       RemoteSyncService.instance.checkEpochAndWipeIfNeeded();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden || state == AppLifecycleState.inactive) {
+      debugPrint('[LIFECYCLE] App ${state.name} - persisting state incrementally');
     }
   }
 

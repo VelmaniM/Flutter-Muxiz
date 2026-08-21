@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,9 @@ import 'package:palette_generator/palette_generator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../shared/models/song.dart';
+import '../../shared/models/listening_activity.dart';
 import '../data/mock_catalog.dart';
+import '../services/listening_tracker_service.dart';
 import '../storage/local_storage.dart';
 import 'audio_handler.dart';
 import 'playback_state.dart';
@@ -22,18 +25,28 @@ final playerStateProvider = StateNotifierProvider<AudioController, PlayerStateMo
 class AudioController extends StateNotifier<PlayerStateModel> {
   final MuxizAudioHandler _handler;
   DateTime _lastSaveTime = DateTime.now();
+  final List<StreamSubscription> _subscriptions = [];
 
   AudioController(this._handler) : super(_getInitialState()) {
     _handler.onSkipToNext = skipToNext;
     _handler.onSkipToPrevious = skipToPrevious;
     _initListeners();
-    _restoreLastPlaybackState();
+    _restoreLastPlaybackState().catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subscriptions) {
+      s.cancel();
+    }
+    _subscriptions.clear();
+    super.dispose();
   }
 
   static PlayerStateModel _getInitialState() {
     try {
       final last = LocalStorageService.getLastPlaybackState();
-      if (last.song != null && last.song!.audioUrl.isNotEmpty) {
+      if (last.song != null) {
         final song = last.song!;
         final queue = last.queue.isNotEmpty ? last.queue : [song];
         final queueIdx = (last.queueIndex >= 0 && last.queueIndex < queue.length)
@@ -54,7 +67,8 @@ class AudioController extends StateNotifier<PlayerStateModel> {
 
   void _initListeners() {
     // 1. Playback & Buffering State
-    _handler.playerService.playerStateStream.listen((stateEvent) {
+    _subscriptions.add(_handler.playerService.playerStateStream.listen((stateEvent) {
+      if (!mounted) return;
       final isPlaying = stateEvent.playing;
       final isBuffering = stateEvent.processingState == ProcessingState.buffering ||
           stateEvent.processingState == ProcessingState.loading;
@@ -79,11 +93,11 @@ class AudioController extends StateNotifier<PlayerStateModel> {
           queueIndex: state.queueIndex,
         );
       }
-    });
+    }));
 
     // 2. Continuous Background Song Sequence / Index Updates (Exact Match with Audio Source)
-    _handler.playerService.sequenceStateStream.listen((seqState) {
-      if (seqState == null) return;
+    _subscriptions.add(_handler.playerService.sequenceStateStream.listen((seqState) {
+      if (!mounted || seqState == null) return;
       final tag = seqState.currentSource?.tag;
       if (tag is MediaItem) {
         final songId = tag.id;
@@ -107,16 +121,30 @@ class AudioController extends StateNotifier<PlayerStateModel> {
           _extractPaletteColor(currentSong.artworkUrl);
         }
       }
-    });
+    }));
 
     // 3. Position Stream with exact duration clamping
-    _handler.playerService.positionStream.listen((pos) {
+    _subscriptions.add(_handler.playerService.positionStream.listen((pos) {
+      if (!mounted) return;
+      // Do not overwrite restored state position with zero if audio player is idle
+      if (!state.isPlaying && _handler.player.audioSource == null) {
+        return;
+      }
       final accurateDuration = state.duration;
       final clampedPos = (accurateDuration > Duration.zero && pos > accurateDuration)
           ? accurateDuration
           : (pos < Duration.zero ? Duration.zero : pos);
 
       state = state.copyWith(position: clampedPos);
+
+      // Track progress for meaningful listen calculation (>=30s or >=25%)
+      if (state.currentSong != null && state.isPlaying) {
+        ListeningTrackerService.instance.onPositionUpdated(
+          state.currentSong!,
+          clampedPos,
+          state.duration,
+        );
+      }
 
       final now = DateTime.now();
       if (state.currentSong != null && now.difference(_lastSaveTime).inSeconds >= 2) {
@@ -128,26 +156,28 @@ class AudioController extends StateNotifier<PlayerStateModel> {
           queueIndex: state.queueIndex,
         );
       }
-    });
+    }));
 
     // 4. Duration Stream with dynamic track sync
-    _handler.playerService.durationStream.listen((dur) {
+    _subscriptions.add(_handler.playerService.durationStream.listen((dur) {
+      if (!mounted) return;
       if (dur != null && dur > Duration.zero) {
         state = state.copyWith(duration: dur);
       }
-    });
+    }));
 
     // 5. Buffered Position Stream
-    _handler.playerService.bufferedPositionStream.listen((buffered) {
+    _subscriptions.add(_handler.playerService.bufferedPositionStream.listen((buffered) {
+      if (!mounted) return;
       state = state.copyWith(bufferedPosition: buffered);
-    });
+    }));
   }
 
   /// Automatically restore the last played song and position on app restart
   Future<void> _restoreLastPlaybackState() async {
     try {
       final last = LocalStorageService.getLastPlaybackState();
-      if (last.song != null && last.song!.audioUrl.isNotEmpty) {
+      if (last.song != null) {
         final song = last.song!;
         final queue = last.queue.isNotEmpty ? last.queue : [song];
         final queueIdx = (last.queueIndex >= 0 && last.queueIndex < queue.length)
@@ -165,18 +195,23 @@ class AudioController extends StateNotifier<PlayerStateModel> {
 
         _extractPaletteColor(song.artworkUrl);
 
-        await _handler.setQueue(
-          queue,
-          initialIndex: queueIdx,
-          initialPosition: last.position,
-          autoPlay: false,
-        );
+        debugPrint('[PLAYER_RESTORE] Restored media item: "${song.title}" (${song.id})');
+        debugPrint('[PLAYER_RESTORE] Restored position: ${last.position.inSeconds}s (Duration: ${song.duration}s)');
+
+        try {
+          await _handler.setQueue(
+            queue,
+            initialIndex: queueIdx,
+            initialPosition: last.position,
+            autoPlay: false,
+          ).catchError((_) {});
+        } catch (_) {}
       }
     } catch (_) {}
   }
 
-  /// Play a song with automatic continuous queue generation
-  Future<void> playSong(Song song, {List<Song>? queue, int? index}) async {
+  /// Play a song with automatic continuous queue generation and optional seek position
+  Future<void> playSong(Song song, {List<Song>? queue, int? index, Duration? startPosition}) async {
     final isDown = song.isDownloaded || LocalStorageService.getDownloadedSongs().any((s) => s.id == song.id);
     final resolvedSong = song.copyWith(isDownloaded: isDown);
 
@@ -202,10 +237,22 @@ class AudioController extends StateNotifier<PlayerStateModel> {
       targetIndex = 0;
     }
 
+    final pos = startPosition ?? Duration.zero;
+
+    // Start tracking playback session in ListeningTrackerService
+    ListeningTrackerService.instance.onSongStarted(resolvedSong);
+    ListeningTrackerService.instance.recordFastLocalOpen(
+      resolvedSong.id,
+      resolvedSong.title,
+      QuickAccessContentType.song,
+      resolvedSong.artworkUrl,
+      subtitle: resolvedSong.artist,
+    );
+
     LocalStorageService.addRecentlyPlayed(resolvedSong);
     LocalStorageService.savePlaybackState(
       song: resolvedSong,
-      position: Duration.zero,
+      position: pos,
       queue: effectiveQueue,
       queueIndex: targetIndex,
     );
@@ -214,7 +261,7 @@ class AudioController extends StateNotifier<PlayerStateModel> {
       currentSong: resolvedSong,
       queue: effectiveQueue,
       queueIndex: targetIndex,
-      position: Duration.zero,
+      position: pos,
       duration: Duration(seconds: resolvedSong.duration),
       isPlaying: true,
       clearError: true,
@@ -223,7 +270,12 @@ class AudioController extends StateNotifier<PlayerStateModel> {
     _extractPaletteColor(resolvedSong.artworkUrl);
 
     // Instant playback triggering for the exact targetIndex
-    await _handler.setQueue(effectiveQueue, initialIndex: targetIndex, autoPlay: true);
+    await _handler.setQueue(
+      effectiveQueue,
+      initialIndex: targetIndex,
+      initialPosition: pos,
+      autoPlay: true,
+    );
   }
 
   Future<void> togglePlayPause() async {
@@ -238,17 +290,24 @@ class AudioController extends StateNotifier<PlayerStateModel> {
 
     if (state.isPlaying) {
       await _handler.pause();
-    } else {
-      if (_handler.player.audioSource == null) {
-        await _handler.setQueue(
-          state.queue.isNotEmpty ? state.queue : [state.currentSong!],
-          initialIndex: state.queueIndex,
-          initialPosition: state.position,
-          autoPlay: true,
+      if (state.currentSong != null) {
+        LocalStorageService.savePlaybackState(
+          song: state.currentSong!,
+          position: state.position,
+          queue: state.queue,
+          queueIndex: state.queueIndex,
         );
+      }
+    } else {
+      final currentSong = state.currentSong!;
+      final queue = state.queue.isNotEmpty ? state.queue : [currentSong];
+      final pos = state.position;
+
+      if (_handler.player.audioSource == null || _handler.player.processingState == ProcessingState.idle) {
+        await playSong(currentSong, queue: queue, index: state.queueIndex, startPosition: pos);
       } else {
-        if (state.position > Duration.zero && (_handler.player.position - state.position).abs() > const Duration(seconds: 2)) {
-          await _handler.seek(state.position);
+        if (pos > Duration.zero && (_handler.player.position - pos).abs() > const Duration(seconds: 1)) {
+          await _handler.seek(pos);
         }
         await _handler.play();
       }

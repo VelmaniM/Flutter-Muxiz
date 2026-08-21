@@ -28,6 +28,8 @@ class AudioRoute {
     this.batteryLevel,
   });
 
+  bool get isNonDefault => type != AudioRouteType.speaker;
+
   AudioRoute copyWith({
     String? id,
     String? name,

@@ -206,7 +206,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           // Popular Header
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 4.0),
               child: Text(
                 'Popular',
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -222,7 +222,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                 child: Center(
                   child: Text(
                     'No songs found for ${artist.name}',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ),
@@ -248,7 +248,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           if (artistAlbums.isNotEmpty) ...[
             const SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.only(left: 16.0, top: 24.0, bottom: 12.0),
+                padding: EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
                 child: Text(
                   'Popular Releases',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -303,7 +303,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           GlassBottomBar(
             currentIndex: ref.watch(selectedTabProvider),
             onTabSelected: (index) {
-              ref.read(selectedTabProvider.notifier).state = index;
+              ref.read(selectedTabProvider.notifier).setTab(index);
               Navigator.popUntil(context, (route) => route.isFirst);
             },
           ),

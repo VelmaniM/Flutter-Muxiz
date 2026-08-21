@@ -67,11 +67,17 @@ class ApiClient {
           }
           if (user != null) {
             await LocalStorageService.setUserData(user);
-            if (user['displayName'] != null) {
-              await LocalStorageService.saveUserName(user['displayName'].toString());
+            if (user['displayName'] != null && user['displayName'].toString().trim().isNotEmpty) {
+              final localName = LocalStorageService.getUserName();
+              if (localName.isEmpty) {
+                await LocalStorageService.saveUserName(user['displayName'].toString());
+              }
             }
-            if (user['avatar'] != null) {
-              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            if (user['avatar'] != null && user['avatar'].toString().trim().isNotEmpty) {
+              final localAvatar = LocalStorageService.getUserAvatar();
+              if (localAvatar == null || localAvatar.isEmpty) {
+                await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+              }
             }
           }
           return (user: user, token: token, error: null, isNewUser: isNewUser);
@@ -108,11 +114,17 @@ class ApiClient {
           }
           if (user != null) {
             await LocalStorageService.setUserData(user);
-            if (user['displayName'] != null) {
-              await LocalStorageService.saveUserName(user['displayName'].toString());
+            if (user['displayName'] != null && user['displayName'].toString().trim().isNotEmpty) {
+              final localName = LocalStorageService.getUserName();
+              if (localName.isEmpty) {
+                await LocalStorageService.saveUserName(user['displayName'].toString());
+              }
             }
-            if (user['avatar'] != null) {
-              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            if (user['avatar'] != null && user['avatar'].toString().trim().isNotEmpty) {
+              final localAvatar = LocalStorageService.getUserAvatar();
+              if (localAvatar == null || localAvatar.isEmpty) {
+                await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+              }
             }
           }
           return (user: user, token: token, error: null);
@@ -156,11 +168,17 @@ class ApiClient {
           }
           if (user != null) {
             await LocalStorageService.setUserData(user);
-            if (user['displayName'] != null) {
-              await LocalStorageService.saveUserName(user['displayName'].toString());
+            if (user['displayName'] != null && user['displayName'].toString().trim().isNotEmpty) {
+              final localName = LocalStorageService.getUserName();
+              if (localName.isEmpty) {
+                await LocalStorageService.saveUserName(user['displayName'].toString());
+              }
             }
-            if (user['avatar'] != null) {
-              await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+            if (user['avatar'] != null && user['avatar'].toString().trim().isNotEmpty) {
+              final localAvatar = LocalStorageService.getUserAvatar();
+              if (localAvatar == null || localAvatar.isEmpty) {
+                await LocalStorageService.saveUserAvatar(user['avatar'].toString());
+              }
             }
           }
           return (user: user, token: token, error: null);

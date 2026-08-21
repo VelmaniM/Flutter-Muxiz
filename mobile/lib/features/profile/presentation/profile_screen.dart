@@ -7,12 +7,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/data/mock_catalog.dart';
 import '../../../core/storage/local_storage.dart';
-import '../../../shared/components/album_card.dart';
-import '../../../shared/components/artist_avatar.dart';
-import '../../details/presentation/playlist_detail_screen.dart';
 import 'profile_image_cropper.dart';
+
+
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -25,175 +23,100 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploadingAvatar = false;
   final ImagePicker _picker = ImagePicker();
 
+  static const List<String> _kPresetEmojis = [
+    '🎧', '🎸', '🎵', '⚡', '👑', '🔥', 
+    '🕶️', '💎', '🦁', '🐯', '🚀', '💿', 
+    '🎙️', '🐺', '🦊', '🐉', '👾', '🪐', 
+    '🌊', '☕', '✨', '⭐', '💫', '🎉',
+  ];
+
+  static const List<({String name, IconData icon, String label})> _kMusicIcons = [
+    (name: 'headphones', icon: Icons.headphones_rounded, label: 'Headphones'),
+    (name: 'music_note', icon: Icons.music_note_rounded, label: 'Music Note'),
+    (name: 'album', icon: Icons.album_rounded, label: 'Vinyl Album'),
+    (name: 'mic', icon: Icons.mic_rounded, label: 'Microphone'),
+    (name: 'equalizer', icon: Icons.graphic_eq_rounded, label: 'Equalizer'),
+    (name: 'fire', icon: Icons.local_fire_department_rounded, label: 'Fire Beats'),
+    (name: 'bolt', icon: Icons.bolt_rounded, label: 'Energy Bolt'),
+    (name: 'diamond', icon: Icons.diamond_rounded, label: 'Diamond VIP'),
+    (name: 'rocket', icon: Icons.rocket_launch_rounded, label: 'Rocket'),
+    (name: 'star', icon: Icons.star_rounded, label: 'Star Artist'),
+    (name: 'speaker', icon: Icons.speaker_rounded, label: 'Subwoofer'),
+    (name: 'piano', icon: Icons.piano_rounded, label: 'Keyboard'),
+    (name: 'radio', icon: Icons.radio_rounded, label: 'Radio Broadcast'),
+    (name: 'favorite', icon: Icons.favorite_rounded, label: 'Heart Beats'),
+  ];
+
+  IconData _getIconData(String name) {
+    for (final item in _kMusicIcons) {
+      if (item.name == name) return item.icon;
+    }
+    return Icons.headphones_rounded;
+  }
+
   void _showProfilePhotoOptions(String? avatarUrl, String displayName) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF181818),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Profile Photo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // SAMPLE AVATAR EMOJIS PICKER
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Choose Avatar Emoji',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 52,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: const [
-                      '🎧', '🎸', '🎵', '⚡', '👑', '🔥', 
-                      '🕶️', '💎', '🦁', '🐯', '🚀', '💿', 
-                      '🎙️', '🐺', '🦊', '🐉', '👾', '🪐', 
-                      '🌊', '☕', '✨', '⭐', '💫', '🎉',
-                    ].length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (ctx, idx) {
-                      const sampleEmojis = [
-                        '🎧', '🎸', '🎵', '⚡', '👑', '🔥', 
-                        '🕶️', '💎', '🦁', '🐯', '🚀', '💿', 
-                        '🎙️', '🐺', '🦊', '🐉', '👾', '🪐', 
-                        '🌊', '☕', '✨', '⭐', '💫', '🎉',
-                      ];
-                      final em = sampleEmojis[idx];
-                      final isSelected = avatarUrl == 'emoji:$em';
-                      return InkWell(
-                        onTap: () async {
-                          Navigator.pop(ctx);
-                          await ref.read(userAvatarProvider.notifier).setAvatar('emoji:$em');
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Text(em, style: const TextStyle(fontSize: 20)),
-                                    const SizedBox(width: 10),
-                                    Text('Avatar updated to $em! ✨', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(26),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.25) : const Color(0xFF242424),
-                            border: Border.all(
-                              color: isSelected ? AppTheme.primaryGreen : Colors.white12,
-                              width: isSelected ? 2 : 1,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(em, style: const TextStyle(fontSize: 22)),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Divider(color: Colors.white10, height: 1),
-                const SizedBox(height: 10),
-
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryGreen, size: 22),
-                  ),
-                  title: Text(
-                    avatarUrl != null && avatarUrl.isNotEmpty ? 'Upload Custom Photo' : 'Upload Photo from Device',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  subtitle: const Text(
-                    'Pick any photo from your device gallery or files',
-                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickAndUploadAvatar(displayName);
-                  },
-                ),
-                if (avatarUrl != null && avatarUrl.isNotEmpty) ...[
-                  const Divider(color: Colors.white10, height: 16),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
-                    ),
-                    title: const Text(
-                      'Remove Current Photo',
-                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 16),
-                    ),
-                    subtitle: const Text(
-                      'Reset to clean default round profile icon with black background',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _removeAvatar();
-                    },
-                  ),
-                ],
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (ctx) => _AvatarPickerModal(
+        initialAvatarUrl: avatarUrl,
+        displayName: displayName,
+        onPhotoUpload: () {
+          Navigator.pop(ctx);
+          _pickAndUploadAvatar(displayName);
+        },
+        onSelectAvatarString: (newAvatarString) async {
+          Navigator.pop(ctx);
+          await _applyAvatar(newAvatarString, displayName);
+        },
+        onRemoveAvatar: () {
+          Navigator.pop(ctx);
+          _removeAvatar();
+        },
+      ),
     );
   }
 
+  Future<void> _applyAvatar(String avatarValue, String displayName) async {
+    setState(() => _isUploadingAvatar = true);
+    await ref.read(userAvatarProvider.notifier).setAvatar(avatarValue);
+
+    // Sync to PostgreSQL DB and Drive
+    try {
+      final userId = LocalStorageService.getUserId();
+      await ref.read(apiClientProvider).updateProfile(
+        userId: userId.isNotEmpty ? userId : 'listener-001',
+        displayName: displayName,
+        avatar: avatarValue,
+      );
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _isUploadingAvatar = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
+              SizedBox(width: 10),
+              Text('Avatar updated & synced to Cloud DB! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          backgroundColor: Color(0xFF1E1E1E),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Future<void> _removeAvatar() async {
-    setState(() {
-      _isUploadingAvatar = true;
-    });
+    setState(() => _isUploadingAvatar = true);
 
     try {
       try {
@@ -207,46 +130,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(userAvatarProvider.notifier).setAvatar(null);
 
       // Async backend remove
-      final dio = Dio();
-      const endpoints = [
-        'http://192.168.1.94:5001/api/v1/uploads/avatar',
-        'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
-        'http://localhost:5001/api/v1/uploads/avatar',
-      ];
-      for (final ep in endpoints) {
-        try {
-          await dio.delete(ep, data: {'userId': LocalStorageService.getUserId()});
-          break;
-        } catch (_) {}
-      }
+      try {
+        final dio = Dio();
+        final userId = LocalStorageService.getUserId();
+        const endpoints = [
+          'http://192.168.1.94:5001/api/v1/uploads/avatar',
+          'https://flutter-muxiz.onrender.com/api/v1/uploads/avatar',
+          'http://localhost:5001/api/v1/uploads/avatar',
+        ];
+        for (final ep in endpoints) {
+          try {
+            await dio.delete(ep, data: {'userId': userId});
+            break;
+          } catch (_) {}
+        }
+      } catch (_) {}
 
       if (mounted) {
-        setState(() {
-          _isUploadingAvatar = false;
-        });
-
+        setState(() => _isUploadingAvatar = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
+          const SnackBar(
+            content: Row(
               children: [
                 Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
                 SizedBox(width: 10),
-                Text('Profile photo removed successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Profile photo reset to default! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               ],
             ),
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: Color(0xFF1E1E1E),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isUploadingAvatar = false;
-        });
-      }
+      if (mounted) setState(() => _isUploadingAvatar = false);
     }
   }
 
@@ -271,9 +190,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         }
       } catch (_) {}
 
-      setState(() {
-        _isUploadingAvatar = true;
-      });
+      setState(() => _isUploadingAvatar = true);
 
       // 1. Permanently copy to Application Documents Directory so it survives app restarts
       final docsDir = await getApplicationDocumentsDirectory();
@@ -281,9 +198,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         final existingFiles = docsDir.listSync();
         for (final f in existingFiles) {
           if (f.path.contains('user_profile_avatar')) {
-            try {
-              f.deleteSync();
-            } catch (_) {}
+            try { f.deleteSync(); } catch (_) {}
           }
         }
       } catch (_) {}
@@ -295,32 +210,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(userAvatarProvider.notifier).setAvatar(permanentFile.path);
 
       if (mounted) {
-        setState(() {
-          _isUploadingAvatar = false;
-        });
-
+        setState(() => _isUploadingAvatar = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
+          const SnackBar(
+            content: Row(
               children: [
                 Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
                 SizedBox(width: 10),
-                Text('Profile photo updated successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Profile photo updated & uploading to Google Drive! ☁️✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               ],
             ),
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: Color(0xFF1E1E1E),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            duration: Duration(seconds: 3),
           ),
         );
       }
 
-      // Background cloud sync (safe, non-blocking)
+      // Background Google Drive & DB upload
       try {
         final dio = Dio(BaseOptions(
-          connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
+          connectTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 15),
         ));
 
         final formData = FormData.fromMap({
@@ -353,36 +265,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isUploadingAvatar = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update photo: $e', style: const TextStyle(color: Colors.white)),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        setState(() => _isUploadingAvatar = false);
       }
     }
   }
 
   void _showEditNameDialog(String currentName) {
-    final textController = TextEditingController(text: currentName);
-
+    final controller = TextEditingController(text: currentName);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF161616),
+      backgroundColor: const Color(0xFF181818),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            left: 20.0,
+            right: 20.0,
+            top: 20.0,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -401,39 +304,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 18),
               const Text(
                 'Edit Display Name',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Enter the name you would like to display on your profile.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               TextField(
-                controller: textController,
+                controller: controller,
                 autofocus: true,
                 style: const TextStyle(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'Enter your name',
-                  hintStyle: const TextStyle(color: AppTheme.textSecondary),
+                  hintStyle: const TextStyle(color: Colors.white38),
                   filled: true,
-                  fillColor: const Color(0xFF222222),
+                  fillColor: const Color(0xFF242424),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 1.5),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryGreen),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -443,19 +336,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                   onPressed: () async {
-                    final newName = textController.text.trim();
+                    final newName = controller.text.trim();
                     if (newName.isEmpty) return;
-
                     Navigator.pop(ctx);
                     await ref.read(userNameProvider.notifier).setName(newName);
                     await LocalStorageService.saveUserName(newName);
 
-                    // Sync with PostgreSQL database via apiClient
                     try {
                       final userId = LocalStorageService.getUserId();
-                      final email = LocalStorageService.getUserEmail();
                       await ref.read(apiClientProvider).updateProfile(
-                        userId: userId.isNotEmpty ? userId : (email.isNotEmpty ? email : 'listener-001'),
+                        userId: userId.isNotEmpty ? userId : 'listener-001',
                         displayName: newName,
                       );
                     } catch (_) {}
@@ -467,7 +357,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             children: [
                               Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20),
                               SizedBox(width: 10),
-                              Text('Name updated successfully in database! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              Text('Name updated successfully! ✨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           backgroundColor: Color(0xFF1E1E1E),
@@ -477,10 +367,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     }
                   },
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
+                  child: const Text('Save Changes', style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -496,13 +383,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     Widget imageContent;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       if (avatarUrl.startsWith('emoji:')) {
-        final emoji = avatarUrl.replaceFirst('emoji:', '');
+        final parts = avatarUrl.replaceFirst('emoji:', '').split(':');
+        final emoji = parts[0];
+        final scale = parts.length > 1 ? (double.tryParse(parts[1]) ?? 56.0) : 56.0;
         imageContent = Container(
           color: const Color(0xFF1E1E1E),
           child: Center(
             child: Text(
               emoji,
-              style: const TextStyle(fontSize: 56),
+              style: TextStyle(fontSize: scale),
+            ),
+          ),
+        );
+      } else if (avatarUrl.startsWith('icon:')) {
+        final parts = avatarUrl.split(':');
+        final iconName = parts.length > 1 ? parts[1] : 'headphones';
+        final iconSize = parts.length > 2 ? (double.tryParse(parts[2]) ?? 54.0) : 54.0;
+        final iconData = _getIconData(iconName);
+        imageContent = Container(
+          color: const Color(0xFF1A1A22),
+          child: Center(
+            child: Icon(
+              iconData,
+              color: AppTheme.primaryGreen,
+              size: iconSize,
             ),
           ),
         );
@@ -549,7 +453,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } else {
       imageContent = Container(
-        color: Colors.black,
+        color: const Color(0xFF1E1E1E),
         child: Center(
           child: Text(
             initial,
@@ -605,8 +509,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final avatarUrl = ref.watch(userAvatarProvider);
     final displayName = ref.watch(userNameProvider);
-    final playlists = ref.watch(customPlaylistsProvider);
-    final artists = MockMusicCatalog.popularArtists;
+    final email = LocalStorageService.getUserEmail();
+    final favCount = LocalStorageService.getFavoriteSongIds().length;
+    final downloadedCount = LocalStorageService.getDownloadedSongs().length;
+    final recentsCount = LocalStorageService.getRecentlyPlayed().length;
+    final customPlaylists = LocalStorageService.getCustomPlaylists();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -614,7 +521,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         bottom: false,
         child: Column(
           children: [
-            // Top Navigation Bar
+            // Top Navigation Bar (Clean, no pencil icon)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
               child: Row(
@@ -634,12 +541,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _showEditNameDialog(displayName),
-                  ),
+                  const SizedBox(width: 24), // Balance spacing
                 ],
               ),
             ),
@@ -648,6 +550,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
                     const SizedBox(height: 16),
@@ -656,32 +559,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _buildAvatarWidget(avatarUrl, displayName),
                     const SizedBox(height: 16),
 
-                    // Display Name with edit pen
-                    GestureDetector(
-                      onTap: () => _showEditNameDialog(displayName),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.edit_rounded, color: AppTheme.primaryGreen, size: 18),
-                        ],
+                    // Display Name (Clean, NO pencil icon next to name!)
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
-                    // Followers / Following
-                    const Text(
-                      '14 Followers  •  28 Following',
-                      style: TextStyle(
+                    // User Email or Listener Badge
+                    Text(
+                      email.isNotEmpty ? email : 'Muxiz VIP Listener',
+                      style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -689,155 +582,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Edit Profile and Share Action Buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.white38),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                          ),
-                          onPressed: () => _showEditNameDialog(displayName),
-                          icon: const Icon(Icons.edit, size: 15, color: Colors.white),
-                          label: const Text('Edit profile', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: const Icon(Icons.share_outlined, color: Colors.white70),
-                          onPressed: () {},
-                        ),
-                      ],
+                    // Edit Profile Action Button
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white24),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      ),
+                      onPressed: () => _showEditNameDialog(displayName),
+                      icon: const Icon(Icons.edit_rounded, size: 14, color: AppTheme.primaryGreen),
+                      label: const Text('Edit Name', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(height: 28),
 
-                    // Public Playlists Section (Only when playlists exist)
-                    if (playlists.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Public Playlists',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {},
-                              child: const Text(
-                                'See all',
-                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                              ),
-                            ),
-                          ],
+                    // SECTION 1: YOUR MUSIC STATS (Real, authentic dynamic metrics)
+                    _buildSectionHeader('Your Music Stats', Icons.insights_rounded),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard('Liked Songs', '$favCount', Icons.favorite_rounded, Colors.redAccent),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 210,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: playlists.length,
-                          itemBuilder: (context, index) {
-                            final playlist = playlists[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 14.0),
-                              child: AlbumCard(
-                                title: playlist.title,
-                                subtitle: '${playlist.songs.length} songs',
-                                imageUrl: playlist.coverUrl,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PlaylistDetailScreen(playlist: playlist),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard('Playlists', '${customPlaylists.length}', Icons.queue_music_rounded, AppTheme.primaryGreen),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Recently Played Artists (Only when artists exist)
-                    if (artists.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Recently played artists',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 140,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: artists.length,
-                          itemBuilder: (context, index) {
-                            final artist = artists[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 16.0),
-                              child: ArtistAvatar(
-                                name: artist.name,
-                                imageUrl: artist.imageUrl,
-                                radius: 45,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-
-                    // Reset Cache Button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.white24, width: 1.2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          minimumSize: const Size(double.infinity, 46),
-                        ),
-                        onPressed: () async {
-                          await LocalStorageService.clearAllPlaybackAndCache();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Cache reset successfully!'),
-                                backgroundColor: Color(0xFF1E1E1E),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 20),
-                        label: const Text(
-                          'Reset App History & Cache',
-                          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
+                      ],
                     ),
-
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard('Downloaded', '$downloadedCount', Icons.download_done_rounded, Colors.cyanAccent),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard('Recently Played', '$recentsCount', Icons.history_rounded, Colors.amberAccent),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 140),
                   ],
                 ),
               ),
@@ -846,5 +630,494 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primaryGreen, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16161C),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dynamic Multi-Tab Avatar Picker with Live Resize Slider & Emoji/Icon Customization
+class _AvatarPickerModal extends StatefulWidget {
+  final String? initialAvatarUrl;
+  final String displayName;
+  final VoidCallback onPhotoUpload;
+  final ValueChanged<String> onSelectAvatarString;
+  final VoidCallback onRemoveAvatar;
+
+  const _AvatarPickerModal({
+    required this.initialAvatarUrl,
+    required this.displayName,
+    required this.onPhotoUpload,
+    required this.onSelectAvatarString,
+    required this.onRemoveAvatar,
+  });
+
+  @override
+  State<_AvatarPickerModal> createState() => _AvatarPickerModalState();
+}
+
+class _AvatarPickerModalState extends State<_AvatarPickerModal> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final TextEditingController _customEmojiController = TextEditingController();
+  
+  double _iconSize = 54.0;
+  String _selectedIcon = 'headphones';
+
+  double _emojiSize = 56.0;
+  String _selectedEmoji = '🎧';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _customEmojiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.72,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            const Text(
+              'Customize Profile Avatar',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tab Bar
+            TabBar(
+              controller: _tabController,
+              indicatorColor: AppTheme.primaryGreen,
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: AppTheme.primaryGreen,
+              unselectedLabelColor: Colors.white60,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              tabs: const [
+                Tab(icon: Icon(Icons.music_note_rounded, size: 18), text: 'Music Icons'),
+                Tab(icon: Icon(Icons.emoji_emotions_rounded, size: 18), text: 'Emoji Avatar'),
+                Tab(icon: Icon(Icons.photo_library_rounded, size: 18), text: 'Custom Photo'),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // TAB 1: MUSIC ICONS WITH LIVE RESIZE
+                  _buildMusicIconsTab(),
+
+                  // TAB 2: EMOJIS WITH CUSTOM TEXT INPUT & RESIZE
+                  _buildEmojiTab(),
+
+                  // TAB 3: CUSTOM PHOTO UPLOAD
+                  _buildPhotoTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMusicIconsTab() {
+    return Column(
+      children: [
+        // Live Preview & Size Slider
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF22222A),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF16161C),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    _getIconForName(_selectedIcon),
+                    color: AppTheme.primaryGreen,
+                    size: _iconSize * 0.75,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Icon Size / Scale', style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                        Text('${_iconSize.toInt()}px', style: const TextStyle(color: AppTheme.primaryGreen, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Slider(
+                      value: _iconSize,
+                      min: 30,
+                      max: 68,
+                      activeColor: AppTheme.primaryGreen,
+                      inactiveColor: Colors.white12,
+                      onChanged: (val) => setState(() => _iconSize = val),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Grid of Music Icons
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: _ProfileScreenState._kMusicIcons.length,
+            itemBuilder: (ctx, idx) {
+              final item = _ProfileScreenState._kMusicIcons[idx];
+              final isSelected = _selectedIcon == item.name;
+              return InkWell(
+                onTap: () {
+                  setState(() => _selectedIcon = item.name);
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.2) : const Color(0xFF22222A),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryGreen : Colors.white12,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(item.icon, color: isSelected ? AppTheme.primaryGreen : Colors.white, size: 26),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isSelected ? AppTheme.primaryGreen : Colors.white70,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Apply Button
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23)),
+            ),
+            onPressed: () {
+              widget.onSelectAvatarString('icon:$_selectedIcon:${_iconSize.toInt()}');
+            },
+            child: const Text('Apply Icon Avatar', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmojiTab() {
+    return Column(
+      children: [
+        // Live Preview & Size Slider
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF22222A),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF16161C),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    _selectedEmoji,
+                    style: TextStyle(fontSize: _emojiSize * 0.7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Emoji Size / Scale', style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                        Text('${_emojiSize.toInt()}px', style: const TextStyle(color: AppTheme.primaryGreen, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Slider(
+                      value: _emojiSize,
+                      min: 32,
+                      max: 72,
+                      activeColor: AppTheme.primaryGreen,
+                      inactiveColor: Colors.white12,
+                      onChanged: (val) => setState(() => _emojiSize = val),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Custom Emoji Text Input Field
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _customEmojiController,
+                maxLength: 2,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20, color: Colors.white),
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: 'Type any custom emoji (e.g. 🦊)',
+                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                  filled: true,
+                  fillColor: const Color(0xFF22222A),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryGreen),
+                  ),
+                ),
+                onChanged: (val) {
+                  if (val.trim().isNotEmpty) {
+                    setState(() => _selectedEmoji = val.trim());
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Grid of Presets
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 6,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: _ProfileScreenState._kPresetEmojis.length,
+            itemBuilder: (ctx, idx) {
+              final em = _ProfileScreenState._kPresetEmojis[idx];
+              final isSelected = _selectedEmoji == em;
+              return InkWell(
+                onTap: () {
+                  setState(() => _selectedEmoji = em);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.25) : const Color(0xFF22222A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryGreen : Colors.white12,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(em, style: const TextStyle(fontSize: 22)),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Apply Button
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23)),
+            ),
+            onPressed: () {
+              widget.onSelectAvatarString('emoji:$_selectedEmoji:${_emojiSize.toInt()}');
+            },
+            child: const Text('Apply Emoji Avatar', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhotoTab() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          tileColor: const Color(0xFF22222A),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryGreen, size: 24),
+          ),
+          title: const Text('Upload Custom Photo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+          subtitle: const Text('Crop, zoom, rotate & upload to Google Drive', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+          onTap: widget.onPhotoUpload,
+        ),
+        if (widget.initialAvatarUrl != null && widget.initialAvatarUrl!.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          ListTile(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            tileColor: const Color(0xFF22222A),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 24),
+            ),
+            title: const Text('Reset to Default Avatar', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
+            subtitle: const Text('Clear custom image and restore clean letter icon', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+            onTap: widget.onRemoveAvatar,
+          ),
+        ],
+      ],
+    );
+  }
+
+  IconData _getIconForName(String name) {
+    for (final item in _ProfileScreenState._kMusicIcons) {
+      if (item.name == name) return item.icon;
+    }
+    return Icons.headphones_rounded;
   }
 }

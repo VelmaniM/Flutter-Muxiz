@@ -83,7 +83,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
           GlassBottomBar(
             currentIndex: ref.watch(selectedTabProvider),
             onTabSelected: (index) {
-              ref.read(selectedTabProvider.notifier).state = index;
+              ref.read(selectedTabProvider.notifier).setTab(index);
               Navigator.popUntil(context, (route) => route.isFirst);
             },
           ),
@@ -141,7 +141,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                       ),
                     ),
                     Text(
-                      '${p.songs.length} songs',
+                      p.creator,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -173,7 +173,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.5),
                 ),
                 subtitle: Text(
-                  'Playlist • ${p.songs.length} songs',
+                  'Playlist • ${p.creator}',
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
                 onTap: () {
@@ -244,7 +244,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                       ),
                     ),
                     Text(
-                      '${alb.songs.length} songs',
+                      alb.artist,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -284,7 +284,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.5),
                 ),
                 subtitle: Text(
-                  'Movie Album • ${alb.songs.length} songs',
+                  'Movie Album • ${alb.artist}',
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
                 onTap: () {
@@ -347,9 +347,9 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                         fontSize: 12.5,
                       ),
                     ),
-                    Text(
-                      '${a.topTracks.length} songs',
-                      style: const TextStyle(
+                    const Text(
+                      'Artist',
+                      style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 11.0,
                       ),
@@ -375,9 +375,9 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
                   a.name,
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.5),
                 ),
-                subtitle: Text(
-                  'Artist • ${a.topTracks.length} songs',
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                subtitle: const Text(
+                  'Artist',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                 ),
                 onTap: () {
                   Navigator.push(

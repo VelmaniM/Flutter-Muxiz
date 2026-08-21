@@ -44,6 +44,8 @@ lerna-debug.log*
 *.sqlite
 *.rdb
 downloads_cache/
+server/data/vault/
+data/vault/
 dist_server/*.apk
 dist_server/*.ipa
 *.apk

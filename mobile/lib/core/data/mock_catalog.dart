@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/constants.dart';
@@ -9,15 +11,29 @@ import '../../shared/models/album.dart';
 import '../../shared/models/playlist.dart';
 import '../storage/local_storage.dart';
 
+import 'bundled_songs.dart';
+
 class CatalogNotifier extends ChangeNotifier {
-  void notify() => notifyListeners();
+  void notify() {
+    try {
+      if (hasListeners) {
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
 }
 
 final catalogNotifier = CatalogNotifier();
-final musicCatalogProvider = ChangeNotifierProvider<CatalogNotifier>((ref) => catalogNotifier);
+final musicCatalogProvider = ChangeNotifierProvider<CatalogNotifier>((ref) {
+  final notifier = CatalogNotifier();
+  void onGlobalNotify() => notifier.notify();
+  catalogNotifier.addListener(onGlobalNotify);
+  ref.onDispose(() => catalogNotifier.removeListener(onGlobalNotify));
+  return notifier;
+});
 
 class MockMusicCatalog {
-  static List<Song> allSongs = [];
+  static List<Song> allSongs = List<Song>.from(kBundledSongs);
   static List<Artist> popularArtists = [];
   static List<Playlist> featuredPlaylists = [];
   static List<Album> topAlbums = [];
@@ -80,18 +96,20 @@ class MockMusicCatalog {
       final norm = normalizeSingleArtist(p);
       if (norm.length >= 2) {
         final lower = norm.toLowerCase();
-        if (!['unknown artist', 'various artists', 'unknown', 'various'].contains(lower) && !seen.contains(lower)) {
+        if (!['unknown artist', 'various artists', 'unknown', 'various', 'soundtrack'].contains(lower) && !seen.contains(lower)) {
           seen.add(lower);
           list.add(norm);
         }
       }
     }
-    return list.isNotEmpty ? list : [normalizeSingleArtist(raw).isNotEmpty ? normalizeSingleArtist(raw) : 'Unknown Artist'];
+    if (list.isNotEmpty) return list;
+    final fallback = normalizeSingleArtist(raw);
+    return (fallback.isNotEmpty && fallback.toLowerCase() != 'unknown artist') ? [fallback] : [];
   }
 
   static String normalizeArtistName(String raw) {
     final clean = normalizeSingleArtist(raw);
-    return clean.isNotEmpty ? clean : 'Unknown Artist';
+    return (clean.isNotEmpty && clean.toLowerCase() != 'unknown artist') ? clean : 'Soundtrack';
   }
 
   static List<Song> getSongsForArtist(String artistName) {
@@ -138,31 +156,51 @@ class MockMusicCatalog {
   static bool _isSyncing = false;
   static bool _autoSyncStarted = false;
   static Timer? _heartbeatTimer;
+  static String activeServerHost = 'http://192.168.1.94:5001';
 
-  static List<String> get candidateBaseUrls => [
-    'http://localhost:5001/api/v1',
-    'http://127.0.0.1:5001/api/v1',
-    'http://192.168.1.94:5001/api/v1',
-    'http://10.0.2.2:5001/api/v1',
-    'https://flutter-muxiz.onrender.com/api/v1',
-    'https://muxizstudio.vercel.app/api',
-    AppConstants.defaultApiBaseUrl,
-  ];
+  static List<String> get candidateBaseUrls {
+    final custom = LocalStorageService.getServerHost();
+    return [
+      if (custom.isNotEmpty) '$custom/api/v1',
+      'http://192.168.1.94:5001/api/v1',
+      'http://127.0.0.1:5001/api/v1',
+      'http://localhost:5001/api/v1',
+      'http://169.254.83.74:5001/api/v1',
+      'http://10.0.2.2:5001/api/v1',
+      AppConstants.defaultApiBaseUrl,
+    ];
+  }
+
+  static String resolveAudioUrl(String rawUrl) {
+    if (rawUrl.trim().isEmpty) return '';
+    var url = rawUrl.trim();
+    if (url.startsWith('/')) {
+      return '$activeServerHost$url';
+    }
+    if (url.contains(':5001/api/v1/songs/stream/')) {
+      final streamPath = url.substring(url.indexOf('/api/v1/songs/stream/'));
+      return '$activeServerHost$streamPath';
+    }
+    return url;
+  }
 
   static void startAutoSync() {
     if (_autoSyncStarted) return;
     _autoSyncStarted = true;
 
-    // Optional background check for live studio updates
+    // Background heartbeat for live studio connection (30s interval to prevent UI & network overhead)
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _checkServerStatusHeartbeat();
     });
+    // Trigger initial check immediately
+    _checkServerStatusHeartbeat();
   }
 
   static Future<void> _checkServerStatusHeartbeat() async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    for (final base in candidateBaseUrls) {
+    bool foundAnyLive = false;
+    final futures = candidateBaseUrls.map((base) async {
       try {
         final dio = Dio(BaseOptions(
           connectTimeout: const Duration(milliseconds: 1500),
@@ -173,21 +211,36 @@ class MockMusicCatalog {
           final data = res.data;
           final bool active = data is Map ? (data['active'] == true) : false;
           if (active) {
-            isServerLive = true;
-            serverStatus = 'ONLINE';
-            break;
+            final discoveredHost = base.replaceAll('/api/v1', '');
+            if (activeServerHost != discoveredHost || !isServerLive) {
+              activeServerHost = discoveredHost;
+              isServerLive = true;
+              serverStatus = 'ONLINE';
+              foundAnyLive = true;
+              // Fetch latest live songs from this active studio
+              _fetchRemoteCatalogInBackground();
+            }
           }
         }
       } catch (_) {}
+    });
+    await Future.wait(futures);
+    if (!foundAnyLive && !isServerLive) {
+      serverStatus = 'OFFLINE';
     }
   }
 
-  /// Initializes the catalog from local cache and triggers live Studio background sync
+  /// Initializes the catalog from local cache or bundled seed and triggers live Studio background sync
   static Future<void> initializeCatalog({bool forceRefresh = false, bool background = false}) async {
     if (allSongs.isEmpty || forceRefresh) {
       final local = LocalStorageService.getCatalogSongsLocally();
       if (local.isNotEmpty) {
         allSongs = local;
+      } else {
+        await _loadBundledCatalog();
+        if (allSongs.isEmpty) {
+          allSongs = List<Song>.from(kBundledSongs);
+        }
       }
     }
 
@@ -199,12 +252,53 @@ class MockMusicCatalog {
     serverStatus = 'ONLINE';
     catalogNotifier.notify();
 
-    // If we have no songs or forceRefresh requested and not in background, await remote fetch immediately
-    if (allSongs.isEmpty && !background) {
-      await _fetchRemoteCatalogInBackground();
-    } else if (!_isSyncing) {
-      // Background non-blocking sync
+    // Background non-blocking sync with server
+    if (!_isSyncing) {
       _fetchRemoteCatalogInBackground();
+    }
+  }
+
+  /// Loads bundled 143+ song catalog from assets so fresh install immediately has all music
+  static Future<void> _loadBundledCatalog() async {
+    try {
+      final jsonStr = await rootBundle.loadString('assets/data/songs_catalog.json');
+      final list = json.decode(jsonStr) as List<dynamic>;
+      final List<Song> bundled = [];
+      for (final item in list) {
+        final id = (item['id'] ?? item['_id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        final rawArt = (item['artworkUrl'] ?? item['artwork'] ?? '').toString();
+        var audio = (item['audioUrl'] ?? '').toString();
+        if (audio.startsWith('/')) {
+          audio = 'http://192.0.0.2:5001$audio';
+        }
+        final rawArtistStr = (item['artistName'] ?? item['artist']?['name'] ?? item['artist'] ?? '').toString().trim();
+        final cleanArtistStr = (rawArtistStr.isNotEmpty && rawArtistStr.toLowerCase() != 'unknown artist')
+            ? rawArtistStr
+            : ((item['movieName'] ?? item['albumName'] ?? '').toString().isNotEmpty
+                ? (item['movieName'] ?? item['albumName']).toString()
+                : 'Soundtrack');
+
+        bundled.add(Song(
+          id: id,
+          title: (item['title'] ?? 'Untitled Track').toString(),
+          artist: cleanArtistStr,
+          album: (item['albumName'] ?? item['album']?['title'] ?? item['album'] ?? 'Single').toString(),
+          movieName: (item['movieName'] ?? item['albumName'] ?? 'Single').toString(),
+          artworkUrl: rawArt,
+          audioUrl: audio,
+          duration: (item['duration'] as num?)?.toInt() ?? 210,
+          genre: (item['genre'] ?? 'Tamil').toString(),
+          language: (item['language'] ?? 'Tamil').toString(),
+          lyrics: (item['lyrics'] is List) ? List<String>.from(item['lyrics']) : [],
+        ));
+      }
+      if (bundled.isNotEmpty) {
+        allSongs = bundled;
+        LocalStorageService.saveCatalogSongsLocally(bundled);
+      }
+    } catch (e) {
+      debugPrint('Error loading bundled catalog: $e');
     }
   }
 
@@ -227,21 +321,34 @@ class MockMusicCatalog {
             if (list != null && list.isNotEmpty) {
               final List<Song> remoteSongs = [];
               for (final item in list) {
-                final id = (item['id'] ?? '').toString();
+                final id = (item['id'] ?? item['_id'] ?? '').toString();
                 if (id.isEmpty) continue;
                 final rawArt = (item['artworkUrl'] ?? item['artwork'] ?? '').toString();
-                final cleanArt = rawArt.replaceAll('/1400x1400bb.jpg', '/600x600bb.jpg');
+                final cleanArt = rawArt.isNotEmpty ? rawArt : '';
+
+                var audio = (item['audioUrl'] ?? '').toString();
+                if (audio.startsWith('/')) {
+                  final serverHost = base.replaceAll('/api/v1', '');
+                  audio = '$serverHost$audio';
+                }
+
+                final rawArtistStr = (item['artistName'] ?? item['artist']?['name'] ?? item['artist'] ?? '').toString().trim();
+                final cleanArtistStr = (rawArtistStr.isNotEmpty && rawArtistStr.toLowerCase() != 'unknown artist')
+                    ? rawArtistStr
+                    : ((item['movieName'] ?? item['albumName'] ?? '').toString().isNotEmpty
+                        ? (item['movieName'] ?? item['albumName']).toString()
+                        : 'Soundtrack');
 
                 remoteSongs.add(Song(
                   id: id,
                   title: (item['title'] ?? 'Untitled Track').toString(),
-                  artist: (item['artistName'] ?? item['artist']?['name'] ?? item['artist'] ?? 'Unknown Artist').toString(),
+                  artist: cleanArtistStr,
                   album: (item['albumName'] ?? item['album']?['title'] ?? item['album'] ?? 'Single').toString(),
-                  movieName: item['movieName']?.toString(),
+                  movieName: (item['movieName'] ?? item['albumName'] ?? 'Single').toString(),
                   artworkUrl: cleanArt,
-                  audioUrl: (item['audioUrl'] ?? '').toString(),
+                  audioUrl: audio,
                   duration: (item['duration'] as num?)?.toInt() ?? 210,
-                  genre: (item['genre'] ?? 'Melody').toString(),
+                  genre: (item['genre'] ?? 'Tamil Soundtrack').toString(),
                   language: (item['language'] ?? 'Tamil').toString(),
                   lyrics: (item['lyrics'] is List) ? List<String>.from(item['lyrics']) : [],
                 ));
@@ -250,12 +357,9 @@ class MockMusicCatalog {
               if (remoteSongs.isNotEmpty) {
                 allSongs = remoteSongs;
 
-                // 2. Fetch Artists Directly from Studio Backend (/artists or /songs/artists/all)
+                // 2. Fetch Artists Directly from Studio Backend (/artists)
                 try {
-                  final artistEndpoint = base.endsWith('/v1')
-                      ? '$base/songs/artists/all?t=$timestamp'
-                      : '$base/artists?t=$timestamp';
-                  final aRes = await dio.get(artistEndpoint);
+                  final aRes = await dio.get('$base/artists?t=$timestamp');
                   if (aRes.statusCode == 200 && aRes.data != null) {
                     final aData = aRes.data;
                     final aList = (aData is Map ? (aData['data'] ?? aData['artists']) : aData) as List<dynamic>?;
@@ -382,7 +486,7 @@ class MockMusicCatalog {
     // 1. Complete Music Vault Playlist (ALL Songs)
     list.add(Playlist(
       id: 'all_songs_vault',
-      title: 'Complete Library (${allSongs.length} Tracks)',
+      title: 'Complete Library',
       creator: 'Muxiz Vault',
       description: 'Access all songs available in your music database.',
       coverUrl: allSongs.first.artworkUrl,

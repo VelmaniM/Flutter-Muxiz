@@ -139,7 +139,9 @@ class MuxizAudioHandler extends BaseAudioHandler with SeekHandler {
 
     _queueManager.setQueue(songs, initialIndex: initialIndex);
 
-    await _sessionManager.activate();
+    try {
+      await _sessionManager.activate();
+    } catch (_) {}
 
     final mediaItems = songs.map(AudioSourceManager.createMediaItem).toList();
     queue.add(mediaItems);
@@ -147,12 +149,14 @@ class MuxizAudioHandler extends BaseAudioHandler with SeekHandler {
     final safeIndex = (initialIndex >= 0 && initialIndex < songs.length) ? initialIndex : 0;
     mediaItem.add(mediaItems[safeIndex]);
 
-    await _playerService.loadPlaylist(
-      songs,
-      initialIndex: safeIndex,
-      initialPosition: initialPosition,
-      autoPlay: autoPlay,
-    );
+    try {
+      await _playerService.loadPlaylist(
+        songs,
+        initialIndex: safeIndex,
+        initialPosition: initialPosition,
+        autoPlay: autoPlay,
+      );
+    } catch (_) {}
   }
 
   void setSongQueue(List<Song> songs) {

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/actions/song_action_models.dart';
 import '../../../core/audio/audio_manager.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/glass_bottom_bar.dart';
 import '../../../shared/components/mini_player.dart';
 import '../../../shared/components/shimmer_box.dart';
@@ -165,14 +164,6 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '•  ${songs.length} tracks',
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -267,7 +258,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
             ),
 
           const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
+            child: SizedBox(height: 130),
           ),
         ],
       ),
@@ -278,7 +269,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
           GlassBottomBar(
             currentIndex: ref.watch(selectedTabProvider),
             onTabSelected: (index) {
-              ref.read(selectedTabProvider.notifier).state = index;
+              ref.read(selectedTabProvider.notifier).setTab(index);
               Navigator.popUntil(context, (route) => route.isFirst);
             },
           ),
@@ -288,9 +279,6 @@ class PlaylistDetailScreen extends ConsumerWidget {
   }
 
   void _showPlaylistMenu(BuildContext context, WidgetRef ref, Playlist playlist) {
-    final isLiked = playlist.id == 'liked_songs';
-    final isCustom = ref.read(customPlaylistsProvider).any((cp) => cp.id == playlist.id);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
@@ -339,11 +327,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Playlist • ${playlist.songs.length} songs',
+                          const Text(
+                            'Playlist',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
                           ),
                         ],
                       ),
@@ -352,95 +340,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 14),
                 const Divider(color: Colors.white12, height: 1),
-                const SizedBox(height: 6),
-
-                if (isCustom || !isLiked)
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 24),
-                    title: const Text(
-                      'Delete playlist',
-                      style: TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Delete from library and database',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _confirmDeletePlaylist(context, ref, playlist);
-                    },
-                  ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _confirmDeletePlaylist(BuildContext context, WidgetRef ref, Playlist playlist) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF222222),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Delete Playlist?',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Are you sure you want to delete "${playlist.title}"? This cannot be undone.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        ),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await ref.read(customPlaylistsProvider.notifier).deletePlaylist(playlist.id);
-                          if (context.mounted) {
-                            Navigator.pop(context); // Exit detail screen
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        ),
-                        child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

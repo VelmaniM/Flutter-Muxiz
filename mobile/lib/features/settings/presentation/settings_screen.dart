@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
+import '../../../core/data/mock_catalog.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../shared/components/user_avatar_button.dart';
 import '../../profile/presentation/profile_screen.dart';
@@ -128,50 +129,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const Divider(color: AppTheme.divider, height: 24),
 
-          // Storage Section
-          _buildSectionHeader('Storage & Cache'),
+          // Studio Server Connection Section
+          _buildSectionHeader('Studio Server Connection'),
           ListTile(
-            title: const Text('Clear Cache', style: TextStyle(color: Colors.white, fontSize: 15)),
-            subtitle: const Text('Free up storage without deleting downloaded songs.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5)),
-            trailing: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white30),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-              onPressed: () async {
-                await LocalStorageService.clearAllPlaybackAndCache();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cache & playback memory cleared successfully!'),
-                      backgroundColor: AppTheme.card,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Clear Cache', style: TextStyle(color: Colors.white, fontSize: 12)),
+            leading: const Icon(Icons.cloud_sync_rounded, color: AppTheme.primaryGreen, size: 22),
+            title: const Text('Server Address', style: TextStyle(color: Colors.white, fontSize: 15)),
+            subtitle: Text(
+              MockMusicCatalog.activeServerHost,
+              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
             ),
-          ),
-
-          const SizedBox(height: 12),
-          // Account / Session Section
-          _buildSectionHeader('Storage & Cache'),
-          ListTile(
-            leading: const Icon(Icons.cleaning_services_rounded, color: AppTheme.primaryGreen, size: 22),
-            title: const Text('Clear Playback Cache', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-            subtitle: const Text('Free up local storage without affecting saved playlists', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-            onTap: () async {
-              await LocalStorageService.clearAllPlaybackAndCache();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Playback cache cleared!'),
-                    backgroundColor: Color(0xFF1E1E1E),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
+            trailing: const Icon(Icons.edit_rounded, color: AppTheme.textSecondary, size: 20),
+            onTap: () => _showServerConfigDialog(),
           ),
 
           const SizedBox(height: 100),
@@ -233,6 +201,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             }).toList(),
           ),
+        );
+      },
+    );
+  }
+
+  void _showServerConfigDialog() {
+    final controller = TextEditingController(text: MockMusicCatalog.activeServerHost);
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF242424),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Studio Server IP / URL', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Enter the IP address of your Mac running Muxiz Studio (e.g. http://192.168.1.50:5001)',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'http://192.168.1.x:5001',
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E1E),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newHost = controller.text.trim().replaceAll(RegExp(r'/+$'), '');
+                if (newHost.isNotEmpty) {
+                  MockMusicCatalog.activeServerHost = newHost;
+                  await LocalStorageService.saveServerHost(newHost);
+                  MockMusicCatalog.initializeCatalog(forceRefresh: true);
+                  setState(() {});
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: const Text('Save & Connect', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
         );
       },
     );

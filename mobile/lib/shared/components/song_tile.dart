@@ -37,12 +37,9 @@ class SongTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerStateProvider);
-    final downloadMgr = ref.watch(downloadManagerProvider);
-
-    final isCurrentSong = playerState.currentSong?.id == song.id;
-    final isPlaying = isCurrentSong && playerState.isPlaying;
-    final isDownloaded = downloadMgr.isDownloaded(song.id) || song.isDownloaded;
+    final isCurrentSong = ref.watch(playerStateProvider.select((s) => s.currentSong?.id == song.id));
+    final isPlaying = isCurrentSong && ref.watch(playerStateProvider.select((s) => s.isPlaying));
+    final isDownloaded = ref.watch(downloadManagerProvider.select((m) => m.isDownloaded(song.id))) || song.isDownloaded;
 
     final effectiveConfig = config ??
         SongActionConfig(
@@ -52,9 +49,10 @@ class SongTile extends ConsumerWidget {
           queueIndex: queueIndex ?? index,
         );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    return RepaintBoundary(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
         onTap: onTap ??
             () {
               if (isCurrentSong) {
@@ -92,7 +90,7 @@ class SongTile extends ConsumerWidget {
                   alignment: Alignment.centerLeft,
                   child: isCurrentSong
                       ? Icon(
-                          isPlaying ? Icons.equalizer_rounded : Icons.play_arrow_rounded,
+                          isPlaying ? Icons.volume_up_rounded : Icons.volume_down_rounded,
                           color: AppTheme.primaryGreen,
                           size: 18,
                         )
@@ -125,9 +123,9 @@ class SongTile extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: isCurrentSong ? AppTheme.primaryGreen : AppTheme.textPrimary,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
+                        color: isCurrentSong ? AppTheme.primaryGreen : Colors.white,
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -143,8 +141,9 @@ class SongTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12.5,
+                              color: Colors.white,
+                              fontSize: 12.0,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -154,11 +153,21 @@ class SongTile extends ConsumerWidget {
                 ),
               ),
 
+              if (showArtwork && isCurrentSong)
+                Padding(
+                  padding: const EdgeInsets.only(right: 2.0),
+                  child: Icon(
+                    isPlaying ? Icons.volume_up_rounded : Icons.volume_down_rounded,
+                    color: AppTheme.primaryGreen,
+                    size: 18,
+                  ),
+                ),
+
               // Three Dots Options
               IconButton(
                 icon: const Icon(
                   Icons.more_vert_rounded,
-                  color: AppTheme.textSecondary,
+                  color: Colors.white,
                   size: 20,
                 ),
                 onPressed: () => showSongActionModal(
@@ -172,6 +181,7 @@ class SongTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

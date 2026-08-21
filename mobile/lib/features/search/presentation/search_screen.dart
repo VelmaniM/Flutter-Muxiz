@@ -14,6 +14,7 @@ import '../../../shared/models/category.dart';
 import '../../../shared/models/song.dart';
 import '../../../shared/models/artist.dart';
 import '../../../shared/models/playlist.dart';
+import '../../../shared/models/album.dart';
 import '../../details/presentation/artist_detail_screen.dart';
 import '../../details/presentation/playlist_detail_screen.dart';
 
@@ -30,6 +31,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   String _query = '';
   bool _isSearching = false;
   List<Song> _matchedSongs = [];
+  List<Playlist> _matchedPlaylists = [];
+  List<Album> _matchedAlbums = [];
   List<Artist> _matchedArtists = [];
   List<String> _recentSearches = [];
 
@@ -65,6 +68,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         _query = '';
         _isSearching = false;
         _matchedSongs = [];
+        _matchedPlaylists = [];
+        _matchedAlbums = [];
         _matchedArtists = [];
       });
       return;
@@ -75,8 +80,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _isSearching = true;
     });
 
-    // 250ms Debounce to prevent overwhelming network or UI
-    _debounceTimer = Timer(const Duration(milliseconds: 250), () {
+    // 150ms Debounce for immediate snappy feedback
+    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
       _performSearch(q);
     });
   }
@@ -88,34 +93,134 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _recordSearch(q.trim());
     }
 
-    // Instant local indexed search first for 0ms responsiveness
     final queryLower = q.toLowerCase();
-    final localSongs = MockMusicCatalog.allSongs
-        .where((s) =>
-            s.title.toLowerCase().contains(queryLower) ||
-            s.artist.toLowerCase().contains(queryLower) ||
-            s.album.toLowerCase().contains(queryLower) ||
-            (s.movieName?.toLowerCase().contains(queryLower) ?? false))
-        .toList();
+    final tokens = queryLower.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
 
-    final localArtists = MockMusicCatalog.popularArtists
-        .where((a) => a.name.toLowerCase().contains(queryLower))
-        .toList();
+    // 1. MATCH SONGS (Every letter / token / substring match in title, artist, album, movie)
+    final allSongs = MockMusicCatalog.allSongs;
+    final matchedSongs = allSongs.where((s) {
+      final title = s.title.toLowerCase();
+      final artist = s.artist.toLowerCase();
+      final album = s.album.toLowerCase();
+      final movie = (s.movieName ?? '').toLowerCase();
+
+      if (title.contains(queryLower) ||
+          artist.contains(queryLower) ||
+          album.contains(queryLower) ||
+          movie.contains(queryLower)) {
+        return true;
+      }
+
+      if (tokens.isNotEmpty &&
+          tokens.every((t) =>
+              title.contains(t) ||
+              artist.contains(t) ||
+              album.contains(t) ||
+              movie.contains(t))) {
+        return true;
+      }
+      return false;
+    }).toList();
+
+    // Sort songs by prefix match relevance
+    matchedSongs.sort((a, b) {
+      final aTitle = a.title.toLowerCase();
+      final bTitle = b.title.toLowerCase();
+      final aStarts = aTitle.startsWith(queryLower);
+      final bStarts = bTitle.startsWith(queryLower);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return 0;
+    });
+
+    // 2. MATCH PLAYLISTS
+    final allPlaylists = <Playlist>[
+      ...MockMusicCatalog.featuredPlaylists,
+      ...LocalStorageService.getCustomPlaylists(),
+    ];
+    final seenPlaylistTitles = <String>{};
+    final uniquePlaylists = allPlaylists.where((p) => seenPlaylistTitles.add(p.title.toLowerCase())).toList();
+
+    final matchedPlaylists = uniquePlaylists.where((p) {
+      final title = p.title.toLowerCase();
+      final desc = p.description.toLowerCase();
+      if (title.contains(queryLower) || desc.contains(queryLower)) return true;
+      return p.songs.any((s) =>
+          s.title.toLowerCase().contains(queryLower) ||
+          s.artist.toLowerCase().contains(queryLower));
+    }).toList();
+
+    // 3. MATCH ALBUMS (Top Albums + Dynamically Grouped Catalog Movie Albums)
+    final allAlbums = List<Album>.from(MockMusicCatalog.topAlbums);
+    final seenAlbumTitles = allAlbums.map((a) => a.title.toLowerCase()).toSet();
+
+    final movieGroups = <String, List<Song>>{};
+    for (final s in allSongs) {
+      final key = (s.movieName != null && s.movieName!.isNotEmpty) ? s.movieName! : s.album;
+      if (key.isNotEmpty) {
+        movieGroups.putIfAbsent(key, () => []).add(s);
+      }
+    }
+
+    for (final entry in movieGroups.entries) {
+      if (!seenAlbumTitles.contains(entry.key.toLowerCase())) {
+        allAlbums.add(
+          Album(
+            id: 'album_${entry.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
+            title: entry.key,
+            artist: entry.value.first.artist,
+            artworkUrl: entry.value.first.artworkUrl,
+            songs: entry.value,
+          ),
+        );
+        seenAlbumTitles.add(entry.key.toLowerCase());
+      }
+    }
+
+    final matchedAlbums = allAlbums.where((a) {
+      final title = a.title.toLowerCase();
+      final artist = a.artist.toLowerCase();
+      return title.contains(queryLower) || artist.contains(queryLower);
+    }).toList();
+
+    // 4. MATCH ARTISTS (Popular Artists + Catalog Artists)
+    final allArtists = List<Artist>.from(MockMusicCatalog.popularArtists);
+    final seenArtistNames = allArtists.map((a) => a.name.toLowerCase()).toSet();
+
+    for (final s in allSongs) {
+      final artistName = MockMusicCatalog.normalizeSingleArtist(s.artist);
+      if (artistName.isNotEmpty && !seenArtistNames.contains(artistName.toLowerCase())) {
+        allArtists.add(
+          Artist(
+            id: 'artist_${artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
+            name: artistName,
+            imageUrl: s.artworkUrl,
+          ),
+        );
+        seenArtistNames.add(artistName.toLowerCase());
+      }
+    }
+
+    final matchedArtists = allArtists.where((a) {
+      return a.name.toLowerCase().contains(queryLower);
+    }).toList();
 
     if (mounted) {
       setState(() {
-        _matchedSongs = localSongs;
-        _matchedArtists = localArtists;
+        _matchedSongs = matchedSongs;
+        _matchedPlaylists = matchedPlaylists;
+        _matchedAlbums = matchedAlbums;
+        _matchedArtists = matchedArtists;
         _isSearching = false;
       });
     }
 
-    // Secondary asynchronous backend search sync
+    // Secondary asynchronous backend search sync for remote songs
     try {
       final remoteSongs = await ref.read(apiClientProvider).searchSongs(q);
       if (mounted && remoteSongs.isNotEmpty && _query == q) {
-        final existingIds = localSongs.map((s) => s.id).toSet();
-        final combined = List<Song>.from(localSongs);
+        final existingIds = matchedSongs.map((s) => s.id).toSet();
+        final combined = List<Song>.from(matchedSongs);
         for (final r in remoteSongs) {
           if (!existingIds.contains(r.id)) {
             combined.add(r);
@@ -365,96 +470,272 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
                     if (_query.isNotEmpty) ...[
-                    // Top Artists Matches
-                    if (_matchedArtists.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
-                          child: Text(
-                            'Artists',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 120,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.only(left: 16.0),
-                            itemCount: _matchedArtists.length,
-                            itemBuilder: (ctx, i) {
-                              final artist = _matchedArtists[i];
-                              return ArtistAvatar(
-                                name: artist.name,
-                                imageUrl: artist.imageUrl,
-                                radius: 36,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (ctx) => ArtistDetailScreen(artist: artist),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Songs Matches
-                    if (_matchedSongs.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
-                          child: Text(
-                            'Songs',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final song = _matchedSongs[index];
-                            return SongTile(
-                              song: song,
-                              queueContext: _matchedSongs,
-                            );
-                          },
-                          childCount: _matchedSongs.length,
-                        ),
-                      ),
-                    ],
-
-                    // Empty State if no match
-                    if (_matchedArtists.isEmpty && _matchedSongs.isEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 80.0),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.search_off_rounded, size: 54, color: AppTheme.textSecondary),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Couldn\'t find "$_query"',
-                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Try searching for a different song, artist or album.',
-                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                                ),
-                              ],
+                      // 1. SONGS MATCHES (Rank 1)
+                      if (_matchedSongs.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 8.0),
+                            child: Text(
+                              'Songs (${_matchedSongs.length})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ] else ...[
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final song = _matchedSongs[index];
+                              return SongTile(
+                                song: song,
+                                index: index + 1,
+                                queueContext: _matchedSongs,
+                                queueIndex: index,
+                              );
+                            },
+                            childCount: _matchedSongs.length,
+                          ),
+                        ),
+                      ],
+
+                      // 2. PLAYLISTS MATCHES (Rank 2)
+                      if (_matchedPlaylists.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
+                            child: Text(
+                              'Playlists (${_matchedPlaylists.length})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 184,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: _matchedPlaylists.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (ctx, i) {
+                                final playlist = _matchedPlaylists[i];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (ctx) => PlaylistDetailScreen(playlist: playlist),
+                                      ),
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    width: 128,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        MuxizImage(
+                                          imageUrl: playlist.coverUrl,
+                                          width: 128,
+                                          height: 128,
+                                          borderRadius: 8,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          playlist.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Playlist • ${playlist.songs.length} songs',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: AppTheme.textMuted,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // 3. ALBUMS MATCHES (Rank 3)
+                      if (_matchedAlbums.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
+                            child: Text(
+                              'Albums (${_matchedAlbums.length})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 184,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: _matchedAlbums.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (ctx, i) {
+                                final album = _matchedAlbums[i];
+                                return GestureDetector(
+                                  onTap: () {
+                                    final pl = Playlist(
+                                      id: album.id,
+                                      title: album.title,
+                                      coverUrl: album.artworkUrl,
+                                      songs: album.songs,
+                                      description: 'Album • ${album.artist} • ${album.releaseYear}',
+                                    );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (ctx) => PlaylistDetailScreen(playlist: pl),
+                                      ),
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    width: 128,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        MuxizImage(
+                                          imageUrl: album.artworkUrl,
+                                          width: 128,
+                                          height: 128,
+                                          borderRadius: 8,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          album.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Album • ${album.artist}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: AppTheme.textMuted,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // 4. ARTISTS MATCHES (Rank 4)
+                      if (_matchedArtists.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16.0, top: 16.0, bottom: 4.0),
+                            child: Text(
+                              'Artists (${_matchedArtists.length})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 124,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: _matchedArtists.length,
+                              itemBuilder: (ctx, i) {
+                                final artist = _matchedArtists[i];
+                                return ArtistAvatar(
+                                  name: artist.name,
+                                  imageUrl: artist.imageUrl,
+                                  radius: 36,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (ctx) => ArtistDetailScreen(artist: artist),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Empty State if no match in any category
+                      if (_matchedSongs.isEmpty &&
+                          _matchedPlaylists.isEmpty &&
+                          _matchedAlbums.isEmpty &&
+                          _matchedArtists.isEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 80.0),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.search_off_rounded, size: 54, color: AppTheme.textSecondary),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Couldn\'t find "$_query"',
+                                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Try searching for a different song, playlist, album or artist.',
+                                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ] else ...[
                     // Recent Searches Section
                     if (_recentSearches.isNotEmpty) ...[
                       SliverToBoxAdapter(
@@ -530,13 +811,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     // Browse All Categories
                     const SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 12.0),
+                        padding: EdgeInsets.only(left: 16.0, top: 12.0, bottom: 6.0),
                         child: Text(
                           'Browse all',
                           style: TextStyle(
-                            color: AppTheme.textPrimary,
+                            color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
@@ -587,7 +869,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           final playlist = Playlist(
             id: 'category_${category.id}',
             title: category.title,
-            description: 'The best of ${category.title} • ${filteredSongs.length} Songs',
+            description: 'The best of ${category.title}',
             coverUrl: category.imageUrl,
             creator: 'Spotify',
             songs: filteredSongs.isNotEmpty ? filteredSongs : MockMusicCatalog.allSongs,

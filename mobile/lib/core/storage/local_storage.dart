@@ -5,8 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/constants.dart';
 import '../../shared/models/song.dart';
 import '../../shared/models/playlist.dart';
+import '../../shared/models/listening_activity.dart';
+import '../../shared/models/continue_listening_item.dart';
 import '../data/mock_catalog.dart';
 import '../network/api_client.dart';
+import '../services/listening_tracker_service.dart';
 
 final favoritesProvider = StateNotifierProvider<FavoritesNotifier, Set<String>>((ref) {
   return FavoritesNotifier(ref);
@@ -74,6 +77,13 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
     final bool willBeFav = await LocalStorageService.toggleFavoriteSong(song);
     state = LocalStorageService.getFavoriteSongIds().toSet();
     _ref.read(likedSongsProvider.notifier).refresh();
+
+    // Trigger fast local signal for Home recommendation engine
+    ListeningTrackerService.instance.recordExplicitInteraction(
+      song.id,
+      QuickAccessContentType.song,
+      boost: willBeFav ? 2 : -1,
+    );
 
     // Call API in background
     try {
@@ -236,22 +246,7 @@ class LocalStorageService {
   static SharedPreferences? _prefs;
 
   static Future<void> init() async {
-    _prefs ??= await SharedPreferences.getInstance();
-    // Complete wipe of all cached song catalogs, playback state, queue, recently played, favorites
-    await _prefs?.remove('muxiz_catalog_songs');
-    await _prefs?.remove('muxiz_persistent_catalog_songs');
-    await _prefs?.remove('muxiz_liked_songs');
-    await _prefs?.remove('muxiz_custom_playlists');
-    await _prefs?.remove('muxiz_recently_played');
-    await _prefs?.remove('muxiz_downloaded_songs');
-    await _prefs?.remove('last_played_song');
-    await _prefs?.remove('last_playback_queue');
-    await _prefs?.remove('last_playback_position_ms');
-    await _prefs?.remove('last_playback_queue_index');
-    await _prefs?.remove(AppConstants.keyFavorites);
-    await _prefs?.remove(AppConstants.keyRecentlyPlayed);
-    await _prefs?.remove(AppConstants.keyCustomPlaylists);
-    await _prefs?.remove(AppConstants.keyDownloads);
+    _prefs = await SharedPreferences.getInstance();
   }
 
   static Future<void> clearAllData() async {
@@ -714,9 +709,9 @@ class LocalStorageService {
     } catch (_) {}
   }
 
-  // --- Library View Mode & Columns (List, 3-Columns, 4-Columns) ---
+  // --- Library View Mode & Columns (List view by default) ---
   static bool getLibraryIsGridView() {
-    return _prefs?.getBool('library_view_is_grid') ?? true;
+    return _prefs?.getBool('library_view_is_grid') ?? false;
   }
 
   static Future<void> setLibraryIsGridView(bool isGrid) async {
@@ -758,17 +753,40 @@ class LocalStorageService {
 
       Song? song;
       if (songRaw != null && songRaw.isNotEmpty) {
-        final parsed = Song.fromJson(jsonDecode(songRaw));
-        song = MockMusicCatalog.allSongs.where((s) => s.id == parsed.id).firstOrNull ?? parsed;
+        try {
+          final parsed = Song.fromJson(jsonDecode(songRaw));
+          song = MockMusicCatalog.allSongs.where((s) => s.id == parsed.id).firstOrNull ?? parsed;
+        } catch (_) {}
       }
 
       List<Song> queue = [];
       if (queueRaw != null && queueRaw.isNotEmpty) {
-        final List<dynamic> qList = jsonDecode(queueRaw);
-        for (final item in qList) {
-          final s = Song.fromJson(item as Map<String, dynamic>);
-          final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
-          queue.add(live ?? s);
+        try {
+          final List<dynamic> qList = jsonDecode(queueRaw);
+          for (final item in qList) {
+            final s = Song.fromJson(item as Map<String, dynamic>);
+            final live = MockMusicCatalog.allSongs.where((m) => m.id == s.id).firstOrNull;
+            queue.add(live ?? s);
+          }
+        } catch (_) {}
+      }
+
+      // Fallback 1: Recently played list
+      if (song == null) {
+        final recents = getRecentlyPlayed();
+        if (recents.isNotEmpty) {
+          song = recents.first;
+          if (queue.isEmpty) {
+            queue = recents;
+          }
+        }
+      }
+
+      // Fallback 2: First song from available catalog so MiniPlayer is never lost
+      if (song == null && MockMusicCatalog.allSongs.isNotEmpty) {
+        song = MockMusicCatalog.allSongs.first;
+        if (queue.isEmpty) {
+          queue = MockMusicCatalog.allSongs;
         }
       }
 
@@ -776,13 +794,17 @@ class LocalStorageService {
         song: song,
         position: Duration(milliseconds: posMs),
         queue: queue,
-        queueIndex: queueIndex,
+        queueIndex: (queueIndex >= 0 && queueIndex < queue.length) ? queueIndex : 0,
       );
     } catch (_) {
+      final recents = getRecentlyPlayed();
+      final fallbackSong = recents.isNotEmpty
+          ? recents.first
+          : (MockMusicCatalog.allSongs.isNotEmpty ? MockMusicCatalog.allSongs.first : null);
       return (
-        song: null,
+        song: fallbackSong,
         position: Duration.zero,
-        queue: <Song>[],
+        queue: recents.isNotEmpty ? recents : MockMusicCatalog.allSongs,
         queueIndex: 0,
       );
     }
@@ -933,6 +955,133 @@ class LocalStorageService {
     await _prefs?.setString(keyMusicSortOption, sortOptionName);
   }
 
+  static const String keyCustomServerHost = 'custom_server_host';
+
+  static String getServerHost() {
+    return _prefs?.getString(keyCustomServerHost) ?? '';
+  }
+
+  static Future<void> saveServerHost(String host) async {
+    await _prefs?.setString(keyCustomServerHost, host);
+  }
+
+  // --- Active Tab State Persistence ---
+  static const String keyLastActiveTab = 'muxiz_last_active_tab';
+
+  static int getLastActiveTab() {
+    return _prefs?.getInt(keyLastActiveTab) ?? 0;
+  }
+
+  static Future<void> saveLastActiveTab(int tabIndex) async {
+    await _prefs?.setInt(keyLastActiveTab, tabIndex);
+  }
+
+  // --- Spotify-Like User-Scoped Listening Activity & Quick Access Persistence ---
+  static String get _scopedListeningActivityKey {
+    final uid = getUserId();
+    return 'muxiz_listening_history_${uid.isNotEmpty ? uid : "default"}';
+  }
+
+  static String get _scopedQuickAccessGridKey {
+    final uid = getUserId();
+    return 'muxiz_quick_access_grid_${uid.isNotEmpty ? uid : "default"}';
+  }
+
+  static ListeningActivityRecord? getListeningActivity(String contentId) {
+    try {
+      final raw = _prefs?.getString('${_scopedListeningActivityKey}_$contentId');
+      if (raw != null && raw.isNotEmpty) {
+        return ListeningActivityRecord.deserialize(raw);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<void> saveListeningActivity(ListeningActivityRecord record) async {
+    try {
+      // 1. Save individual record
+      await _prefs?.setString('${_scopedListeningActivityKey}_${record.contentId}', record.serialize());
+
+      // 2. Track in user's index of activity IDs
+      final indexKey = '${_scopedListeningActivityKey}_index';
+      final currentIds = _prefs?.getStringList(indexKey) ?? [];
+      if (!currentIds.contains(record.contentId)) {
+        currentIds.add(record.contentId);
+        await _prefs?.setStringList(indexKey, currentIds);
+      }
+    } catch (_) {}
+  }
+
+  static List<ListeningActivityRecord> getAllListeningActivities() {
+    final indexKey = '${_scopedListeningActivityKey}_index';
+    final currentIds = _prefs?.getStringList(indexKey) ?? [];
+    final List<ListeningActivityRecord> result = [];
+
+    for (final id in currentIds) {
+      final record = getListeningActivity(id);
+      if (record != null) {
+        result.add(record);
+      }
+    }
+    return result;
+  }
+
+  static List<Map<String, dynamic>> getPersistedQuickAccessCards() {
+    try {
+      final raw = _prefs?.getString(_scopedQuickAccessGridKey);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<void> savePersistedQuickAccessCards(List<Map<String, dynamic>> cards) async {
+    try {
+      await _prefs?.setString(_scopedQuickAccessGridKey, jsonEncode(cards));
+    } catch (_) {}
+  }
+
+  static String get _scopedContinueListeningKey => 'continue_listening_${getUserId()}';
+
+  static List<ContinueListeningItem> getContinueListeningList() {
+    try {
+      final raw = _prefs?.getString(_scopedContinueListeningKey);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list.map((e) => ContinueListeningItem.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<void> saveContinueListeningItem(ContinueListeningItem item) async {
+    try {
+      final list = getContinueListeningList();
+      list.removeWhere((i) => i.song.id == item.song.id);
+      list.insert(0, item);
+      // Keep up to 10 most recent continue listening tracks
+      final trimmed = list.take(10).toList();
+      await _prefs?.setString(_scopedContinueListeningKey, jsonEncode(trimmed.map((e) => e.toJson()).toList()));
+    } catch (_) {}
+  }
+
+  static Future<void> removeContinueListeningItem(String songId) async {
+    try {
+      final list = getContinueListeningList();
+      final initialLen = list.length;
+      list.removeWhere((i) => i.song.id == songId);
+      if (list.length != initialLen) {
+        await _prefs?.setString(_scopedContinueListeningKey, jsonEncode(list.map((e) => e.toJson()).toList()));
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> clearContinueListening() async {
+    await _prefs?.remove(_scopedContinueListeningKey);
+  }
+
   /// Completely clears playback cache, persistent memory, and temporary states
   static Future<void> clearAllPlaybackAndCache() async {
     await _prefs?.remove('last_played_song');
@@ -941,5 +1090,7 @@ class LocalStorageService {
     await _prefs?.remove('last_playback_queue_index');
     await _prefs?.remove(AppConstants.keyRecentlyPlayed);
     await _prefs?.remove(keyPersistentCatalog);
+    await _prefs?.remove(_scopedQuickAccessGridKey);
+    await _prefs?.remove(_scopedContinueListeningKey);
   }
 }

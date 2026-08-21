@@ -20,6 +20,8 @@ import '../../player/presentation/player_screen.dart';
 import '../../main_layout.dart';
 
 import '../../../core/storage/local_storage.dart';
+import '../../../core/services/listening_tracker_service.dart';
+import '../../../shared/models/listening_activity.dart';
 
 enum SongSortOption {
   recentlyAdded('Recently Added', Icons.schedule_rounded),
@@ -44,6 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedFilterIndex = 0;
   final List<String> _filterPills = ['All', 'Music'];
   late SongSortOption _currentSort;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -53,6 +56,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       (o) => o.name == saved,
       orElse: () => SongSortOption.recentlyAdded,
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   List<Song> _getSortedSongs(List<Song> source) {
@@ -78,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showSortBottomSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: const Color(0xFF16161C),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -151,15 +160,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(musicCatalogProvider);
-    final rawSongs = MockMusicCatalog.allSongs;
-    final songs = _getSortedSongs(rawSongs);
-    final feedAsync = ref.watch(homeFeedProvider);
-
     final isMusicOnly = _selectedFilterIndex == 1;
-    final feed = feedAsync.valueOrNull ??
-        ref.read(recommendationServiceProvider).generateLocalAlgorithmicFeed(
-              currentSong: ref.read(playerStateProvider).currentSong,
-            );
+    final songs = isMusicOnly ? _getSortedSongs(MockMusicCatalog.allSongs) : const <Song>[];
+    final feedAsync = ref.watch(homeFeedProvider);
+    final currentPlayingSongId = ref.watch(playerStateProvider.select((s) => s.currentSong?.id));
+    final isAudioPlaying = ref.watch(playerStateProvider.select((s) => s.isPlaying));
+
+    final feed = feedAsync.valueOrNull ?? ref.read(homeFeedProvider.notifier).cachedFeed;
+
+    // Listen for bottom bar Home icon re-tap to reset filter to All and scroll to top
+    ref.listen(homeResetTriggerProvider, (prev, next) {
+      if (next != prev) {
+        setState(() {
+          _selectedFilterIndex = 0; // Switch to "All"
+        });
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -167,23 +190,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         bottom: false,
         child: Column(
           children: [
-            // FIXED Top Header Bar (Spotify Style)
+            // FIXED Top Header Bar: Clean, Minimal, Comfortable
             Container(
               color: AppTheme.background,
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 4.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 6.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1 (TOP): Profile Avatar + Filter Pills + Action Icons (Bell, History, Settings)
+                  // Row 1 (TOP): Profile Avatar + Filter Pills + Action Icons
                   Row(
                     children: [
                       const UserAvatarButton(size: 36),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
 
                       // Filter Pills (All, Music)
                       Expanded(
                         child: SizedBox(
-                          height: 30,
+                          height: 32,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: _filterPills.length,
@@ -201,30 +224,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
 
-                      // Action Icons Row (Compact Gap)
+                      // Action Icons Row with comfortable tap targets
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
-                            padding: const EdgeInsets.all(2),
-                            constraints: const BoxConstraints(),
+                            icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 21),
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                             onPressed: () {},
                           ),
-                          const SizedBox(width: 2),
                           IconButton(
-                            icon: const Icon(Icons.history_rounded, color: Colors.white, size: 20),
-                            padding: const EdgeInsets.all(2),
-                            constraints: const BoxConstraints(),
+                            icon: const Icon(Icons.history_rounded, color: Colors.white, size: 21),
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                             onPressed: () {},
                           ),
-                          const SizedBox(width: 2),
                           IconButton(
-                            icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
-                            padding: const EdgeInsets.all(2),
-                            constraints: const BoxConstraints(),
+                            icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 21),
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -236,16 +257,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  // Row 2 (BELOW): Dynamic Greeting or Music Header with Sort Selector
-                  if (isMusicOnly)
+                  // Row 2: Sort Selector (Only when Music Filter is active)
+                  if (isMusicOnly) ...[
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Music (${songs.length})',
-                          style: const TextStyle(
+                        const Text(
+                          'Music',
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -256,239 +276,186 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onTap: _showSortBottomSheet,
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF242424),
+                              color: const Color(0xFF1A1A22),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: Colors.white12),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(_currentSort.icon, size: 13, color: AppTheme.primaryGreen),
-                                const SizedBox(width: 5),
+                                Icon(_currentSort.icon, size: 14, color: AppTheme.primaryGreen),
+                                const SizedBox(width: 6),
                                 Text(
                                   _currentSort.label,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11.5,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 4),
                                 const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Colors.white70),
                               ],
                             ),
                           ),
                         ),
                       ],
-                    )
-                  else
-                    Text(
-                      feed.greeting,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
                     ),
+                  ],
                 ],
               ),
             ),
 
-            // Content Area: Live Feed & Full Design UI (Auto-updates strictly on new song uploads)
+            // Content Area: Live Feed & Full Design UI (Zero Continue Listening Section)
             Expanded(
               child: CustomScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                    // VIEW 1: MUSIC FILTER ACTIVE -> Show full library of sorted songs
-                    if (isMusicOnly) ...[
-                      SliverPadding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 140.0),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final song = songs[index];
-                              return SongTile(
-                                song: song,
-                                index: index + 1,
-                                queueContext: songs,
-                                queueIndex: index,
-                              );
-                            },
-                            childCount: songs.length,
+                  // VIEW 1: MUSIC FILTER ACTIVE -> Show full library of sorted songs
+                  if (isMusicOnly) ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 140.0),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final song = songs[index];
+                            return SongTile(
+                              song: song,
+                              index: index + 1,
+                              queueContext: songs,
+                              queueIndex: index,
+                            );
+                          },
+                          childCount: songs.length,
+                        ),
+                      ),
+                    ),
+                  ]
+                  // VIEW 2: ALL TAB ACTIVE -> 100% Dynamic Spotify & Apple Music Inspired Feed
+                  else ...[
+                    // Empty state on brand new install with 0 songs
+                    if (MockMusicCatalog.allSongs.isEmpty) ...[
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppTheme.primaryGreen.withValues(alpha: 0.25),
+                                        const Color(0xFF1DB954).withValues(alpha: 0.08),
+                                      ],
+                                    ),
+                                    border: Border.all(color: Colors.white12),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.music_note_rounded, color: AppTheme.primaryGreen, size: 32),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                const Text(
+                                  'No songs in library yet',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Upload tracks from Muxiz Studio to start listening',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                                ),
+                                const SizedBox(height: 18),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1A1A22),
+                                    foregroundColor: AppTheme.primaryGreen,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    side: const BorderSide(color: Colors.white12),
+                                  ),
+                                  onPressed: () => MockMusicCatalog.initializeCatalog(forceRefresh: true),
+                                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                                  label: const Text('Sync with Studio'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ]
-                    // VIEW 2: ALL TAB ACTIVE -> 100% Dynamic Spotify Algorithmic Feed
-                    else ...[
-                      // Dynamic Quick-play 6 Cards (Responsive to recent plays, albums, playlists)
+                    ] else ...[
+                      // Dynamic Greeting Section with Side Accent Bar (Below top bar)
+                      SliverPadding(
+                        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 14.0, bottom: 4.0),
+                        sliver: SliverToBoxAdapter(
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 3.5,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryGreen,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Builder(
+                                builder: (context) {
+                                  final rawName = LocalStorageService.getUserName();
+                                  final displayName = rawName.isNotEmpty ? rawName.trim().split(' ').first : '';
+                                  final fullGreeting = displayName.isNotEmpty ? '${feed.greeting}, $displayName' : feed.greeting;
+                                  return Text(
+                                    fullGreeting,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Dynamic Quick-play 6 Cards (Refined, Aesthetic 2-Column Grid)
                       if (feed.quickPlayCards.isNotEmpty) ...[
                         SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                           sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 380,
-                              mainAxisExtent: 56,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisExtent: 48,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                             ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
                                 final card = feed.quickPlayCards[index];
-                                return _buildQuickPlayCard(card, index);
+                                return _buildQuickPlayCard(card, index, currentPlayingSongId, isAudioPlaying);
                               },
                               childCount: feed.quickPlayCards.length > 6 ? 6 : feed.quickPlayCards.length,
                             ),
                           ),
                         ),
-                      ] else if (feed.sections.isEmpty && rawSongs.isNotEmpty) ...[
-                        // Clean minimalist CENTERED prompt for new users (middle of screen)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 32.0),
-                              child: InkWell(
-                                onTap: () {
-                                  ref.read(selectedTabProvider.notifier).state = 1;
-                                },
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF181818),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white10),
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 64,
-                                        height: 64,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              AppTheme.primaryGreen.withValues(alpha: 0.25),
-                                              const Color(0xFF1DB954).withValues(alpha: 0.08),
-                                            ],
-                                          ),
-                                          border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
-                                        ),
-                                        child: const Center(
-                                          child: Icon(Icons.music_note_rounded, color: AppTheme.primaryGreen, size: 32),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      const Text(
-                                        'Search your favorite song and listen',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: AppTheme.textPrimary,
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: -0.3,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Tap here to explore songs and personalize your home feed',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryGreen,
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.search_rounded, color: Colors.black, size: 16),
-                                            SizedBox(width: 6),
-                                            Text(
-                                              'Explore Music',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
 
-                      // Empty / Syncing State if Catalog is Loading
-                      if (rawSongs.isEmpty) ...[
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 32,
-                                    height: 32,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3,
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    'Connecting to Muxiz Music Vault...',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Loading your songs, albums, and playlists from Studio',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF222222),
-                                      foregroundColor: AppTheme.primaryGreen,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                      side: const BorderSide(color: Colors.white12),
-                                    ),
-                                    onPressed: () => MockMusicCatalog.initializeCatalog(forceRefresh: true),
-                                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                                    label: const Text('Refresh Catalog'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      // Dynamically Render Algorithmic Shelves (Spotify & Apple Music Layout)
+                      // Dynamically Render Algorithmic Shelves (Zero Continue Listening Section)
                       for (final section in feed.sections) ...[
                         if (section.type == HomeSectionType.songs && (section.songs?.isNotEmpty ?? false)) ...[
                           SliverToBoxAdapter(
-                            child: _buildSongSection(section),
+                            child: _buildSongSection(section, currentPlayingSongId),
                           ),
                         ] else if (section.type == HomeSectionType.playlists && (section.playlists?.isNotEmpty ?? false)) ...[
                           SliverToBoxAdapter(
@@ -510,8 +477,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 205,
+                              height: 180,
                               child: ListView.builder(
+                                physics: const BouncingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.only(left: 16.0),
                                 itemCount: section.playlists!.length,
@@ -522,6 +490,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     subtitle: p.description,
                                     imageUrl: p.coverUrl,
                                     onTap: () {
+                                      ListeningTrackerService.instance.recordFastLocalOpen(
+                                        'playlist_${p.id}',
+                                        p.title,
+                                        QuickAccessContentType.playlist,
+                                        p.coverUrl,
+                                        subtitle: p.description,
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -554,8 +529,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 205,
+                              height: 180,
                               child: ListView.builder(
+                                physics: const BouncingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.only(left: 16.0),
                                 itemCount: section.albums!.length > 10 ? 10 : section.albums!.length,
@@ -574,6 +550,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     subtitle: 'Album • ${alb.artist}',
                                     imageUrl: alb.artworkUrl,
                                     onTap: () {
+                                      ListeningTrackerService.instance.recordFastLocalOpen(
+                                        alb.id,
+                                        alb.title,
+                                        QuickAccessContentType.album,
+                                        alb.artworkUrl,
+                                        subtitle: 'Album • ${alb.artist}',
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -606,8 +589,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 145,
+                              height: 155,
                               child: ListView.builder(
+                                physics: const BouncingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.only(left: 16.0),
                                 itemCount: section.artists!.length > 10 ? 10 : section.artists!.length,
@@ -616,8 +600,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   return ArtistAvatar(
                                     name: a.name,
                                     imageUrl: a.imageUrl,
-                                    radius: 44,
+                                    radius: 46,
                                     onTap: () {
+                                      ListeningTrackerService.instance.recordFastLocalOpen(
+                                        'artist_${a.id}',
+                                        a.name,
+                                        QuickAccessContentType.artist,
+                                        a.imageUrl,
+                                        subtitle: 'Artist',
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -639,15 +630,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
-  Widget _buildSongSection(HomeSection section) {
+  Widget _buildSongSection(HomeSection section, String? currentPlayingSongId) {
     final songList = section.songs ?? [];
     if (songList.isEmpty) return const SizedBox.shrink();
 
@@ -670,15 +662,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         SizedBox(
-          height: 205,
+          height: 180,
           child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(left: 16.0),
             itemCount: songList.length,
             itemBuilder: (ctx, i) {
               final song = songList[i];
-              final playerState = ref.watch(playerStateProvider);
-              final isCurrent = playerState.currentSong?.id == song.id;
+              final isCurrent = currentPlayingSongId == song.id;
 
               return AlbumCard(
                 title: song.title,
@@ -712,7 +704,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSectionHeader(String title, {VoidCallback? onSeeAll}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 22.0, bottom: 12.0),
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -720,8 +712,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
               letterSpacing: -0.4,
             ),
           ),
@@ -729,13 +721,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             GestureDetector(
               onTap: onSeeAll,
               child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4.0),
+                padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
                 child: Text(
                   'See all',
                   style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -745,15 +737,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildQuickPlayCard(QuickPlayCardItem item, int index) {
-    final playerState = ref.watch(playerStateProvider);
-    final isCurrent = item.song != null && playerState.currentSong?.id == item.song!.id;
+  Widget _buildQuickPlayCard(QuickPlayCardItem item, int index, String? currentPlayingSongId, bool isAudioPlaying) {
+    final isCurrent = item.song != null && currentPlayingSongId == item.song!.id;
 
-    return Material(
-      color: const Color(0xFF282828),
-      borderRadius: BorderRadius.circular(4),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
+    return RepaintBoundary(
+      key: ValueKey('q_card_${item.id}_$index'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF16161C),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.06),
+            width: 0.8,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+        borderRadius: BorderRadius.circular(8),
         onTap: () {
           if (item.song != null) {
             if (isCurrent) {
@@ -766,11 +766,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 builder: (ctx) => const PlayerScreen(),
               );
             } else {
-              ref.read(playerStateProvider.notifier).playSong(
-                    item.song!,
-                  );
+              ref.read(playerStateProvider.notifier).playSong(item.song!);
             }
           } else if (item.album != null) {
+            ListeningTrackerService.instance.recordFastLocalOpen(
+              item.album!.id,
+              item.album!.title,
+              QuickAccessContentType.album,
+              item.album!.artworkUrl,
+              subtitle: 'Album • ${item.album!.artist}',
+            );
             final playlistEquivalent = Playlist(
               id: item.album!.id,
               title: item.album!.title,
@@ -786,10 +791,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             );
           } else if (item.playlist != null) {
+            ListeningTrackerService.instance.recordFastLocalOpen(
+              'playlist_${item.playlist!.id}',
+              item.playlist!.title,
+              QuickAccessContentType.playlist,
+              item.playlist!.coverUrl,
+              subtitle: 'Playlist',
+            );
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (ctx) => PlaylistDetailScreen(playlist: item.playlist!),
+              ),
+            );
+          } else if (item.artist != null) {
+            ListeningTrackerService.instance.recordFastLocalOpen(
+              'artist_${item.artist!.id}',
+              item.artist!.name,
+              QuickAccessContentType.artist,
+              item.artist!.imageUrl,
+              subtitle: 'Artist',
+            );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => ArtistDetailScreen(artist: item.artist!),
               ),
             );
           }
@@ -798,28 +824,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             MuxizImage(
               imageUrl: item.imageUrl,
-              width: 56,
-              height: 56,
-              borderRadius: 0,
+              width: 48,
+              height: 48,
+              borderRadius: 6,
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                item.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Text(
+                  item.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isCurrent ? AppTheme.primaryGreen : Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            if (isCurrent)
+              Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: Icon(
+                  isAudioPlaying ? Icons.volume_up_rounded : Icons.volume_down_rounded,
+                  size: 16,
+                  color: AppTheme.primaryGreen,
+                ),
+              )
+            else
+              const SizedBox(width: 6),
           ],
         ),
       ),
+    ),
     );
   }
 }

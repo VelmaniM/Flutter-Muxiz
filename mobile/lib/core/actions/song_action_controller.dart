@@ -200,7 +200,7 @@ class SongActionController {
     final albumPlaylist = Playlist(
       id: existingAlbum.id,
       title: existingAlbum.title,
-      description: 'Album • ${existingAlbum.songs.length} songs',
+      description: 'Album • ${existingAlbum.artist}',
       coverUrl: existingAlbum.artworkUrl,
       creator: existingAlbum.artist,
       songs: existingAlbum.songs.isNotEmpty ? existingAlbum.songs : [song],

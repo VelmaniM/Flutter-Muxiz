@@ -1,28 +1,33 @@
-# Muxiz - Production Native Music Streaming Platform (.cursorrules)
+# Muxiz Unified Fullstack Music Platform (.cursorrules)
 
 ## Architecture Overview
-- **Mobile Frontend**: Flutter (Dart) with Riverpod (StateNotifier), `just_audio`, and `audio_service`.
-- **Backend API**: NestJS (TypeScript) with Prisma ORM and PostgreSQL.
-- **Storage & Streaming**: PostgreSQL is the application source of truth (users, songs, favorites, playlists, play counts). Google Drive provides audio streaming via direct API.
-- **Native OS Integration**: iOS (`AVAudioSession`, `AVRoutePickerView`) and Android (`AudioManager`, `AudioDeviceCallback`) for background audio, lock-screen notifications, and hardware output route switching.
+- **Mobile Client**: Flutter (Dart) with Riverpod, `just_audio`, `audio_service`, and `RemoteSyncService` (real-time SSE streaming + non-interruptive background sync).
+- **Backend & Cloud Vault Engine**: Node.js Express (`server/src/`) with Google Drive OAuth 5TB streaming proxy (HTTP 206 Partial Content range support), MongoDB Atlas + LocalStore zero-downtime cache.
+- **Studio Admin Console**: React + Vite + Tailwind (`server/client/`) featuring Apple/Linear-inspired Clean White Theme (`#ffffff`, `#f8fafc`), zero neon effects, and official Muxiz app branding.
+- **Metadata Intelligence**: Automated Apple Music & iTunes API matcher extracting official track titles, artists, albums, and 100% 1400x1400 Ultra HD cover art.
 
-## Non-Destructive Development Directives
-- **DO NOT** create a new Flutter project or replace existing architecture.
-- **DO NOT** remove existing working features.
-- **Google Drive is NOT the database**: PostgreSQL is the single source of truth for all relations.
-- **Secrets & Credentials**: Never hardcode or print JWT secrets, Google service account keys, passwords, or API tokens.
-- **Environment URLs**: Use `String.fromEnvironment('API_BASE_URL')` with automatic local LAN fallback; do not hardcode localhost into release builds.
+## Core Rules & Development Directives
 
-## State Management & Audio Rules
-1. **Audio Player**: Only ONE active instance of `AudioPlayer` exists, managed inside `AudioPlayerService` via `MuxizAudioHandler`.
-2. **State & Queue Sync**: `QueueManager` and `just_audio.ConcatenatingAudioSource` must maintain identical sequence indices (1:1 mapping).
-3. **Optimistic Updates**: User actions (Like/Unlike, Add to Playlist, Reorder Queue) update Flutter local state immediately (0ms UI latency) before syncing with PostgreSQL in the background.
-4. **Song Actions**: All song actions across all screens (Home, Search, Library, Artist, Playlist, Full Player, Queue) MUST route through `SongActionController` with appropriate `SongActionContext`.
+### 1. Zero Dummy Data Policy
+- **No Mock / Dummy Users**: Users are registered strictly from the Flutter mobile app frontend (`RemoteSyncService.syncCurrentUserProfile()`). Studio Admin Console only moderates real frontend accounts.
+- **Deduplicated Artists**: Compound artist strings (`Anirudh, Jonita`) are split into canonical profiles with accurate track counts aggregated across the entire catalog.
 
-## CLI & Automation Shortcuts
-- `make dev-backend` - Start NestJS API with Prisma in watch mode
-- `make dev-mobile`  - Launch Flutter app on connected device / simulator
-- `make test`        - Run all backend and Flutter test suites
-- `make analyze`     - Run Flutter static analysis with zero warnings
-- `make build-apk`   - Build native Android release APK
-- `make build-ipa`   - Build native iOS release IPA
+### 2. Audio Streaming & Storage
+- Audio playback must stream through the `/api/v1/songs/stream/:fileId` proxy supporting HTTP `Range` headers to ensure 0 CORS errors and 0 buffer seek latency.
+- Never expose private Google Drive file IDs or raw download URLs in public client share links.
+
+### 3. Real-Time Background App Sync
+- When songs or metadata are added, edited, or deleted in Studio, the server broadcasts an SSE event (`catalog_update`) on `/api/server/events`.
+- Mobile client refreshes its catalog silently in the background without interrupting or stopping the currently playing song.
+
+### 4. Flutter State Management & Audio
+- Single `AudioPlayer` instance managed inside `MuxizAudioHandler`.
+- Floating Mini Player, Queue Manager, and lock-screen native media notifications must remain in 1:1 sync.
+- Optimistic UI updates for likes, favorites, and queue changes (0ms UI latency).
+
+### 5. Quick Commands
+- `npm run dev` (in `server/client/`) -> Start Studio Admin Console Vite Dev Server
+- `npm run build` (in `server/client/`) -> Compile React Studio Production Bundle
+- `node src/server.js` (in `server/`) -> Start Unified Node.js Engine on port 5001
+- `flutter test` (in `mobile/`) -> Run Flutter unit & widget test suite (33/33 tests)
+- `flutter run` (in `mobile/`) -> Run Flutter app on connected mobile device / simulator

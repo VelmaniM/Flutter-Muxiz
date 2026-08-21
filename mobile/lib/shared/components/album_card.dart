@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../app/theme.dart';
 import 'shimmer_box.dart';
 
 class AlbumCard extends StatelessWidget {
@@ -15,7 +14,7 @@ class AlbumCard extends StatelessWidget {
     required this.subtitle,
     required this.imageUrl,
     this.onTap,
-    this.size = 142,
+    this.size = 122,
   });
 
   @override
@@ -24,44 +23,44 @@ class AlbumCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: size,
-        margin: const EdgeInsets.only(right: 14.0),
+        margin: const EdgeInsets.only(right: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Artwork Image (Spotify 4px radius)
+            // Artwork Image with refined 8px corners
             MuxizImage(
               imageUrl: imageUrl,
               width: size,
               height: size,
-              borderRadius: 4,
+              borderRadius: 8,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
-            // Title (Spotify 13.5px Bold White)
+            // Title
             Text(
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+                fontSize: 12.5,
                 letterSpacing: -0.2,
               ),
             ),
             const SizedBox(height: 2),
 
-            // Subtitle (Spotify 12px #B3B3B3 Muted)
+            // Subtitle (Pure White)
             Text(
               subtitle,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12.0,
-                fontWeight: FontWeight.w400,
-                height: 1.25,
+                color: Colors.white,
+                fontSize: 11.0,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
               ),
             ),
           ],

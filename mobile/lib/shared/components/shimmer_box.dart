@@ -54,7 +54,7 @@ class ShimmerLoadingScope extends InheritedWidget {
 }
 
 /// Smooth Animated Shimmer Box Element
-class ShimmerBox extends StatefulWidget {
+class ShimmerBox extends StatelessWidget {
   final double? width;
   final double? height;
   final double borderRadius;
@@ -77,64 +77,53 @@ class ShimmerBox extends StatefulWidget {
         shape = BoxShape.circle;
 
   @override
-  State<ShimmerBox> createState() => _ShimmerBoxState();
-}
-
-class _ShimmerBoxState extends State<ShimmerBox> with SingleTickerProviderStateMixin {
-  AnimationController? _localController;
-
-  @override
-  void initState() {
-    super.initState();
-    _localController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _localController?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final parentScope = ShimmerLoading.of(context);
-    final Listenable listenable = parentScope?.animation ?? _localController!;
 
-    return AnimatedBuilder(
-      animation: listenable,
-      builder: (context, child) {
-        final double value = parentScope != null
-            ? parentScope.animation.value
-            : (_localController?.value ?? 0.0);
-
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            shape: widget.shape,
-            borderRadius: widget.shape == BoxShape.rectangle
-                ? BorderRadius.circular(widget.borderRadius)
-                : null,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: [
-                (value - 0.3).clamp(0.0, 1.0),
-                value.clamp(0.0, 1.0),
-                (value + 0.3).clamp(0.0, 1.0),
-              ],
-              colors: const [
-                Color(0xFF1E1E1E),
-                Color(0xFF2E2E2E),
-                Color(0xFF1E1E1E),
-              ],
+    if (parentScope != null) {
+      return AnimatedBuilder(
+        animation: parentScope.animation,
+        builder: (context, child) {
+          final double value = parentScope.animation.value;
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              shape: shape,
+              borderRadius: shape == BoxShape.rectangle
+                  ? BorderRadius.circular(borderRadius)
+                  : null,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [
+                  (value - 0.3).clamp(0.0, 1.0),
+                  value.clamp(0.0, 1.0),
+                  (value + 0.3).clamp(0.0, 1.0),
+                ],
+                colors: const [
+                  Color(0xFF18181F),
+                  Color(0xFF282832),
+                  Color(0xFF18181F),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      );
+    }
+
+    // Lightweight high-performance static placeholder container (Zero Ticker overhead)
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A22),
+        shape: shape,
+        borderRadius: shape == BoxShape.rectangle
+            ? BorderRadius.circular(borderRadius)
+            : null,
+      ),
     );
   }
 }
@@ -177,12 +166,13 @@ class MuxizImage extends StatelessWidget {
       return _buildFallback();
     }
 
-    final int safeMemWidth = (width != null && width!.isFinite && width! > 0)
-        ? (width! * 2).toInt().clamp(64, 600)
-        : 400;
-    final int safeMemHeight = (height != null && height!.isFinite && height! > 0)
-        ? (height! * 2).toInt().clamp(64, 600)
-        : 400;
+    // Standardize memory cache dimensions into discrete buckets (prevents re-decode flicker)
+    final int safeMemWidth = (width != null && width! <= 64)
+        ? 128
+        : ((width != null && width! <= 180) ? 360 : 600);
+    final int safeMemHeight = (height != null && height! <= 64)
+        ? 128
+        : ((height != null && height! <= 180) ? 360 : 600);
 
     final String cleanUrl = imageUrl
         .replaceAll('/1400x1400bb.jpg', '/600x600bb.jpg')
@@ -196,6 +186,7 @@ class MuxizImage extends StatelessWidget {
         final Uint8List bytes = base64Decode(base64Str);
         imageWidget = Image.memory(
           bytes,
+          key: ValueKey(cleanUrl),
           width: width,
           height: height,
           fit: fit,
@@ -206,12 +197,14 @@ class MuxizImage extends StatelessWidget {
       }
     } else {
       imageWidget = CachedNetworkImage(
+        key: ValueKey(cleanUrl),
+        cacheKey: cleanUrl,
         imageUrl: cleanUrl,
         width: width,
         height: height,
         fit: fit,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
+        fadeInDuration: const Duration(milliseconds: 150),
+        fadeOutDuration: const Duration(milliseconds: 150),
         memCacheWidth: safeMemWidth,
         memCacheHeight: safeMemHeight,
         maxWidthDiskCache: 600,

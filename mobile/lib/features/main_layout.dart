@@ -9,7 +9,20 @@ import 'library/presentation/library_screen.dart';
 import '../core/audio/audio_manager.dart';
 import '../core/storage/local_storage.dart';
 
-final selectedTabProvider = StateProvider<int>((ref) => 0);
+final selectedTabProvider = StateNotifierProvider<SelectedTabNotifier, int>((ref) {
+  return SelectedTabNotifier();
+});
+
+class SelectedTabNotifier extends StateNotifier<int> {
+  SelectedTabNotifier() : super(LocalStorageService.getLastActiveTab());
+
+  void setTab(int index) {
+    state = index;
+    LocalStorageService.saveLastActiveTab(index);
+  }
+}
+
+final homeResetTriggerProvider = StateProvider<int>((ref) => 0);
 
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
@@ -29,7 +42,7 @@ class MainLayout extends ConsumerWidget {
       if (next != null && next != previous) {
         if (!LocalStorageService.hasCompletedFirstPlay()) {
           LocalStorageService.markFirstPlayCompleted();
-          ref.read(selectedTabProvider.notifier).state = 0;
+          ref.read(selectedTabProvider.notifier).setTab(0);
         }
       }
     });
@@ -57,7 +70,12 @@ class MainLayout extends ConsumerWidget {
                 GlassBottomBar(
                   currentIndex: currentIndex,
                   onTabSelected: (index) {
-                    ref.read(selectedTabProvider.notifier).state = index;
+                    if (index == 0 && currentIndex == 0) {
+                      // Tap Home again -> reset filter to "All" and scroll to top!
+                      ref.read(homeResetTriggerProvider.notifier).state++;
+                    } else {
+                      ref.read(selectedTabProvider.notifier).setTab(index);
+                    }
                   },
                 ),
               ],

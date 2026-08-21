@@ -29,6 +29,38 @@ class RemoteSyncService {
     _isListening = true;
     _startSSEListener();
     _startEpochPolling();
+    syncCurrentUserProfile();
+  }
+
+  /// Syncs the current mobile user profile to Studio Backend from Front-End
+  Future<void> syncCurrentUserProfile() async {
+    try {
+      final name = LocalStorageService.getUserName();
+      final userEmail = LocalStorageService.getUserEmail();
+      final userId = LocalStorageService.getUserId();
+      final email = userEmail.isNotEmpty
+          ? userEmail
+          : 'listener_${userId.length > 6 ? userId.substring(0, 6) : userId}@muxiz.io';
+      final favCount = LocalStorageService.getFavoriteSongIds().length;
+
+      for (final baseUrl in [AppConstants.defaultApiBaseUrl, ...AppConstants.fallbackApiBaseUrls]) {
+        try {
+          await Dio(BaseOptions(
+            connectTimeout: const Duration(seconds: 4),
+            receiveTimeout: const Duration(seconds: 4),
+          )).post(
+            '$baseUrl/users',
+            data: {
+              'name': name.isNotEmpty ? name : 'Muxiz Listener',
+              'email': email,
+              'favoritesCount': favCount,
+              'role': 'LISTENER',
+            },
+          );
+          break;
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   void stop() {
@@ -156,27 +188,23 @@ class RemoteSyncService {
     }
   }
 
-  /// Executes immediate app cache & local storage clearance
+  /// Executes immediate app cache & catalog sync seamlessly without interrupting user playback
   Future<void> executeInstantRemoteCacheWipe() async {
     try {
-      // 1. Clear Flutter Image In-Memory & Live Cache
+      // 1. Clear in-memory image cache for stale cover arts
       try {
         PaintingBinding.instance.imageCache.clear();
-        PaintingBinding.instance.imageCache.clearLiveImages();
       } catch (_) {}
 
-      // 2. Clear LocalStorage and temporary playback files
-      await LocalStorageService.clearAllPlaybackAndCache();
+      // 2. Re-fetch fresh catalog from Studio in the background
+      await MockMusicCatalog.initializeCatalog(forceRefresh: true, background: true);
 
-      // 3. Re-initialize and download fresh catalog from Studio
-      await MockMusicCatalog.initializeCatalog(background: true);
-
-      // 4. Notify all Riverpod listeners across Home, Search & Player screens
+      // 3. Notify all Riverpod listeners across Home, Search & Library screens
       catalogNotifier.notify();
 
-      debugPrint('✅ [RemoteSync] Instant remote app cache and local storage wipe completed successfully!');
+      debugPrint('✅ [RemoteSync] Seamless background sync completed with zero audio interruption!');
     } catch (e) {
-      debugPrint('⚠️ [RemoteSync] Error executing cache wipe: $e');
+      debugPrint('⚠️ [RemoteSync] Error executing background sync: $e');
     }
   }
 }

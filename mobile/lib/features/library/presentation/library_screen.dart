@@ -26,7 +26,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['Playlists', 'Downloaded', 'Artists', 'Albums'];
-  bool _isGridView = true;
+  bool _isGridView = false;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -34,7 +34,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   void initState() {
     super.initState();
-    // Load persistent user preference for Grid vs List view
+    // Load persistent user preference for Grid vs List view (defaults to List)
     _isGridView = LocalStorageService.getLibraryIsGridView();
     _searchController.addListener(() {
       setState(() {
@@ -387,13 +387,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 alb.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.5),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.0),
                               ),
                               subtitle: Text(
                                 'Album • ${alb.artist}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                               onTap: () {
                                 Navigator.push(
@@ -479,16 +479,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14.5,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14.0,
                                 ),
                               ),
                               subtitle: Text(
                                 p.description,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                               onTap: () {
                                 Navigator.push(
@@ -565,9 +565,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   void _showPlaylistContextMenu(Playlist p) {
-    final isLiked = p.id == 'liked_songs';
-    final isCustom = ref.read(customPlaylistsProvider).any((cp) => cp.id == p.id);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
@@ -620,7 +617,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Playlist • ${p.songs.length} songs • ${p.creator}',
+                            'Playlist • ${p.creator}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
@@ -634,30 +631,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const Divider(color: Colors.white12, height: 1),
                 const SizedBox(height: 6),
 
-                // Option 1: Delete Playlist (if custom playlist or user created)
-                if (isCustom || !isLiked)
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 24),
-                    title: const Text(
-                      'Delete playlist',
-                      style: TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Delete from library and database',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      _confirmDeletePlaylist(p);
-                    },
-                  ),
-
-                // Option 2: Share Playlist
+                // Option: Share Playlist
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   leading: const Icon(Icons.share_outlined, color: Colors.white, size: 22),
@@ -671,96 +645,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   },
                 ),
                 const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _confirmDeletePlaylist(Playlist p) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF222222),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Delete Playlist?',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Are you sure you want to delete "${p.title}"? This cannot be undone.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        ),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await LocalStorageService.addDeletedPlaylistId(p.id);
-                          await ref.read(customPlaylistsProvider.notifier).deletePlaylist(p.id);
-                          MockMusicCatalog.featuredPlaylists.removeWhere((pl) => pl.id == p.id);
-                          ref.read(homeFeedProvider.notifier).refreshFeed();
-                          setState(() {});
-
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: const Color(0xFF282828),
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen, size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'Deleted "${p.title}" (Songs remain safe in library)',
-                                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        ),
-                        child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

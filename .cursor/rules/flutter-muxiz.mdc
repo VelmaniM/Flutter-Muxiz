@@ -1,6 +1,6 @@
 ---
-description: Comprehensive architecture, coding rules, and development standards for Muxiz Flutter + NestJS Music App
-globs: ["**/*.dart", "**/*.ts", "**/*.prisma", "**/*.swift", "**/*.kt"]
+description: Comprehensive architecture, coding rules, and development standards for Muxiz Flutter + Node.js Music Platform
+globs: ["**/*.dart", "**/*.js", "**/*.jsx", "**/*.html", "**/*.css", "**/*.json"]
 alwaysApply: true
 ---
 
@@ -10,30 +10,25 @@ alwaysApply: true
 - **Mobile (Flutter)**:
   - State: `flutter_riverpod` (StateNotifierProvider, NotifierProvider)
   - Audio Engine: `just_audio` + `audio_service` with single `ConcatenatingAudioSource`
-  - Audio Routes: Native Platform Channel (`com.muxiz.app/audio_route`)
-  - Local Storage: `shared_preferences` / `local_storage.dart` for JWT tokens, cache, offline tracks
-  - Network: `dio` with automatic JWT Bearer token interceptor (`api_client.dart`)
-- **Backend (NestJS)**:
-  - Database: PostgreSQL with Prisma ORM
-  - Auth: JWT auth (`JwtAuthGuard`) + zero-friction Guest session generation (`/auth/guest`)
-  - Endpoints: `/songs`, `/playlists`, `/users`, `/favorites`, `/search`, `/recommendations`
+  - Real-time Sync: `RemoteSyncService` connects to server SSE `/api/server/events` and updates `MockMusicCatalog` with zero playback interruption.
+  - User Sync: Automatically syncs active mobile profile via `POST /api/v1/users`.
+- **Backend & Cloud Vault (Node.js Express in `server/`)**:
+  - Vault: Google Drive 5TB with HTTP 206 Range Stream Proxy (`/api/v1/songs/stream/:fileId`).
+  - Database: MongoDB Atlas + `LocalStore` zero-downtime cache fallback (`server/data/`).
+  - Apple Music Engine: Auto-extracts official track metadata & 1400x1400 Ultra HD artwork (`metadataService.js`).
+  - Studio Admin Console: React + Vite + Tailwind clean white theme (`server/client/`).
 
-## 2. Audio Pipeline & Queue Rules
+## 2. Audio Pipeline & Real-Time Sync Rules
 - Never create duplicate `AudioPlayer` instances.
-- Never use unbound delays or microtask loops to append playlist sources; use direct single-pass `AudioSourceManager.createPlaylist()`.
-- Synchronize all queue insertions (`playNext`, `addToQueue`, `reorderQueue`) simultaneously across `QueueManager`, `MuxizAudioHandler`, and `just_audio`.
-- Honor `AudioRepeatMode` (off, all, one) and queue boundaries on next/previous track skips.
+- Audio stream requests must support `Accept-Ranges: bytes` and `Content-Range`.
+- Studio Admin actions (upload, edit, delete, cache wipe) must bump the global cache epoch and broadcast SSE `catalog_update`.
+- Mobile cache updates must refresh catalog silently in background without killing or pausing active audio streams.
 
-## 3. UI/UX & Design Standards
-- Premium Spotify & Apple Music inspired aesthetic: Dark background (`#121212`), high contrast, vibrant dominant color extraction from album artwork.
-- Optimistic UI updates with instant user feedback for Likes, Playlists, and Downloads.
-- Floating Mini Player with smooth gestures (tap to expand, swipe horizontal for next/previous).
-- Hardware audio device picker with live battery indicator and native AirPlay/Bluetooth system routing.
+## 3. User & Artist Data Policies
+- Zero dummy/mock users: Users are strictly registered from the Flutter frontend mobile app.
+- Artists are normalized and deduplicated across tracks with exact track counts.
+- Strict ID-based song deletion with cascading orphan cleanup for artists/albums with 0 remaining tracks.
 
-## 4. Automation Commands
-- `bash scripts/automate.sh dev-backend`
-- `bash scripts/automate.sh dev-mobile`
-- `bash scripts/automate.sh test`
-- `bash scripts/automate.sh analyze`
-- `bash scripts/automate.sh build-apk`
-- `bash scripts/automate.sh build-ipa`
+## 4. UI/UX Standards
+- **Studio Console**: Apple & Linear inspired Clean White Theme (`#ffffff`, `#f8fafc`, `#e2e8f0`), official `app_logo.png`, zero neon glowing effects.
+- **Mobile App**: Dark theme (`#121212`), high contrast, floating mini player, gesture swipe, lock-screen media controls.

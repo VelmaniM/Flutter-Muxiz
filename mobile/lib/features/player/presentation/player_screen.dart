@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
 import '../../../core/actions/song_action_models.dart';
 import '../../../core/audio/audio_manager.dart';
-import '../../../core/audio/audio_route.dart';
 import '../../../core/audio/audio_route_manager.dart';
 import '../../../shared/models/song.dart';
 import '../../../shared/components/device_picker_modal.dart';
@@ -54,6 +53,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         : (mediaQuery.viewPadding.top > 0 ? mediaQuery.viewPadding.top : 48.0);
     final bottomPadding = math.max(mediaQuery.padding.bottom, 16.0);
 
+    final dominantColor = playerState.dominantColor;
+    final topColor = Color.lerp(dominantColor, const Color(0xFF121218), 0.15) ?? const Color(0xFF282834);
+    final midColor = Color.lerp(dominantColor, Colors.black, 0.70) ?? const Color(0xFF14141A);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeInOut,
@@ -64,12 +67,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF1E1E1E),
-            const Color(0xFF141414),
-            const Color(0xFF0A0A0A),
+            topColor,
+            midColor,
+            const Color(0xFF0A0A0E),
             Colors.black,
           ],
-          stops: const [0.0, 0.35, 0.70, 1.0],
+          stops: const [0.0, 0.40, 0.75, 1.0],
         ),
       ),
       child: Scaffold(
@@ -97,8 +100,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       children: [
                         Text(
                           'PLAYING FROM PLAYLIST',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 10.0,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.1,
@@ -189,9 +192,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: AppTheme.textSecondary,
+                            color: Colors.white,
                             fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -216,16 +219,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
               const SizedBox(height: 10),
 
-              // 4. Seek Bar Slider & Timestamps
+              // 4. Seek Bar Slider & Timestamps (Pure White Line & Thumb)
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3.5,
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.5),
                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                   activeTrackColor: Colors.white,
-                  inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                  inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
                   thumbColor: Colors.white,
-                  overlayColor: Colors.white.withValues(alpha: 0.1),
+                  overlayColor: Colors.white.withValues(alpha: 0.15),
                 ),
                 child: Slider(
                   value: _isSeeking
@@ -247,7 +250,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ),
 
-              // Timestamps (Position & Duration)
+              // Timestamps (Position & Duration - Pure White)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6.0),
                 child: Row(
@@ -255,18 +258,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   children: [
                     Text(
                       currentPosFormatted,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.0,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       totalDurFormatted,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.0,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -366,19 +369,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         Icon(
                           currentRoute != null
                               ? currentRoute.icon
-                              : Icons.speaker_group_outlined,
-                          color: (currentRoute != null && currentRoute.type != AudioRouteType.speaker)
-                              ? AppTheme.primaryGreen
-                              : AppTheme.textSecondary,
+                              : Icons.phone_iphone_rounded,
+                          color: AppTheme.primaryGreen,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          currentRoute != null ? currentRoute.name : 'Audio Output',
-                          style: TextStyle(
-                            color: (currentRoute != null && currentRoute.type != AudioRouteType.speaker)
-                                ? AppTheme.primaryGreen
-                                : AppTheme.textSecondary,
+                          currentRoute != null ? currentRoute.name : 'iPhone Speaker',
+                          style: const TextStyle(
+                            color: AppTheme.primaryGreen,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                           ),
@@ -445,10 +444,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         const Text(
                           'Playback Queue',
                           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '${upNext.length + (playerState.currentSong != null ? 1 : 0)} tracks',
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                         ),
                       ],
                     ),
