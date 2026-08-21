@@ -49,7 +49,7 @@ const SongSchema = new mongoose.Schema(
     storage: {
       provider: {
         type: String,
-        enum: ['GOOGLE_DRIVE', 'CLOUDINARY', 'DIRECT_URL'],
+        enum: ['GOOGLE_DRIVE', 'LOCAL_VAULT', 'DIRECT_URL'],
         default: 'GOOGLE_DRIVE',
       },
       fileId: {

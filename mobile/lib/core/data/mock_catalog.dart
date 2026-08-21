@@ -156,14 +156,14 @@ class MockMusicCatalog {
   static bool _isSyncing = false;
   static bool _autoSyncStarted = false;
   static Timer? _heartbeatTimer;
-  static String activeServerHost = 'https://muxiz-app.onrender.com';
+  static String activeServerHost = 'http://192.168.1.94:5001';
 
   static List<String> get candidateBaseUrls {
     final custom = LocalStorageService.getServerHost();
     return [
       if (custom.isNotEmpty) '$custom/api/v1',
-      'https://muxiz-app.onrender.com/api/v1',
       'http://192.168.1.94:5001/api/v1',
+      'https://muxiz-app.onrender.com/api/v1',
       'http://127.0.0.1:5001/api/v1',
       'http://localhost:5001/api/v1',
       'http://169.254.83.74:5001/api/v1',

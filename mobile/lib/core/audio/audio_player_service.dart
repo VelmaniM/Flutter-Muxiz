@@ -51,6 +51,9 @@ class AudioPlayerService {
       await _player.play();
     } catch (e) {
       debugPrint('AudioPlayerService playSongImmediately error: $e');
+      try {
+        await _player.stop();
+      } catch (_) {}
     }
   }
 
