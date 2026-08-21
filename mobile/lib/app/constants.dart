@@ -7,10 +7,11 @@ class AppConstants {
 
   static String get defaultApiBaseUrl {
     if (envApiUrl.isNotEmpty) return envApiUrl;
-    return 'http://192.168.1.94:5001/api/v1';
+    return 'https://muxiz-app.onrender.com/api/v1';
   }
 
   static List<String> get fallbackApiBaseUrls => [
+    'https://muxiz-app.onrender.com/api/v1',
     'http://192.168.1.94:5001/api/v1',
     'http://127.0.0.1:5001/api/v1',
     'http://localhost:5001/api/v1',
