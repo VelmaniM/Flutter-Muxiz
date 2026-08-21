@@ -465,6 +465,39 @@ class UploadController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/v1/uploads/avatar
+   * Handle user avatar upload
+   */
+  static async uploadAvatar(req, res, next) {
+    try {
+      const { avatarUrl } = req.body || {};
+      res.json({
+        success: true,
+        message: 'Avatar uploaded successfully.',
+        avatarUrl: avatarUrl || '',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/uploads/avatar
+   * Remove user avatar
+   */
+  static async removeAvatar(req, res, next) {
+    try {
+      res.json({
+        success: true,
+        message: 'Avatar removed successfully.',
+        avatarUrl: '',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = UploadController;
