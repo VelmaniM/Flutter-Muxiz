@@ -18,24 +18,31 @@ const getLanIp = () => {
   return 'localhost';
 };
 
-const startServer = async () => {
+const startServer = () => {
   try {
-    // 1. Connect to MongoDB Atlas
-    await connectDB();
-
     const lanIp = getLanIp();
 
-    // 2. Start HTTP Server binding to 0.0.0.0 (All interfaces for physical devices)
-    app.listen(PORT, '0.0.0.0', () => {
+    // 1. Start HTTP Server immediately binding to 0.0.0.0 for instant Render health check
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('\n======================================================');
       console.log('🎧 MUXIZ UNIFIED MONO-ENGINE ACTIVE');
       console.log(`📡 Local Console:   http://localhost:${PORT}/studio`);
       console.log(`🌐 Rest API:        http://localhost:${PORT}/api/v1/songs`);
       console.log(`📱 Physical Phone:  http://${lanIp}:${PORT}/api/v1`);
       console.log('⚡ Redis Cache:     Active (0ms In-Memory Ultra Cache)');
-      console.log('🗄️  Database:        MongoDB Atlas + LocalStore Ready');
+      console.log('🗄️  Database:        Connecting to MongoDB Atlas in background...');
       console.log('☁️  Media Vault:     Direct Streaming Engine Active');
       console.log('======================================================\n');
+
+      // 2. Connect to MongoDB Atlas concurrently
+      connectDB().catch((err) => {
+        console.warn('⚠️ [MongoDB Startup Notice]', err.message);
+      });
+    });
+
+    server.on('error', (err) => {
+      console.error('❌ Server listen error:', err);
+      process.exit(1);
     });
   } catch (err) {
     console.error('❌ Failed to start Muxiz Server Engine:', err);
